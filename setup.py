@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 VERSION = "0.1.0"
-PACKAGE_NAME = "xxx"
+PACKAGE_NAME = "carefree-creator"
 
-DESCRIPTION = "Template for utilizing carefree-client"
+DESCRIPTION = "An AI-powered creator for everyone."
 with open("README.md", encoding="utf-8") as f:
     LONG_DESCRIPTION = f.read()
 
@@ -13,6 +13,7 @@ setup(
     packages=find_packages(exclude=("tests",)),
     install_requires=[
         "carefree-client>=0.1.2",
+        "carefree-learn[cv]>=0.3.1",
     ],
     author="carefree0910",
     author_email="syameimaru.saki@gmail.com",

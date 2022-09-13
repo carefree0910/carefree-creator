@@ -1,30 +1,12 @@
-FROM python:3.8-slim-buster AS builder
+FROM nvcr.io/nvidia/pytorch:21.07-py3
 WORKDIR /workplace
 COPY . .
+RUN rm -rf /opt/conda/lib/python3.8/site-packages/cv2 && \
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip install -U pip && \
+    pip install . && \
+    rm -rf ./*
 
-RUN rm /etc/apt/sources.list && \
-    echo "deb http://mirrors.163.com/debian/ buster main non-free contrib" >> /etc/apt/sources.list  && \
-    echo "deb http://mirrors.163.com/debian/ buster-updates main non-free contrib" >> /etc/apt/sources.list  && \
-    echo "deb http://mirrors.163.com/debian/ buster-backports main non-free contrib" >> /etc/apt/sources.list  && \
-    echo "deb-src http://mirrors.163.com/debian/ buster main non-free contrib" >> /etc/apt/sources.list  && \
-    echo "deb-src http://mirrors.163.com/debian/ buster-updates main non-free contrib" >> /etc/apt/sources.list  && \
-    echo "deb-src http://mirrors.163.com/debian/ buster-backports main non-free contrib" >> /etc/apt/sources.list  && \
-    echo "deb http://mirrors.163.com/debian-security/ buster/updates main non-free contrib" >> /etc/apt/sources.list  && \
-    echo "deb-src http://mirrors.163.com/debian-security/ buster/updates main non-free contrib" >> /etc/apt/sources.list  && \
-    apt-get clean && \
-    apt-get update && \
-    apt-get -y install gcc mono-mcs && \
-    rm -rf /var/lib/apt/lists/* && \
-    python -m venv .venv &&  \
-    .venv/bin/pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
-    .venv/bin/pip install -U pip setuptools && \
-    .venv/bin/pip install . --default-timeout=10000 && \
-    find /workplace/.venv \( -type d -a -name test -o -name tests \) -o \( -type f -a -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' \+
-
-FROM python:3.8-slim
-WORKDIR /workplace
-COPY --from=builder /workplace /workplace
-ENV PATH="/workplace/.venv/bin:$PATH"
 COPY apis apis
 
 EXPOSE 8123

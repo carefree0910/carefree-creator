@@ -1,20 +1,11 @@
-FROM python:3.8-slim-buster AS builder
+FROM nvcr.io/nvidia/pytorch:21.07-py3
 WORKDIR /workplace
 COPY . .
+RUN rm -rf /opt/conda/lib/python3.8/site-packages/cv2 && \
+    pip install -U pip && \
+    pip install . && \
+    rm -rf ./*
 
-RUN apt-get clean && \
-    apt-get update && \
-    apt-get -y install gcc mono-mcs && \
-    rm -rf /var/lib/apt/lists/* && \
-    python -m venv .venv &&  \
-    .venv/bin/pip install -U pip setuptools && \
-    .venv/bin/pip install . --default-timeout=10000 && \
-    find /workplace/.venv \( -type d -a -name test -o -name tests \) -o \( -type f -a -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' \+
-
-FROM python:3.8-slim
-WORKDIR /workplace
-COPY --from=builder /workplace /workplace
-ENV PATH="/workplace/.venv/bin:$PATH"
 COPY apis apis
 
 EXPOSE 8123
