@@ -1,0 +1,45 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: "%(asctime)s - %(process)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: standard
+    level: INFO
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.handlers.WatchedFileHandler
+    formatter: standard
+    level: DEBUG
+
+
+loggers:
+  uvicorn:
+    error:
+      propagate: true
+  PIL:
+    level: INFO
+    handlers: [ console ]
+    propagate: no
+  multipart:
+    level: INFO
+    handlers: [ console ]
+    propagate: no
+  qcloud_cos:
+    level: INFO
+    handlers: [ console ]
+    propagate: no
+  urllib3:
+    level: INFO
+    handlers: [ console ]
+    propagate: no
+
+root:
+  level: DEBUG
+  handlers: [ console, file ]
+  propagate: no

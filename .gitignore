@@ -1,0 +1,13 @@
+.idea/*
+.DS_Store
+*.pyc
+.vscode/*
+_*/
+build/*
+*.egg-info
+pip-wheel-metadata
+**/.ipynb_checkpoints/*
+dist/*
+**/mlruns/*
+*.zip
+apis/logs/*
