@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any
 from typing import Dict
 from fastapi import FastAPI
+from fastapi import Response
 from pydantic import BaseModel
 from pkg_resources import get_distribution
 from fastapi.openapi.utils import get_openapi
@@ -17,6 +18,9 @@ from cfclient.core import HttpClient
 from cfclient.core import TritonClient
 from cfclient.utils import get_responses
 from cfclient.utils import run_algorithm
+from cfclient.utils import get_image_response_kwargs
+
+from cfcreator import *
 
 
 constants = dict(
@@ -132,6 +136,12 @@ async def health_check() -> HealthCheckResponse:
 @app.post(demo_hello_endpoint, responses=get_responses(HelloResponse))
 async def hello(data: HelloModel) -> HelloResponse:
     return await run_algorithm(loaded_algorithms["demo.hello"], data)
+
+
+# txt2img
+@app.post(txt2img_sd_endpoint, **get_image_response_kwargs())
+async def txt2img_sd(data: Txt2ImgModel) -> Response:
+    return await run_algorithm(loaded_algorithms["txt2img.sd"], data)
 
 
 # events
