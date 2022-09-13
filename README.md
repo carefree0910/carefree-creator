@@ -6,11 +6,7 @@ An AI-powered creator for everyone.
 
 # UI
 
-## Google Colab
-
-```text
-https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/demo.ipynb
-```
+## [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/demo.ipynb)
 
 
 # Server
