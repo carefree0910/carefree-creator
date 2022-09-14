@@ -16,7 +16,8 @@ class Txt2ImgSD(AlgorithmBase):
         self.m = get_sd()
 
     async def run(self, data: Txt2ImgModel, *args: Any) -> Response:
-        img_arr = self.m.txt2img(data.text).numpy()[0]
+        size = data.w, data.h
+        img_arr = self.m.txt2img(data.text, size=size, max_wh=data.max_wh).numpy()[0]
         img_arr = 0.5 * (img_arr + 1.0)
         img_arr = img_arr.transpose([1, 2, 0])
         return Response(content=np_to_bytes(img_arr), media_type="image/png")
