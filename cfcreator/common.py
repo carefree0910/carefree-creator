@@ -1,4 +1,5 @@
 from typing import Callable
+from pydantic import Field
 from cfclient.models import TextModel
 from cflearn.api.cv import DiffusionAPI
 
@@ -20,7 +21,9 @@ def get_sd() -> DiffusionAPI:
 
 
 class Txt2ImgModel(TextModel):
-    pass
+    w: int = Field(512, description="The desired output width.")
+    h: int = Field(512, description="The desired output height.")
+    max_wh: int = Field(512, description="The maximum resolution.")
 
 
 __all__ = [
