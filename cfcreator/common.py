@@ -1,7 +1,10 @@
+import numpy as np
+
 from typing import Callable
 from pydantic import Field
 from pydantic import BaseModel
 from cfclient.models import TextModel
+from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 
 
@@ -19,6 +22,12 @@ def _get(key: str, init: Callable) -> DiffusionAPI:
 
 def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
+
+
+def get_bytes_from_diffusion(img_arr: np.ndarray) -> bytes:
+    img_arr = 0.5 * (img_arr + 1.0)
+    img_arr = img_arr.transpose([1, 2, 0])
+    return np_to_bytes(img_arr)
 
 
 class MaxWHModel(BaseModel):

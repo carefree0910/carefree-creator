@@ -3,9 +3,9 @@ import time
 from typing import Any
 from fastapi import Response
 from cfclient.models import AlgorithmBase
-from cfcv.misc.toolkit import np_to_bytes
 
 from .common import get_sd
+from .common import get_bytes_from_diffusion
 from .common import Txt2ImgModel
 
 
@@ -24,10 +24,9 @@ class Txt2ImgSD(AlgorithmBase):
         t = time.time()
         size = data.w, data.h
         img_arr = self.m.txt2img(data.text, size=size, max_wh=data.max_wh).numpy()[0]
-        img_arr = 0.5 * (img_arr + 1.0)
-        img_arr = img_arr.transpose([1, 2, 0])
+        content = get_bytes_from_diffusion(img_arr)
         self.log_times({"total": time.time() - t})
-        return Response(content=np_to_bytes(img_arr), media_type="image/png")
+        return Response(content=content, media_type="image/png")
 
 
 __all__ = [
