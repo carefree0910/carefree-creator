@@ -1,2 +1,2 @@
 from .common import *
-from .sd import *
+from .txt2img import *
