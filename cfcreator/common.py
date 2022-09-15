@@ -7,6 +7,7 @@ from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
+from cflearn.api.cv import TranslatorAPI
 
 
 apis = {}
@@ -25,8 +26,13 @@ def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
 
 
-def get_sr() -> DiffusionAPI:
-    return _get("sr", DiffusionAPI.from_sr)
+def get_sr() -> TranslatorAPI:
+    return _get("sr", TranslatorAPI.from_esr)
+
+
+def get_bytes_from_translator(img_arr: np.ndarray) -> bytes:
+    img_arr = img_arr.transpose([1, 2, 0])
+    return np_to_bytes(img_arr)
 
 
 def get_bytes_from_diffusion(img_arr: np.ndarray) -> bytes:

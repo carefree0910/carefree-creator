@@ -6,7 +6,7 @@ from cfclient.utils import download_image_with_retry
 from cfclient.models import AlgorithmBase
 
 from .common import get_sr
-from .common import get_bytes_from_diffusion
+from .common import get_bytes_from_translator
 from .common import Img2ImgModel
 
 
@@ -26,7 +26,7 @@ class Img2ImgSR(AlgorithmBase):
         image = await download_image_with_retry(self.http_client.session, data.url)
         t1 = time.time()
         img_arr = self.m.sr(image, max_wh=data.max_wh).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        content = get_bytes_from_translator(img_arr)
         self.log_times({"download": t1 - t0, "inference": time.time() - t1})
         return Response(content=content, media_type="image/png")
 
