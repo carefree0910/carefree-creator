@@ -1,5 +1,6 @@
 from typing import Callable
 from pydantic import Field
+from pydantic import BaseModel
 from cfclient.models import TextModel
 from cflearn.api.cv import DiffusionAPI
 
@@ -20,10 +21,13 @@ def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
 
 
-class Txt2ImgModel(TextModel):
+class MaxWHModel(BaseModel):
+    max_wh: int = Field(512, description="The maximum resolution.")
+
+
+class Txt2ImgModel(TextModel, MaxWHModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
-    max_wh: int = Field(512, description="The maximum resolution.")
 
 
 __all__ = [
