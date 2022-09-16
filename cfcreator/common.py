@@ -26,8 +26,8 @@ def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
 
 
-def get_sr() -> TranslatorAPI:
-    return _get("sr", TranslatorAPI.from_esr)
+def get_esr() -> TranslatorAPI:
+    return _get("esr", TranslatorAPI.from_esr)
 
 
 def get_bytes_from_translator(img_arr: np.ndarray) -> bytes:

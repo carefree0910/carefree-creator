@@ -5,7 +5,7 @@ from fastapi import Response
 from cfclient.utils import download_image_with_retry
 from cfclient.models import AlgorithmBase
 
-from .common import get_sr
+from .common import get_esr
 from .common import get_bytes_from_translator
 from .common import Img2ImgModel
 
@@ -18,7 +18,7 @@ class Img2ImgSR(AlgorithmBase):
     endpoint = img2img_sr_endpoint
 
     def initialize(self) -> None:
-        self.m = get_sr()
+        self.m = get_esr()
 
     async def run(self, data: Img2ImgModel, *args: Any) -> Response:
         self.log_endpoint(data)
