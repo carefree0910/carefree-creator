@@ -26,6 +26,10 @@ def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
 
 
+def get_inpainting() -> DiffusionAPI:
+    return _get("inpainting", DiffusionAPI.from_inpainting)
+
+
 def get_esr() -> TranslatorAPI:
     return _get("esr", TranslatorAPI.from_esr)
 
