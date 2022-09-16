@@ -30,6 +30,10 @@ def get_esr() -> TranslatorAPI:
     return _get("esr", TranslatorAPI.from_esr)
 
 
+def get_esr_anime() -> TranslatorAPI:
+    return _get("esr_anime", TranslatorAPI.from_esr_anime)
+
+
 def get_bytes_from_translator(img_arr: np.ndarray) -> bytes:
     img_arr = img_arr.transpose([1, 2, 0])
     return np_to_bytes(img_arr)

@@ -150,7 +150,7 @@ async def txt2img_sd(data: Txt2ImgModel) -> Response:
 
 
 @app.post(img2img_sr_endpoint, **get_image_response_kwargs())
-async def img2img_sr(data: Img2ImgModel) -> Response:
+async def img2img_sr(data: Img2ImgSRModel) -> Response:
     return await run_algorithm(loaded_algorithms["img2img.sr"], data)
 
 
