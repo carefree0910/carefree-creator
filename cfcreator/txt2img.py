@@ -25,7 +25,7 @@ class Txt2ImgSD(AlgorithmBase):
         size = data.w, data.h
         img_arr = self.m.txt2img(data.text, size=size, max_wh=data.max_wh).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        self.log_times({"total": time.time() - t})
+        self.log_times({"inference": time.time() - t})
         return Response(content=content, media_type="image/png")
 
 
