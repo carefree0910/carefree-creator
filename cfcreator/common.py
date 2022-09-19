@@ -26,16 +26,20 @@ def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
 
 
-def get_inpainting() -> DiffusionAPI:
-    return _get("inpainting", DiffusionAPI.from_inpainting)
-
-
 def get_esr() -> TranslatorAPI:
     return _get("esr", TranslatorAPI.from_esr)
 
 
 def get_esr_anime() -> TranslatorAPI:
     return _get("esr_anime", TranslatorAPI.from_esr_anime)
+
+
+def get_inpainting() -> DiffusionAPI:
+    return _get("inpainting", DiffusionAPI.from_inpainting)
+
+
+def get_semantic() -> DiffusionAPI:
+    return _get("semantic", DiffusionAPI.from_semantic)
 
 
 def get_bytes_from_translator(img_arr: np.ndarray) -> bytes:
