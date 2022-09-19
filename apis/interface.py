@@ -159,6 +159,11 @@ async def img2img_inpainting(data: Img2ImgInpaintingModel) -> Response:
     return await run_algorithm(loaded_algorithms["img2img.inpainting"], data)
 
 
+@app.post(img2img_semantic2img_endpoint, **get_image_response_kwargs())
+async def img2img_semantic2img(data: Img2ImgSemantic2ImgModel) -> Response:
+    return await run_algorithm(loaded_algorithms["img2img.semantic2img"], data)
+
+
 # events
 
 
