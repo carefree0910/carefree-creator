@@ -8,6 +8,7 @@ from typing import Dict
 from typing import List
 from fastapi import Response
 from pydantic import Field
+from scipy.interpolate import NearestNDInterpolator
 from cfclient.utils import download_image_with_retry
 from cfclient.models import AlgorithmBase
 
@@ -121,30 +122,56 @@ class Img2ImgSemantic2Img(AlgorithmBase):
         raw_semantic = await download_image_with_retry(self.http_client.session, data.url)
         t1 = time.time()
         w, h = raw_semantic.size
-        # `0` is the `unlabeled` class
-        semantic_arr = np.zeros([h, w], np.uint8).ravel()
         raw_arr = np.array(raw_semantic)
         alpha = None
         valid_mask = None
+        valid_mask_ravel = None
         # handle alpha
         if raw_arr.shape[-1] == 4:
             alpha = raw_arr[..., -1]
             raw_arr = raw_arr[..., :3]
             valid_mask = alpha > 0
-        for color, label in data.color2label.items():
-            rgb = color2rgb(color)
-            label_mask = (raw_arr == rgb).all(axis=2)
-            if valid_mask is not None:
-                label_mask &= valid_mask
-            semantic_arr[label_mask.ravel()] = label
-        semantic_arr = semantic_arr.reshape([h, w, 1]).repeat(3, axis=2)
-        if alpha is not None:
-            semantic_arr = np.concatenate([semantic_arr, alpha[..., None]], axis=2)
-        semantic = Image.fromarray(semantic_arr)
+            valid_mask_ravel = valid_mask.ravel()
+        # get nearest color
+        raw_arr_flat = raw_arr.reshape([h * w, 1, 3])
+        if valid_mask_ravel is not None:
+            raw_arr_flat = raw_arr_flat[valid_mask_ravel]
+        raw_arr_flat = raw_arr_flat.astype(np.int16)
+        colors = sorted(data.color2label)
+        rgbs = np.array(list(map(color2rgb, colors)), np.int16).reshape([1, -1, 3])
+        diff = np.abs(raw_arr_flat - rgbs).mean(2)
+        indices = np.argmin(diff, axis=1)
+        # diffusion has no `unlabeled` label, so it should be COCO.label - 1
+        labels = np.array([data.color2label[color] - 1 for color in colors], np.uint8)
+        arr_labels = labels[indices]
+        if valid_mask_ravel is None:
+            semantic_arr = arr_labels
+        else:
+            semantic_arr = np.zeros([h, w], np.uint8).ravel()
+            semantic_arr[valid_mask_ravel] = arr_labels
+        # nearest interpolation
         t2 = time.time()
-        img_arr = self.m.semantic2img(semantic, max_wh=data.max_wh).numpy()[0]
+        if valid_mask is not None and valid_mask_ravel is not None:
+            to_coordinates = lambda mask: np.array(np.nonzero(mask)).T
+            valid_coordinates = to_coordinates(valid_mask)
+            interpolator = NearestNDInterpolator(valid_coordinates, arr_labels)
+            invalid_mask = ~valid_mask
+            invalid_coordinates = to_coordinates(invalid_mask)
+            semantic_arr[invalid_mask.ravel()] = interpolator(invalid_coordinates)
+        # gather
+        semantic_arr = semantic_arr.reshape([h, w])
+        semantic = Image.fromarray(semantic_arr)
+        t3 = time.time()
+        img_arr = self.m.semantic2img(semantic, alpha=alpha, max_wh=data.max_wh).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        self.log_times({"download": t1 - t0, "preprocess": t2 - t1,  "inference": time.time() - t2})
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "preprocess": t2 - t1,
+                "interpolation": t3 - t2,
+                "inference": time.time() - t3,
+            }
+        )
         return Response(content=content, media_type="image/png")
 
 
