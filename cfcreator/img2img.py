@@ -101,6 +101,11 @@ Mapping of color -> (semantic) label.
 > The color should be of `rgb(r,g,b)` format.
 """,
     )
+    keep_alpha: bool = Field(
+        False,
+        description="Whether the returned image should keep the "
+                    "alpha-channel of the input image or not.",
+    )
 
 
 def color2rgb(color: str) -> List[int]:
@@ -162,6 +167,10 @@ class Img2ImgSemantic2Img(AlgorithmBase):
         semantic_arr = semantic_arr.reshape([h, w])
         semantic = Image.fromarray(semantic_arr)
         t3 = time.time()
+        if not data.keep_alpha:
+            alpha = None
+        elif alpha is not None:
+            alpha = alpha[None, None].astype(np.float32) / 255.0
         img_arr = self.m.semantic2img(semantic, alpha=alpha, max_wh=data.max_wh).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         self.log_times(
