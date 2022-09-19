@@ -93,7 +93,7 @@ class Img2ImgInpainting(AlgorithmBase):
 
 
 class Img2ImgSemantic2ImgModel(Img2ImgModel):
-    color2label: Dict[str, str] = Field(
+    color2label: Dict[str, int] = Field(
         ...,
         description="""
 Mapping of color -> (semantic) label.
