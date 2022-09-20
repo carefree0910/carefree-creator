@@ -12,6 +12,7 @@ from scipy.interpolate import NearestNDInterpolator
 from cfclient.utils import download_image_with_retry
 from cfclient.models import AlgorithmBase
 
+from .common import get_sd
 from .common import get_esr
 from .common import get_semantic
 from .common import get_esr_anime
@@ -21,9 +22,39 @@ from .common import get_bytes_from_translator
 from .common import Img2ImgModel
 
 
+img2img_sd_endpoint = "/img2img/sd"
 img2img_sr_endpoint = "/img2img/sr"
 img2img_inpainting_endpoint = "/img2img/inpainting"
 img2img_semantic2img_endpoint = "/img2img/semantic2img"
+
+
+class Img2ImgSDModel(Img2ImgModel):
+    text: str = Field(..., description="The text that we want to handle.")
+    fidelity: float = Field(0.2, description="The fidelity of the input image.")
+
+
+@AlgorithmBase.register("img2img.sd")
+class Img2ImgSD(AlgorithmBase):
+    endpoint = img2img_sd_endpoint
+
+    def initialize(self) -> None:
+        self.m = get_sd()
+
+    async def run(self, data: Img2ImgSDModel, *args: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await download_image_with_retry(self.http_client.session, data.url)
+        t1 = time.time()
+        img_arr = self.m.img2img(
+            image,
+            cond=[data.text],
+            max_wh=data.max_wh,
+            fidelity=data.fidelity,
+            anchor=64,
+        ).numpy()[0]
+        content = get_bytes_from_diffusion(img_arr)
+        self.log_times({"download": t1 - t0, "inference": time.time() - t1})
+        return Response(content=content, media_type="image/png")
 
 
 class Img2ImgSRModel(Img2ImgModel):
@@ -185,12 +216,15 @@ class Img2ImgSemantic2Img(AlgorithmBase):
 
 
 __all__ = [
+    "img2img_sd_endpoint",
     "img2img_sr_endpoint",
     "img2img_inpainting_endpoint",
     "img2img_semantic2img_endpoint",
+    "Img2ImgSDModel",
     "Img2ImgSRModel",
     "Img2ImgInpaintingModel",
     "Img2ImgSemantic2ImgModel",
+    "Img2ImgSD",
     "Img2ImgSR",
     "Img2ImgInpainting",
     "Img2ImgSemantic2Img",
