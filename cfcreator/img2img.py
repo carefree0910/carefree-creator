@@ -11,6 +11,7 @@ from pydantic import Field
 from scipy.interpolate import NearestNDInterpolator
 from cfclient.utils import download_image_with_retry
 from cfclient.models import AlgorithmBase
+from cfcv.misc.toolkit import to_rgb
 
 from .common import get_sd
 from .common import get_esr
@@ -31,6 +32,11 @@ img2img_semantic2img_endpoint = "/img2img/semantic2img"
 class Img2ImgSDModel(Img2ImgModel):
     text: str = Field(..., description="The text that we want to handle.")
     fidelity: float = Field(0.2, description="The fidelity of the input image.")
+    keep_alpha: bool = Field(True, description="""
+Whether the returned image should keep the alpha-channel of the input image or not.
+> If the input image is a sketch image, then `keep_alpha` needs to be False in most of the time.  
+"""
+    )
 
 
 @AlgorithmBase.register("img2img.sd")
@@ -45,6 +51,8 @@ class Img2ImgSD(AlgorithmBase):
         t0 = time.time()
         image = await download_image_with_retry(self.http_client.session, data.url)
         t1 = time.time()
+        if not data.keep_alpha:
+            image = to_rgb(image)
         img_arr = self.m.img2img(
             image,
             cond=[data.text],
