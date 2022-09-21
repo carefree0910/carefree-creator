@@ -103,6 +103,7 @@ Refine fidelity used in inpainting.
         description="""
 The `cdn` / `cos` url of the user's mask.
 > `cos` url from `qcloud` is preferred.
+> If empty string is provided, then we will use an empty mask, which means we will simply perform an image-to-image transform.  
 """,
     )
 
@@ -118,7 +119,11 @@ class Img2ImgInpainting(AlgorithmBase):
         self.log_endpoint(data)
         t0 = time.time()
         image = await download_image_with_retry(self.http_client.session, data.url)
-        mask = await download_image_with_retry(self.http_client.session, data.mask_url)
+        mask_url = data.mask_url
+        if not mask_url:
+            mask = Image.new("L", image.size, color=0)
+        else:
+            mask = await download_image_with_retry(self.http_client.session, mask_url)
         t1 = time.time()
         refine_fidelity = data.refine_fidelity if data.use_refine else None
         img_arr = self.m.inpainting(
