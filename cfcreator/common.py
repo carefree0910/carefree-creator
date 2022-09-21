@@ -1,5 +1,7 @@
 import numpy as np
 
+from typing import List
+from typing import Tuple
 from typing import Union
 from typing import Callable
 from pydantic import Field
@@ -61,6 +63,23 @@ class MaxWHModel(BaseModel):
 class Txt2ImgModel(TextModel, MaxWHModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
+    use_seed: bool = Field(False, description="Whether should we use seed.")
+    seed: int = Field(0, description="""
+Seed of the generation.
+> Only take effects when `use_refine` is set to True.
+"""
+    )
+    variation_seed: int = Field(0, description="""
+Seed of the variation generation.
+> Only take effects when `variation_strength` is larger than 0.
+"""
+    )
+    variation_strength: float = Field(
+        0.0,
+        ge=0.0,
+        description="Strength of the variation generation.",
+    )
+    variations: List[Tuple[int, float]] = Field([], description="Variation ingredients")
 
 
 class Img2ImgModel(ImageModel, MaxWHModel):
