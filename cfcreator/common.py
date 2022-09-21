@@ -18,7 +18,7 @@ def _get(key: str, init: Callable) -> Union[DiffusionAPI, TranslatorAPI]:
     m = apis.get(key)
     if m is not None:
         return m
-    m = init("cuda:0", use_amp=True)
+    m = init("cuda:0", use_half=True)
     apis[key] = m
     return m
 
