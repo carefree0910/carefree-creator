@@ -1,5 +1,6 @@
 import numpy as np
 
+from typing import Union
 from typing import Callable
 from pydantic import Field
 from pydantic import BaseModel
@@ -13,7 +14,7 @@ from cflearn.api.cv import TranslatorAPI
 apis = {}
 
 
-def _get(key: str, init: Callable) -> DiffusionAPI:
+def _get(key: str, init: Callable) -> Union[DiffusionAPI, TranslatorAPI]:
     m = apis.get(key)
     if m is not None:
         return m
