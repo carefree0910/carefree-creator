@@ -95,6 +95,10 @@ class Img2ImgModel(ImageModel, MaxWHModel):
     pass
 
 
+class Img2ImgDiffusionModel(Img2ImgModel, DiffusionModel):
+    pass
+
+
 def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:
     seed = None
     if data.use_seed:
@@ -117,4 +121,5 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
 __all__ = [
     "Txt2ImgModel",
     "Img2ImgModel",
+    "Img2ImgDiffusionModel",
 ]

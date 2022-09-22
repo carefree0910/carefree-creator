@@ -21,6 +21,7 @@ from .common import get_inpainting
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
 from .common import Img2ImgModel
+from .common import Img2ImgDiffusionModel
 
 
 img2img_sd_endpoint = "/img2img/sd"
@@ -29,7 +30,7 @@ img2img_inpainting_endpoint = "/img2img/inpainting"
 img2img_semantic2img_endpoint = "/img2img/semantic2img"
 
 
-class Img2ImgSDModel(Img2ImgModel):
+class Img2ImgSDModel(Img2ImgDiffusionModel):
     text: str = Field(..., description="The text that we want to handle.")
     fidelity: float = Field(0.2, description="The fidelity of the input image.")
     keep_alpha: bool = Field(True, description="""
@@ -89,7 +90,7 @@ class Img2ImgSR(AlgorithmBase):
         return Response(content=content, media_type="image/png")
 
 
-class Img2ImgInpaintingModel(Img2ImgModel):
+class Img2ImgInpaintingModel(Img2ImgDiffusionModel):
     use_refine: bool = Field(False, description="Whether should we perform refining.")
     refine_fidelity: float = Field(
         0.8,
@@ -137,7 +138,7 @@ class Img2ImgInpainting(AlgorithmBase):
         return Response(content=content, media_type="image/png")
 
 
-class Img2ImgSemantic2ImgModel(Img2ImgModel):
+class Img2ImgSemantic2ImgModel(Img2ImgDiffusionModel):
     color2label: Dict[str, int] = Field(
         ...,
         description="""
