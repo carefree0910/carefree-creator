@@ -60,9 +60,7 @@ class MaxWHModel(BaseModel):
     max_wh: int = Field(512, description="The maximum resolution.")
 
 
-class Txt2ImgModel(TextModel, MaxWHModel):
-    w: int = Field(512, description="The desired output width.")
-    h: int = Field(512, description="The desired output height.")
+class DiffusionModel(BaseModel):
     use_circular: bool = Field(
         False,
         description="Whether should we use circular pattern (e.g. generate textures).",
@@ -84,6 +82,11 @@ Seed of the variation generation.
         description="Strength of the variation generation.",
     )
     variations: List[Tuple[int, float]] = Field([], description="Variation ingredients")
+
+
+class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
+    w: int = Field(512, description="The desired output width.")
+    h: int = Field(512, description="The desired output height.")
 
 
 class Img2ImgModel(ImageModel, MaxWHModel):
