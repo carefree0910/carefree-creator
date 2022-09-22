@@ -63,6 +63,10 @@ class MaxWHModel(BaseModel):
 class Txt2ImgModel(TextModel, MaxWHModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
+    use_circular: bool = Field(
+        False,
+        description="Whether should we use circular pattern (e.g. generate textures).",
+    )
     use_seed: bool = Field(False, description="Whether should we use seed.")
     seed: int = Field(0, description="""
 Seed of the generation.

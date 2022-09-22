@@ -32,6 +32,7 @@ class Txt2ImgSD(AlgorithmBase):
             variation_seed = data.variation_seed
             variation_strength = data.variation_strength
         variations = data.variations or None
+        self.m.switch_circular(data.use_circular)
         img_arr = self.m.txt2img(
             data.text,
             size=size,
