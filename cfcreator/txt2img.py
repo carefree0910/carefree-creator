@@ -5,6 +5,7 @@ from fastapi import Response
 from cfclient.models import AlgorithmBase
 
 from .common import get_sd
+from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import Txt2ImgModel
 
@@ -23,24 +24,12 @@ class Txt2ImgSD(AlgorithmBase):
         self.log_endpoint(data)
         t = time.time()
         size = data.w, data.h
-        seed = None
-        if data.use_seed:
-            seed = data.seed
-        variation_seed = None
-        variation_strength = None
-        if data.variation_strength > 0:
-            variation_seed = data.variation_seed
-            variation_strength = data.variation_strength
-        variations = data.variations or None
-        self.m.switch_circular(data.use_circular)
+        kwargs = handle_diffusion_model(self.m, data)
         img_arr = self.m.txt2img(
             data.text,
             size=size,
             max_wh=data.max_wh,
-            seed=seed,
-            variations=variations,
-            variation_seed=variation_seed,
-            variation_strength=variation_strength,
+            **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         self.log_times({"inference": time.time() - t})

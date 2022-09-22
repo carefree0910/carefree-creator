@@ -1,5 +1,7 @@
 import numpy as np
 
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -91,6 +93,25 @@ class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
 
 class Img2ImgModel(ImageModel, MaxWHModel):
     pass
+
+
+def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:
+    seed = None
+    if data.use_seed:
+        seed = data.seed
+    variation_seed = None
+    variation_strength = None
+    if data.variation_strength > 0:
+        variation_seed = data.variation_seed
+        variation_strength = data.variation_strength
+    variations = data.variations or None
+    m.switch_circular(data.use_circular)
+    return dict(
+        seed=seed,
+        variation_seed=variation_seed,
+        variation_strength=variation_strength,
+        variations=variations,
+    )
 
 
 __all__ = [
