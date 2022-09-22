@@ -18,6 +18,7 @@ from .common import get_esr
 from .common import get_semantic
 from .common import get_esr_anime
 from .common import get_inpainting
+from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
 from .common import Img2ImgModel
@@ -54,12 +55,14 @@ class Img2ImgSD(AlgorithmBase):
         t1 = time.time()
         if not data.keep_alpha:
             image = to_rgb(image)
+        kwargs = handle_diffusion_model(self.m, data)
         img_arr = self.m.img2img(
             image,
             cond=[data.text],
             max_wh=data.max_wh,
             fidelity=data.fidelity,
             anchor=64,
+            **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         self.log_times({"download": t1 - t0, "inference": time.time() - t1})
