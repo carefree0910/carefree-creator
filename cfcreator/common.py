@@ -59,7 +59,7 @@ def get_bytes_from_diffusion(img_arr: np.ndarray) -> bytes:
 
 
 class MaxWHModel(BaseModel):
-    max_wh: int = Field(512, description="The maximum resolution.")
+    max_wh: int = Field(1024, description="The maximum resolution.")
 
 
 class DiffusionModel(BaseModel):
