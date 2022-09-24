@@ -142,7 +142,7 @@ async def hello(data: HelloModel) -> HelloResponse:
 
 
 @app.post(txt2img_sd_endpoint, **get_image_response_kwargs())
-async def txt2img_sd(data: Txt2ImgModel) -> Response:
+async def txt2img_sd(data: Txt2ImgSDModel) -> Response:
     return await run_algorithm(loaded_algorithms["txt2img.sd"], data)
 
 

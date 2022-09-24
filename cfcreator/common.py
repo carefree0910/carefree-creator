@@ -87,8 +87,7 @@ Seed of the variation generation.
 
 
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
-    w: int = Field(512, description="The desired output width.")
-    h: int = Field(512, description="The desired output height.")
+    pass
 
 
 class Img2ImgModel(ImageModel, MaxWHModel):
