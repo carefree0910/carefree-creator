@@ -146,6 +146,11 @@ async def txt2img_sd(data: Txt2ImgSDModel) -> Response:
     return await run_algorithm(loaded_algorithms["txt2img.sd"], data)
 
 
+@app.post(txt2img_sd_outpainting_endpoint, **get_image_response_kwargs())
+async def txt2img_sd_outpainting(data: Txt2ImgSDOutpaintingModel) -> Response:
+    return await run_algorithm(loaded_algorithms["txt2img.sd.outpainting"], data)
+
+
 # img2img
 
 
