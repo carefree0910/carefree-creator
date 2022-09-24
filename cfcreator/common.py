@@ -87,7 +87,11 @@ Seed of the variation generation.
 
 
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
-    pass
+    num_steps: int = Field(50, description="Number of sampling steps")
+    guidance_scale: float = Field(
+        7.5,
+        description="Guidance scale for classifier-free guidance.",
+    )
 
 
 class Img2ImgModel(ImageModel, MaxWHModel):
