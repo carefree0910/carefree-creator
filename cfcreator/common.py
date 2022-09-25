@@ -3,7 +3,6 @@ import numpy as np
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 from typing import Union
 from typing import Callable
 from pydantic import Field
@@ -62,6 +61,11 @@ class MaxWHModel(BaseModel):
     max_wh: int = Field(1024, description="The maximum resolution.")
 
 
+class VariationModel(BaseModel):
+    seed: int = Field(..., description="Seed of the variation.")
+    strength: float = Field(..., description="Strength of the variation.")
+
+
 class DiffusionModel(BaseModel):
     use_circular: bool = Field(
         False,
@@ -83,7 +87,7 @@ Seed of the variation generation.
         ge=0.0,
         description="Strength of the variation generation.",
     )
-    variations: List[Tuple[int, float]] = Field([], description="Variation ingredients")
+    variations: List[VariationModel] = Field([], description="Variation ingredients")
 
 
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
@@ -111,7 +115,10 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     if data.variation_strength > 0:
         variation_seed = data.variation_seed
         variation_strength = data.variation_strength
-    variations = data.variations or None
+    if data.variations is None:
+        variations = None
+    else:
+        variations = [(v.seed, v.strength) for v in data.variations]
     m.switch_circular(data.use_circular)
     return dict(
         seed=seed,
