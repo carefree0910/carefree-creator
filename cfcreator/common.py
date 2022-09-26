@@ -30,6 +30,10 @@ def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
 
 
+def get_sd_anime() -> DiffusionAPI:
+    return _get("sd_anime", DiffusionAPI.from_sd_anime)
+
+
 def get_esr() -> TranslatorAPI:
     return _get("esr", TranslatorAPI.from_esr)
 

@@ -15,6 +15,7 @@ from cfcv.misc.toolkit import to_rgb
 
 from .common import get_sd
 from .common import get_esr
+from .common import get_sd_anime
 from .common import get_semantic
 from .common import get_esr_anime
 from .common import get_inpainting
@@ -39,6 +40,7 @@ Whether the returned image should keep the alpha-channel of the input image or n
 > If the input image is a sketch image, then `keep_alpha` needs to be False in most of the time.  
 """
     )
+    is_anime: bool = Field(False, description="Whether should we generate anime images or not.")
 
 
 @AlgorithmBase.register("img2img.sd")
@@ -47,6 +49,7 @@ class Img2ImgSD(AlgorithmBase):
 
     def initialize(self) -> None:
         self.m = get_sd()
+        self.m_anime = get_sd_anime()
 
     async def run(self, data: Img2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -55,8 +58,9 @@ class Img2ImgSD(AlgorithmBase):
         t1 = time.time()
         if not data.keep_alpha:
             image = to_rgb(image)
-        kwargs = handle_diffusion_model(self.m, data)
-        img_arr = self.m.img2img(
+        m = self.m_anime if data.is_anime else self.m
+        kwargs = handle_diffusion_model(m, data)
+        img_arr = m.img2img(
             image,
             cond=[data.text],
             max_wh=data.max_wh,

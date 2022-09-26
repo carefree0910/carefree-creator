@@ -9,6 +9,7 @@ from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
 
 from .common import get_sd
+from .common import get_sd_anime
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import Txt2ImgModel
@@ -21,6 +22,7 @@ txt2img_sd_outpainting_endpoint = "/txt2img/sd.outpainting"
 class Txt2ImgSDModel(Txt2ImgModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
+    is_anime: bool = Field(False, description="Whether should we generate anime images or not.")
 
 
 @AlgorithmBase.register("txt2img.sd")
@@ -29,13 +31,15 @@ class Txt2ImgSD(AlgorithmBase):
 
     def initialize(self) -> None:
         self.m = get_sd()
+        self.m_anime = get_sd_anime()
 
     async def run(self, data: Txt2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t = time.time()
         size = data.w, data.h
-        kwargs = handle_diffusion_model(self.m, data)
-        img_arr = self.m.txt2img(
+        m = self.m_anime if data.is_anime else self.m
+        kwargs = handle_diffusion_model(m, data)
+        img_arr = m.txt2img(
             data.text,
             size=size,
             max_wh=data.max_wh,
