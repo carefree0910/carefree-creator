@@ -15,6 +15,13 @@ setup(
         "carefree-client>=0.1.2",
         "carefree-learn[cv]>=0.3.1",
     ],
+    extras_require={
+        "kafka": [
+            "kafka-python",
+            "redis[hiredis]",
+            "cos-python-sdk-v5",
+        ]
+    },
     author="carefree0910",
     author_email="syameimaru.saki@gmail.com",
     description=DESCRIPTION,

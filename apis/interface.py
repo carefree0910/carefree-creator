@@ -151,7 +151,7 @@ class TranslateResponse(BaseModel):
 
 @app.post("/translate")
 def translate(data: TranslateModel) -> TranslateResponse:
-    return TranslateResponse(data.text)
+    return TranslateResponse(text=data.text)
 
 
 # txt2img

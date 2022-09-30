@@ -12,6 +12,7 @@ from .common import get_sd
 from .common import get_sd_anime
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
+from .common import IAlgorithm
 from .common import Txt2ImgModel
 
 
@@ -26,7 +27,9 @@ class Txt2ImgSDModel(Txt2ImgModel):
 
 
 @AlgorithmBase.register("txt2img.sd")
-class Txt2ImgSD(AlgorithmBase):
+class Txt2ImgSD(IAlgorithm):
+    model_class = Txt2ImgSDModel
+
     endpoint = txt2img_sd_endpoint
 
     def initialize(self) -> None:
@@ -66,7 +69,9 @@ class Txt2ImgSDOutpaintingModel(Txt2ImgModel, ImageModel):
 
 
 @AlgorithmBase.register("txt2img.sd.outpainting")
-class Txt2ImgSDOutpainting(AlgorithmBase):
+class Txt2ImgSDOutpainting(IAlgorithm):
+    model_class = Txt2ImgSDOutpaintingModel
+
     endpoint = txt2img_sd_outpainting_endpoint
 
     def initialize(self) -> None:

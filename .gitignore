@@ -11,3 +11,4 @@ dist/*
 **/mlruns/*
 *.zip
 apis/logs/*
+apis/kafka/logs/*

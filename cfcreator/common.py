@@ -1,14 +1,17 @@
 import numpy as np
 
+from abc import ABCMeta
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Type
 from typing import Union
 from typing import Callable
 from pydantic import Field
 from pydantic import BaseModel
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
+from cfclient.models import AlgorithmBase
 from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
@@ -130,6 +133,10 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         variation_strength=variation_strength,
         variations=variations,
     )
+
+
+class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
+    model_class: Type[BaseModel]
 
 
 __all__ = [

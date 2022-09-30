@@ -22,6 +22,7 @@ from .common import get_inpainting
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
+from .common import IAlgorithm
 from .common import Img2ImgModel
 from .common import Img2ImgDiffusionModel
 
@@ -44,7 +45,9 @@ Whether the returned image should keep the alpha-channel of the input image or n
 
 
 @AlgorithmBase.register("img2img.sd")
-class Img2ImgSD(AlgorithmBase):
+class Img2ImgSD(IAlgorithm):
+    model_class = Img2ImgSDModel
+
     endpoint = img2img_sd_endpoint
 
     def initialize(self) -> None:
@@ -78,7 +81,9 @@ class Img2ImgSRModel(Img2ImgModel):
 
 
 @AlgorithmBase.register("img2img.sr")
-class Img2ImgSR(AlgorithmBase):
+class Img2ImgSR(IAlgorithm):
+    model_class = Img2ImgSRModel
+
     endpoint = img2img_sr_endpoint
 
     def initialize(self) -> None:
@@ -117,7 +122,9 @@ The `cdn` / `cos` url of the user's mask.
 
 
 @AlgorithmBase.register("img2img.inpainting")
-class Img2ImgInpainting(AlgorithmBase):
+class Img2ImgInpainting(IAlgorithm):
+    model_class = Img2ImgInpaintingModel
+
     endpoint = img2img_inpainting_endpoint
 
     def initialize(self) -> None:
@@ -167,7 +174,9 @@ def color2rgb(color: str) -> List[int]:
 
 
 @AlgorithmBase.register("img2img.semantic2img")
-class Img2ImgSemantic2Img(AlgorithmBase):
+class Img2ImgSemantic2Img(IAlgorithm):
+    model_class = Img2ImgSemantic2ImgModel
+
     endpoint = img2img_semantic2img_endpoint
 
     def initialize(self) -> None:
