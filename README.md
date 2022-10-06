@@ -487,7 +487,7 @@ Dogs are cute as well, but I got bitten when I was young so...
 
 ### Why did you build this project?
 
-I'm a big fan of Touhou since 10 years ago, and one of my biggest dreams is to make an epic Touhou fan game.
+I've been a big fan of Touhou since 10 years ago, and one of my biggest dreams is to make an epic Touhou fan game.
 
 It wouldn't be possible because I can hardly draw anything (🤣), but now with Stable Diffusion everything is hopeful again.
 
