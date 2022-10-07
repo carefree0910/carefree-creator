@@ -105,11 +105,11 @@ The features listed in this section hide behind that picture-icon on the left:
 
 This is the most basic and foundamental feature:
 
-![Text to Image](https://ailabcdn.nolibox.com/gif/carefree-creator/text_to_image.gif)
+![Text to Image](https://github.com/carefree0910/datasets/releases/download/static/text_to_image.gif)
 
 But we added something more. For example, you can choose the style:
 
-![Text to Image With Style](https://ailabcdn.nolibox.com/gif/carefree-creator/text_to_image_with_style.gif)
+![Text to Image With Style](https://github.com/carefree0910/datasets/releases/download/static/text_to_image_with_style.gif)
 
 And as you can see, there are some other options as well - we will cover most of them in the following sections.
 
@@ -117,7 +117,7 @@ And as you can see, there are some other options as well - we will cover most of
 
 <details>
 <summary>GIF</summary>
-<img src="https://ailabcdn.nolibox.com/gif/carefree-creator/variation_generation.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/variation_generation.gif" alt="Variation Generation" />
 </details>
 
 A very powerful feature that we support is to generate variations. Let's say you generated a nice portrait of `komeiji koishi`:
@@ -146,7 +146,7 @@ The last `komeiji koishi` somehow mimics the art style of `ZUN` 😆!
 
 <details>
 <summary>GIF</summary>
-<img src="https://ailabcdn.nolibox.com/gif/carefree-creator/image_translation.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/image_translation.gif" alt="Variation Generation" />
 </details>
 
 We support 'translating' any sketches to images with the given prompt. Although it is not required, we recommend adding an 'Empty Node' (with the 'plus' icon on the top) as a 'canvas' for you to draw on:
@@ -201,7 +201,7 @@ With this technique, you can actually upload your own images (for instance, the 
 
 <details>
 <summary>GIF</summary>
-<img src="https://ailabcdn.nolibox.com/gif/carefree-creator/circular_textures.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/circular_textures.gif" alt="Variation Generation" />
 </details>
 
 So what are circular textures? Circular textures are images that can be 'tiled' together, and it is easy to specify `carefree-creator` to generate such textures by toggling the corresponding switch:
@@ -284,7 +284,7 @@ Still far from good, but it's quite interesting!
 
 <details>
 <summary>GIF</summary>
-<img src="https://ailabcdn.nolibox.com/gif/carefree-creator/landscape.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/landscape.gif" alt="Variation Generation" />
 </details>
 
 Another interesting feature is that you can do landscape synthesis, similar to `GauGAN`:
@@ -349,7 +349,7 @@ As you can see, the result even looks like a vector graphic, nice!
 
 <details>
 <summary>GIF</summary>
-<img src="https://ailabcdn.nolibox.com/gif/carefree-creator/inpainting.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/inpainting.gif" alt="Variation Generation" />
 </details>
 
 Annoyed that only a small part of a generated image is not what you want? Then our Inpainting feature can come to rescue. Let's say we've generated a nice portrait of `hakurei reimu`, but you might notice that there is something weird:
