@@ -1,6 +1,8 @@
 ![noli-creator](./static/images/social-image.jpg)
 
 
+[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Try%20most%20of%20the%20recent%20AI%20magics%20together,%20online,%20and%20for%20FREE!&url=https://github.com/carefree0910/carefree-creator&via=carefree0910&hashtags=stablediffusion,pytorch,developers)
+
 An open sourced, AI-powered creator for everyone.
 
 - [WebUI](https://creator.nolibox.com/guest) (Recommended!)
