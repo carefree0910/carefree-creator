@@ -20,6 +20,7 @@ BUCKET = "ailab-1310750649"
 CDN_HOST = "https://ailabcdn.nolibox.com"
 COS_HOST = "https://ailab-1310750649.cos.ap-shanghai.myqcloud.com/"
 TEXT_BIZ_TYPE = "56daee337ae2d847e55838c0ddb6d547"
+IMAGE_BIZ_TYPE = "aeb9f1736399386b4bdcc5496ece5289"
 SECRET_ID = os.getenv("SECRETID")
 SECRET_KEY = os.getenv("SECRETKEY")
 
@@ -141,6 +142,12 @@ def upload_temp_image(
     )
 
 
+def audit_image(client: CosS3Client, path: str) -> AuditResponse:
+    res = client.get_object_sensitive_content_recognition(BUCKET, path, BizType=IMAGE_BIZ_TYPE)
+    label = res["Label"]
+    return AuditResponse(safe=label == "Normal", reason=label)
+
+
 __all__ = [
     "REGION",
     "SECRET_ID",
@@ -150,6 +157,7 @@ __all__ = [
     "audit_text",
     "upload_image",
     "upload_temp_image",
+    "audit_image",
     "UploadImageResponse",
 ]
 
