@@ -1,8 +1,10 @@
 import os
 import json
+import time
 import yaml
 import redis
 import datetime
+import requests
 import logging.config
 
 from enum import Enum
@@ -13,13 +15,18 @@ from typing import Dict
 from typing import Optional
 from typing import NamedTuple
 from fastapi import FastAPI
+from pydantic import Field
 from pydantic import BaseModel
+from qcloud_cos import CosConfig
+from qcloud_cos import CosS3Client
 from pkg_resources import get_distribution
 from cftool.misc import random_hash
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 
 from cfclient.utils import get_responses
+
+from cfcreator import *
 
 
 app = FastAPI()
@@ -61,6 +68,7 @@ class EndpointFilter(logging.Filter):
         return True
 
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+logging.getLogger("dicttoxml").disabled = True
 logging.getLogger("kafka.conn").disabled = True
 logging.getLogger("kafka.cluster").disabled = True
 logging.getLogger("kafka.coordinator").disabled = True
@@ -68,6 +76,8 @@ logging.getLogger("kafka.consumer.subscription_state").disabled = True
 
 
 # clients
+config = CosConfig(Region=REGION, SecretId=SECRET_ID, SecretKey=SECRET_KEY)
+cos_client = CosS3Client(config)
 redis_client = redis.Redis(host="localhost", port=6379, db=0)
 kafka_admin = KafkaAdminClient(bootstrap_servers="172.17.16.8:9092")
 kafka_producer = KafkaProducer(bootstrap_servers="172.17.16.8:9092")
@@ -112,20 +122,27 @@ async def health_check() -> HealthCheckResponse:
     return {"status": "alive"}
 
 
-# translate
+# get prompt
 
 
-class TranslateModel(BaseModel):
+class GetPromptModel(BaseModel):
     text: str
 
 
-class TranslateResponse(BaseModel):
+class GetPromptResponse(BaseModel):
     text: str
+    success: bool
+    reason: str
 
 
 @app.post("/translate")
-def translate(data: TranslateModel) -> TranslateResponse:
-    return TranslateResponse(text=data.text)
+@app.post("/get_prompt")
+def get_prompt(data: GetPromptModel) -> GetPromptResponse:
+    text = data.text
+    audit = audit_text(cos_client, text)
+    if not audit.safe:
+        return GetPromptResponse(text="", success=False, reason=audit.reason)
+    return GetPromptResponse(text=text, success=True, reason="")
 
 
 # kafka & redis

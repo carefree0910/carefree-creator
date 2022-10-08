@@ -138,20 +138,23 @@ async def hello(data: HelloModel) -> HelloResponse:
     return await run_algorithm(loaded_algorithms["demo.hello"], data)
 
 
-# translate
+# get prompt
 
 
-class TranslateModel(BaseModel):
+class GetPromptModel(BaseModel):
     text: str
 
 
-class TranslateResponse(BaseModel):
+class GetPromptResponse(BaseModel):
     text: str
+    success: bool
+    reason: str
 
 
 @app.post("/translate")
-def translate(data: TranslateModel) -> TranslateResponse:
-    return TranslateResponse(text=data.text)
+@app.post("/get_prompt")
+def get_prompt(data: GetPromptModel) -> GetPromptResponse:
+    return GetPromptResponse(text=data.text, success=True, reason="")
 
 
 # txt2img
