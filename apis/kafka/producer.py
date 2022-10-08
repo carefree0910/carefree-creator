@@ -15,7 +15,6 @@ from typing import Dict
 from typing import Optional
 from typing import NamedTuple
 from fastapi import FastAPI
-from pydantic import Field
 from pydantic import BaseModel
 from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
@@ -123,16 +122,6 @@ async def health_check() -> HealthCheckResponse:
 
 
 # get prompt
-
-
-class GetPromptModel(BaseModel):
-    text: str
-
-
-class GetPromptResponse(BaseModel):
-    text: str
-    success: bool
-    reason: str
 
 
 @app.post("/translate")

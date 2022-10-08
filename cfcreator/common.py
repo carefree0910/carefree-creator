@@ -139,8 +139,24 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     model_class: Type[BaseModel]
 
 
+# API models
+
+
+class GetPromptModel(BaseModel):
+    text: str
+    need_translate: bool = Field(True, description="Whether we need to translate the input text.")
+
+
+class GetPromptResponse(BaseModel):
+    text: str
+    success: bool
+    reason: str
+
+
 __all__ = [
     "Txt2ImgModel",
     "Img2ImgModel",
     "Img2ImgDiffusionModel",
+    "GetPromptModel",
+    "GetPromptResponse",
 ]

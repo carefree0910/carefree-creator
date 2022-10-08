@@ -141,16 +141,6 @@ async def hello(data: HelloModel) -> HelloResponse:
 # get prompt
 
 
-class GetPromptModel(BaseModel):
-    text: str
-
-
-class GetPromptResponse(BaseModel):
-    text: str
-    success: bool
-    reason: str
-
-
 @app.post("/translate")
 @app.post("/get_prompt")
 def get_prompt(data: GetPromptModel) -> GetPromptResponse:
