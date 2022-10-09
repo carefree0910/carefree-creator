@@ -158,6 +158,7 @@ __all__ = [
     "upload_image",
     "upload_temp_image",
     "audit_image",
+    "AuditResponse",
     "UploadImageResponse",
 ]
 

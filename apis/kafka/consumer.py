@@ -123,7 +123,10 @@ async def consume() -> None:
                 model = algorithm.model_class(**params)  # type: ignore
                 res: Response = await run_algorithm(algorithm, model)
                 urls = upload_temp_image(cos_client, res.body)
-                audit = audit_image(cos_client, urls.path)
+                if task != "img2img.sr":
+                    audit = audit_image(cos_client, urls.path)
+                else:
+                    audit = AuditResponse(safe=True, reason="")
                 result = dict(
                     cdn=urls.cdn if audit.safe else "",
                     cos=urls.cos if audit.safe else "",
