@@ -35,10 +35,11 @@ An open sourced, AI-powered creator for everyone.
   - [Super Resolution](#super-resolution)
   - [Inpainting](#inpainting)
 - [Installation](#installation)
+  - [Prepare](#prepare)
   - [pip installation](#pip-installation)
     - [Run](#run)
   - [Docker](#docker)
-    - [Prepare](#prepare)
+    - [Prepare](#prepare-1)
     - [Build](#build)
     - [Run](#run-1)
 - [Q&A](#qa)
@@ -392,10 +393,17 @@ Not perfect, but I'm pretty satisfied because what I've done is just some simple
 - Python 3.8 / 3.9
 - `pytorch>=1.9.0`. Please refer to [PyTorch](https://pytorch.org/get-started/locally/)'s official website, and it is highly recommended to pre-install PyTorch with conda.
 
+## Prepare
+
+```bash
+git clone https://github.com/carefree0910/carefree-creator.git
+cd carefree-creator
+```
+
 ## pip installation
 
 ```bash
-pip install carefree-creator
+pip install -e .
 ```
 
 ### Run
