@@ -11,8 +11,12 @@ from typing import BinaryIO
 from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
-from qcloud_cos import CosConfig
-from qcloud_cos import CosS3Client
+try:
+    from qcloud_cos import CosConfig
+    from qcloud_cos import CosS3Client
+except:
+    CosConfig = None
+    CosS3Client = None
 
 
 REGION = "ap-shanghai"
