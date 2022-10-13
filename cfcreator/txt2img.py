@@ -46,8 +46,6 @@ class Txt2ImgSD(IAlgorithm):
             data.text,
             size=size,
             max_wh=data.max_wh,
-            num_steps=data.num_steps,
-            unconditional_guidance_scale=data.guidance_scale,
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
@@ -88,8 +86,6 @@ class Txt2ImgSDOutpainting(IAlgorithm):
             image,
             anchor=64,
             max_wh=data.max_wh,
-            num_steps=data.num_steps,
-            unconditional_guidance_scale=data.guidance_scale,
             fidelity=data.fidelity,
             padding_mode=data.padding_mode,
             **kwargs,

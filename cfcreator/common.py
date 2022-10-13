@@ -95,14 +95,15 @@ Seed of the variation generation.
         description="Strength of the variation generation.",
     )
     variations: List[VariationModel] = Field([], description="Variation ingredients")
-
-
-class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
     num_steps: int = Field(50, description="Number of sampling steps")
     guidance_scale: float = Field(
         7.5,
         description="Guidance scale for classifier-free guidance.",
     )
+
+
+class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
+    pass
 
 
 class Img2ImgModel(ImageModel, MaxWHModel):
@@ -132,6 +133,8 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         variation_seed=variation_seed,
         variation_strength=variation_strength,
         variations=variations,
+        num_steps=data.num_steps,
+        unconditional_guidance_scale=data.guidance_scale,
     )
 
 
