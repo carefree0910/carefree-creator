@@ -88,10 +88,6 @@ Since `carefree-creator` is a (fairly) stand-alone FastAPI service, it is possib
 > 
 > We will show you how to perform `sketch2img` in [this section](#sketch-to-image).
 
-After turning the switch on, we'll see a setting panel, where you can setup your own domain & port. You can also see the final host that we'll use at the bottom:
-
-![local-server-settings](./static/images/local-server-settings.png)
-
 To make things fancy we can call it a 'Decentralized Deployment Method' (🤨). Anyway, with local deployment, you can then utilize your own machines to avoid waiting my poor cloud server to generate the images for one or few minutes. What's more, since you deployed for yourself, it will be FREE forever!
 
 > This also reveals the goal of `carefree-creator`: we handle the messy **WebUI** parts for you, so you can focus on developing cool models and algorithms that can later seamlessly integrate into it.
