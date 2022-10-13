@@ -3,6 +3,8 @@
 
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=AI%20Magics%20meet%20Infinite%20draw%20board!&url=https://github.com/carefree0910/carefree-creator&via=carefree0910&hashtags=stablediffusion,pytorch,developers)
 
+> Sometimes my poor cloud server will be on **FIRE** 🔥. You can know where your tasks are queued as shown in [this section](#is-it-free), but personally I'll always recommend you to try [local deployment](#webui--local-deployment)!
+
 An open sourced, AI-powered creator for everyone.
 
 - [WebUI](https://creator.nolibox.com/guest) (Recommended!)
@@ -15,6 +17,7 @@ An open sourced, AI-powered creator for everyone.
 
 - [tl;dr](#tldr)
 - [WebUI & Local Deployment](#webui--local-deployment)
+  - [Here is the deployment guide.](#here-is-the-deployment-guide)
 - [Image Generating Features](#image-generating-features)
   - [Text to Image](#text-to-image)
   - [Generate Variations](#generate-variations)
@@ -75,7 +78,7 @@ It might be fair to consider this as:
 
 # WebUI & Local Deployment
 
-> [Here](#installation) is the deployment guide.
+## [Here](#installation) is the deployment guide.
 
 Since `carefree-creator` is a (fairly) stand-alone FastAPI service, it is possible to use our hosted **WebUI** along with your local server. In fact, we've already provided a switch for you:
 
