@@ -8,6 +8,7 @@
 An open sourced, AI-powered creator for everyone.
 
 - [WebUI](https://creator.nolibox.com/guest) (Recommended!)
+  - We also recommend to launch a [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server.ipynb) server for this WebUI!
 - [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/demo.ipynb) (Very limited features, but very customizable!)
 
 > This repo (`carefree-creator`) contains the backend server's codes, the **WebUI** codes (`noli-creator`) will be open sourced as well if it gains enough interests 😉.
@@ -17,7 +18,7 @@ An open sourced, AI-powered creator for everyone.
 
 - [tl;dr](#tldr)
 - [WebUI & Local Deployment](#webui--local-deployment)
-  - [Here is the deployment guide.](#here-is-the-deployment-guide)
+  - [Here is a Google Colab solution (Recommended!)](#here-is-a-google-colab-solution-recommended)
 - [Image Generating Features](#image-generating-features)
   - [Text to Image](#text-to-image)
   - [Generate Variations](#generate-variations)
@@ -78,7 +79,8 @@ It might be fair to consider this as:
 
 # WebUI & Local Deployment
 
-## [Here](#installation) is the deployment guide.
+## [Here](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server.ipynb) is a Google Colab solution (Recommended!)
+> [Here](#installation) is the local installation guide.
 
 Since `carefree-creator` is a (fairly) stand-alone FastAPI service, it is possible to use our hosted **WebUI** along with your local server. In fact, we've already provided a switch for you:
 
