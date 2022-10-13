@@ -100,6 +100,10 @@ Seed of the variation generation.
         7.5,
         description="Guidance scale for classifier-free guidance.",
     )
+    negative_prompt: str = Field(
+        "",
+        description="Negative prompt for classifier-free guidance.",
+    )
 
 
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
@@ -128,6 +132,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     else:
         variations = [(v.seed, v.strength) for v in data.variations]
     m.switch_circular(data.use_circular)
+    unconditional_cond = [data.negative_prompt] if data.negative_prompt else None
     return dict(
         seed=seed,
         variation_seed=variation_seed,
@@ -135,6 +140,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         variations=variations,
         num_steps=data.num_steps,
         unconditional_guidance_scale=data.guidance_scale,
+        unconditional_cond=unconditional_cond,
     )
 
 
