@@ -117,6 +117,13 @@ async def consume() -> None:
             uid = data["uid"]
             task = data["task"]
             params = data["params"]
+            existing = redis_client.get(uid)
+            if existing is not None:
+                existing = json.loads(existing)
+                print(">>> existing", existing)
+                if existing["status"] == "finished":
+                    continue
+            print(">>> working", uid)
             redis_client.set(uid, json.dumps(dict(status="working", data=None)))
             try:
                 algorithm = loaded_algorithms[task]
