@@ -27,7 +27,9 @@ An open sourced, AI-powered creator for everyone.
     - [General Image to Image translation](#general-image-to-image-translation)
   - [Generate Circular (Tiling) Textures](#generate-circular-tiling-textures)
   - [Generate Better Anime images](#generate-better-anime-images)
+  - [Negative Prompt](#negative-prompt)
   - [Inspect / Copy / Import Parameters](#inspect--copy--import-parameters)
+    - [🌟Advanced Usage](#advanced-usage)
   - [Presets](#presets)
     - [Use Preset Capsules](#use-preset-capsules)
     - [Use Preset Panel](#use-preset-panel)
@@ -224,17 +226,50 @@ Thanks to [Waifu Diffusion](https://github.com/harubaru/waifu-diffusion), we are
 
 ![waifu-diffusion](./static/images/waifu-diffusion.jpg)
 
+## Negative Prompt
+
+After selecting a **generated** image, we can see a `Negative Prompt` panel on the left:
+
+![negative-prompt](./static/images/negative_prompt0.jpg)
+
+Where you can apply negative prompt to the selected image:
+
+![negative-prompt-result](./static/images/negative_prompt1.jpg)
+
 ## Inspect / Copy / Import Parameters
 
 It's well known that x-Diffusion models need good 'prompts' to generate good images, but what makes good 'prompts' remains mystery. Therefore, we support inspecting parameters of every generated image:
 
 ![inspect-parameters](./static/images/inspect-parameters.jpg)
 
-You can copy the parameters with the little `Copy` button, and the copied parameters can then be pasted to the `Parameters to Image` panel on the left:
+You can copy the `parameters` with the little `Copy` button, and the copied `parameters` can then be pasted to the `Parameters to Image` panel on the left:
 
 ![parameters-to-image](./static/images/parameters-to-image.jpg)
 
 In this way, all the creations will be sharable, reproducible and (sort of) understandable!
+
+### 🌟Advanced Usage
+
+With the ability to copy / import the `parameters`, we can actually access to the 'bleeding-edge' features that have not yet introduced to the WebUI. For instance, you might have already noticed that we cannot adjust the `seed`, `steps`, `guidance_scale`, ... of the generation process, but we can actually set them up in the `parameters`:
+
+```json
+{
+  "type": "txt2img",
+  "data": {
+    "w": 704,
+    "h": 512,
+    "text": "a beautiful, fantasy landscape, HD",
+    "use_circular": false,
+    "is_anime": false,
+    "seed": 692615800,
+    "num_steps": 50,
+    "guidance_scale": 7.5,
+    "timestamp": 1665914359287
+  }
+}
+```
+
+Pretty straight forward, isn't it? 😉
 
 ## Presets
 
