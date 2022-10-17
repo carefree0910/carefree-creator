@@ -9,7 +9,7 @@ An open sourced, AI-powered creator for everyone.
 
 - [WebUI](https://creator.nolibox.com/guest) (Recommended!)
   - We also recommend to launch a [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server.ipynb) server for this WebUI!
-  - 我们也提供了一份详尽的、[中文版本的 Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server.ipynb) 哦！
+  - 我们也提供了一份详尽的、[中文版本的 Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server_zh.ipynb) 哦！
 - [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/demo.ipynb) (Very limited features, but very customizable!)
 
 > This repo (`carefree-creator`) contains the backend server's codes, the **WebUI** codes (`noli-creator`) will be open sourced as well if it gains enough interests 😉.
