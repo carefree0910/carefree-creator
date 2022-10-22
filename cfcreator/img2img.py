@@ -13,9 +13,9 @@ from cfclient.utils import download_image_with_retry
 from cfclient.models import AlgorithmBase
 from cfcv.misc.toolkit import to_rgb
 
-from .common import get_sd
 from .common import get_esr
-from .common import get_sd_anime
+from .common import init_sd_ms
+from .common import get_sd_from
 from .common import get_semantic
 from .common import get_esr_anime
 from .common import get_inpainting
@@ -51,8 +51,7 @@ class Img2ImgSD(IAlgorithm):
     endpoint = img2img_sd_endpoint
 
     def initialize(self) -> None:
-        self.m = get_sd()
-        self.m_anime = get_sd_anime()
+        self.ms = init_sd_ms()
 
     async def run(self, data: Img2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -61,7 +60,7 @@ class Img2ImgSD(IAlgorithm):
         t1 = time.time()
         if not data.keep_alpha:
             image = to_rgb(image)
-        m = self.m_anime if data.is_anime else self.m
+        m = get_sd_from(self.ms, data)
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.img2img(
             image,

@@ -9,6 +9,7 @@ from typing import Union
 from typing import Callable
 from pydantic import Field
 from pydantic import BaseModel
+from functools import partial
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
@@ -31,6 +32,10 @@ def _get(key: str, init: Callable) -> Union[DiffusionAPI, TranslatorAPI]:
 
 def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
+
+
+def get_sd_version(version: str) -> DiffusionAPI:
+    return _get(f"sd_{version}", partial(DiffusionAPI.from_sd_version, version))
 
 
 def get_sd_anime() -> DiffusionAPI:
@@ -104,6 +109,7 @@ Seed of the variation generation.
         "",
         description="Negative prompt for classifier-free guidance.",
     )
+    version: str = Field("", description="Version of the diffusion model")
 
 
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
@@ -160,6 +166,26 @@ class GetPromptResponse(BaseModel):
     text: str
     success: bool
     reason: str
+
+
+# shortcuts
+
+
+class SDParameters(BaseModel):
+    is_anime: bool
+    version: str
+
+
+def init_sd_ms() -> Dict[str, DiffusionAPI]:
+    return {
+        "": get_sd(),
+        "v1.5": get_sd_version("v1.5"),
+        "anime": get_sd_anime(),
+    }
+
+
+def get_sd_from(ms: Dict[str, DiffusionAPI], data: SDParameters) -> DiffusionAPI:
+    return ms["anime"] if data.is_anime else ms[data.version]
 
 
 __all__ = [

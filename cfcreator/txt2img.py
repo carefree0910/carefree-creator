@@ -8,8 +8,8 @@ from cfclient.utils import download_image_with_retry
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
 
-from .common import get_sd
-from .common import get_sd_anime
+from .common import init_sd_ms
+from .common import get_sd_from
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import IAlgorithm
@@ -33,14 +33,13 @@ class Txt2ImgSD(IAlgorithm):
     endpoint = txt2img_sd_endpoint
 
     def initialize(self) -> None:
-        self.m = get_sd()
-        self.m_anime = get_sd_anime()
+        self.ms = init_sd_ms()
 
     async def run(self, data: Txt2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t = time.time()
         size = data.w, data.h
-        m = self.m_anime if data.is_anime else self.m
+        m = get_sd_from(self.ms, data)
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.txt2img(
             data.text,
