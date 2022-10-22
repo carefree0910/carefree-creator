@@ -6,7 +6,6 @@ from fastapi import Response
 from pydantic import Field
 from cfclient.utils import download_image_with_retry
 from cfclient.models import ImageModel
-from cfclient.models import AlgorithmBase
 
 from .common import init_sd_ms
 from .common import get_sd_from
@@ -28,7 +27,7 @@ class Txt2ImgSDModel(Txt2ImgModel):
     is_anime: bool = Field(False, description="Whether should we generate anime images or not.")
 
 
-@AlgorithmBase.register("txt2img.sd")
+@IAlgorithm.auto_register()
 class Txt2ImgSD(IAlgorithm):
     model_class = Txt2ImgSDModel
 
@@ -74,7 +73,7 @@ class Txt2ImgSDOutpaintingModel(Txt2ImgModel, ImageModel):
     pass
 
 
-@AlgorithmBase.register("txt2img.sd.inpainting")
+@IAlgorithm.auto_register()
 class Txt2ImgSDInpainting(IAlgorithm):
     model_class = Txt2ImgSDInpaintingModel
 
@@ -103,7 +102,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
         return Response(content=content, media_type="image/png")
 
 
-@AlgorithmBase.register("txt2img.sd.outpainting")
+@IAlgorithm.auto_register()
 class Txt2ImgSDOutpainting(IAlgorithm):
     model_class = Txt2ImgSDOutpaintingModel
 

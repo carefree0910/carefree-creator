@@ -10,7 +10,6 @@ from fastapi import Response
 from pydantic import Field
 from scipy.interpolate import NearestNDInterpolator
 from cfclient.utils import download_image_with_retry
-from cfclient.models import AlgorithmBase
 from cfcv.misc.toolkit import to_rgb
 
 from .common import get_esr
@@ -44,7 +43,7 @@ Whether the returned image should keep the alpha-channel of the input image or n
     is_anime: bool = Field(False, description="Whether should we generate anime images or not.")
 
 
-@AlgorithmBase.register("img2img.sd")
+@IAlgorithm.auto_register()
 class Img2ImgSD(IAlgorithm):
     model_class = Img2ImgSDModel
 
@@ -79,7 +78,7 @@ class Img2ImgSRModel(Img2ImgModel):
     is_anime: bool = Field(False, description="Whether the input image is an anime image or not.")
 
 
-@AlgorithmBase.register("img2img.sr")
+@IAlgorithm.auto_register()
 class Img2ImgSR(IAlgorithm):
     model_class = Img2ImgSRModel
 
@@ -120,7 +119,7 @@ The `cdn` / `cos` url of the user's mask.
     )
 
 
-@AlgorithmBase.register("img2img.inpainting")
+@IAlgorithm.auto_register()
 class Img2ImgInpainting(IAlgorithm):
     model_class = Img2ImgInpaintingModel
 
@@ -172,7 +171,7 @@ def color2rgb(color: str) -> List[int]:
     return [int(n.strip()) for n in color[4:-1].split(",")]
 
 
-@AlgorithmBase.register("img2img.semantic2img")
+@IAlgorithm.auto_register()
 class Img2ImgSemantic2Img(IAlgorithm):
     model_class = Img2ImgSemantic2ImgModel
 

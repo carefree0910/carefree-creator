@@ -154,8 +154,19 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     )
 
 
+def endpoint2algorithm(endpoint: str) -> str:
+    return endpoint[1:].replace("/", ".")
+
+
 class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     model_class: Type[BaseModel]
+
+    @classmethod
+    def auto_register(cls) -> Callable[[AlgorithmBase], AlgorithmBase]:
+        def _register(cls_: AlgorithmBase) -> AlgorithmBase:
+            return cls.register(endpoint2algorithm(cls_.endpoint))(cls_)
+
+        return _register
 
 
 # API models
@@ -193,6 +204,7 @@ def get_sd_from(ms: Dict[str, DiffusionAPI], data: SDParameters) -> DiffusionAPI
 
 
 __all__ = [
+    "endpoint2algorithm",
     "Txt2ImgModel",
     "Img2ImgModel",
     "Img2ImgDiffusionModel",
