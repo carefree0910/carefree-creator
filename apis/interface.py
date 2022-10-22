@@ -6,6 +6,7 @@ import logging.config
 from enum import Enum
 from typing import Any
 from typing import Dict
+from typing import Type
 from fastapi import FastAPI
 from fastapi import Response
 from pydantic import BaseModel
@@ -147,46 +148,25 @@ def get_prompt(data: GetPromptModel) -> GetPromptResponse:
     return GetPromptResponse(text=data.text, success=True, reason="")
 
 
+# meta
+
+
+def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
+    @app.post(endpoint, **get_image_response_kwargs(), name=endpoint[1:].replace("/", "_"))
+    async def fn(data: data_model) -> Response:
+        return await run_algorithm(loaded_algorithms[endpoint2algorithm(endpoint)], data)
+
+
 # txt2img
-
-
-@app.post(txt2img_sd_endpoint, **get_image_response_kwargs())
-async def txt2img_sd(data: Txt2ImgSDModel) -> Response:
-    return await run_algorithm(loaded_algorithms["txt2img.sd"], data)
-
-
-@app.post(txt2img_sd_inpainting_endpoint, **get_image_response_kwargs())
-async def txt2img_sd_inpainting(data: Txt2ImgSDInpaintingModel) -> Response:
-    return await run_algorithm(loaded_algorithms["txt2img.sd.inpainting"], data)
-
-
-@app.post(txt2img_sd_outpainting_endpoint, **get_image_response_kwargs())
-async def txt2img_sd_outpainting(data: Txt2ImgSDOutpaintingModel) -> Response:
-    return await run_algorithm(loaded_algorithms["txt2img.sd.outpainting"], data)
-
+register_endpoint(txt2img_sd_endpoint, Txt2ImgSDModel)
+register_endpoint(txt2img_sd_inpainting_endpoint, Txt2ImgSDInpaintingModel)
+register_endpoint(txt2img_sd_outpainting_endpoint, Txt2ImgSDOutpaintingModel)
 
 # img2img
-
-
-@app.post(img2img_sd_endpoint, **get_image_response_kwargs())
-async def img2img_sd(data: Img2ImgSDModel) -> Response:
-    return await run_algorithm(loaded_algorithms["img2img.sd"], data)
-
-
-@app.post(img2img_sr_endpoint, **get_image_response_kwargs())
-async def img2img_sr(data: Img2ImgSRModel) -> Response:
-    return await run_algorithm(loaded_algorithms["img2img.sr"], data)
-
-
-@app.post(img2img_inpainting_endpoint, **get_image_response_kwargs())
-async def img2img_inpainting(data: Img2ImgInpaintingModel) -> Response:
-    return await run_algorithm(loaded_algorithms["img2img.inpainting"], data)
-
-
-@app.post(img2img_semantic2img_endpoint, **get_image_response_kwargs())
-async def img2img_semantic2img(data: Img2ImgSemantic2ImgModel) -> Response:
-    return await run_algorithm(loaded_algorithms["img2img.semantic2img"], data)
-
+register_endpoint(img2img_sd_endpoint, Img2ImgSDModel)
+register_endpoint(img2img_sr_endpoint, Img2ImgSRModel)
+register_endpoint(img2img_inpainting_endpoint, Img2ImgInpaintingModel)
+register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 
 # events
 
