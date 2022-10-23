@@ -57,6 +57,7 @@ with open(os.path.join(root, "config.yml")) as f:
 
 excluded_endpoints = {"/health", "/redoc", "/docs", "/openapi.json"}
 
+
 class EndpointFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if not record.args:
@@ -66,6 +67,7 @@ class EndpointFilter(logging.Filter):
         if record.args[2] in excluded_endpoints:
             return False
         return True
+
 
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
@@ -87,8 +89,7 @@ clients = dict(
 
 # algorithms
 loaded_algorithms: Dict[str, AlgorithmBase] = {
-    k: v(clients)
-    for k, v in algorithms.items()
+    k: v(clients) for k, v in algorithms.items()
 }
 
 
@@ -101,6 +102,7 @@ DOCS_DESCRIPTION = (
     "This is a client framework based on FastAPI. "
     "It also supports interacting with Triton Inference Server."
 )
+
 
 def carefree_schema() -> Dict[str, Any]:
     schema = get_openapi(
@@ -123,8 +125,10 @@ def carefree_schema() -> Dict[str, Any]:
 class HealthStatus(Enum):
     ALIVE = "alive"
 
+
 class HealthCheckResponse(BaseModel):
     status: HealthStatus
+
 
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check() -> HealthCheckResponse:
@@ -152,9 +156,12 @@ def get_prompt(data: GetPromptModel) -> GetPromptResponse:
 
 
 def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
-    @app.post(endpoint, **get_image_response_kwargs(), name=endpoint[1:].replace("/", "_"))
-    async def fn(data: data_model) -> Response:
-        return await run_algorithm(loaded_algorithms[endpoint2algorithm(endpoint)], data)
+    name = endpoint[1:].replace("/", "_")
+    algorithm = loaded_algorithms[endpoint2algorithm(endpoint)]
+
+    @app.post(endpoint, **get_image_response_kwargs(), name=name)
+    async def _(data: data_model) -> Response:
+        return await run_algorithm(algorithm, data)
 
 
 # txt2img

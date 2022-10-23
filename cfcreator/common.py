@@ -96,15 +96,19 @@ class DiffusionModel(BaseModel):
         description="Whether should we use circular pattern (e.g. generate textures).",
     )
     use_seed: bool = Field(False, description="Whether should we use seed.")
-    seed: int = Field(0, description="""
+    seed: int = Field(
+        0,
+        description="""
 Seed of the generation.
 > Only take effects when `use_refine` is set to True.
-"""
+""",
     )
-    variation_seed: int = Field(0, description="""
+    variation_seed: int = Field(
+        0,
+        description="""
 Seed of the variation generation.
 > Only take effects when `variation_strength` is larger than 0.
-"""
+""",
     )
     variation_strength: float = Field(
         0.0,
@@ -182,7 +186,10 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
 
 class GetPromptModel(BaseModel):
     text: str
-    need_translate: bool = Field(True, description="Whether we need to translate the input text.")
+    need_translate: bool = Field(
+        True,
+        description="Whether we need to translate the input text.",
+    )
 
 
 class GetPromptResponse(BaseModel):
