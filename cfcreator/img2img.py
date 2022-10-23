@@ -12,6 +12,7 @@ from scipy.interpolate import NearestNDInterpolator
 from cfclient.utils import download_image_with_retry
 from cfcv.misc.toolkit import to_rgb
 
+from .common import cleanup
 from .common import get_esr
 from .common import init_sd_ms
 from .common import get_sd_from
@@ -24,6 +25,7 @@ from .common import get_bytes_from_translator
 from .common import IAlgorithm
 from .common import Img2ImgModel
 from .common import Img2ImgDiffusionModel
+from .parameters import save_memory
 
 
 img2img_sd_endpoint = "/img2img/sd"
@@ -60,6 +62,7 @@ class Img2ImgSD(IAlgorithm):
         if not data.keep_alpha:
             image = to_rgb(image)
         m = get_sd_from(self.ms, data)
+        t2 = time.time()
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.img2img(
             image,
@@ -70,7 +73,16 @@ class Img2ImgSD(IAlgorithm):
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        self.log_times({"download": t1 - t0, "inference": time.time() - t1})
+        t3 = time.time()
+        cleanup(m)
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "get_model": t2 - t1,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
+            }
+        )
         return Response(content=content, media_type="image/png")
 
 
@@ -138,6 +150,9 @@ class Img2ImgInpainting(IAlgorithm):
         else:
             mask = await download_image_with_retry(self.http_client.session, mask_url)
         t1 = time.time()
+        if save_memory():
+            self.m.to("cuda:0", use_half=True)
+        t2 = time.time()
         refine_fidelity = data.refine_fidelity if data.use_refine else None
         img_arr = self.m.inpainting(
             image,
@@ -146,7 +161,16 @@ class Img2ImgInpainting(IAlgorithm):
             refine_fidelity=refine_fidelity,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        self.log_times({"download": t1 - t0, "inference": time.time() - t1})
+        t3 = time.time()
+        cleanup(self.m)
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "get_model": t2 - t1,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
+            }
+        )
         return Response(content=content, media_type="image/png")
 
 
@@ -226,18 +250,25 @@ class Img2ImgSemantic2Img(IAlgorithm):
         semantic_arr = semantic_arr.reshape([h, w])
         semantic = Image.fromarray(semantic_arr)
         t3 = time.time()
+        if save_memory():
+            self.m.to("cuda:0", use_half=True)
+        t4 = time.time()
         if not data.keep_alpha:
             alpha = None
         elif alpha is not None:
             alpha = alpha[None, None].astype(np.float32) / 255.0
         img_arr = self.m.semantic2img(semantic, alpha=alpha, max_wh=data.max_wh).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
+        t5 = time.time()
+        cleanup(self.m)
         self.log_times(
             {
                 "download": t1 - t0,
                 "preprocess": t2 - t1,
                 "interpolation": t3 - t2,
-                "inference": time.time() - t3,
+                "get_model": t4 - t3,
+                "inference": t5 - t4,
+                "cleanup": time.time() - t5,
             }
         )
         return Response(content=content, media_type="image/png")

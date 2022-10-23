@@ -7,6 +7,7 @@ from pydantic import Field
 from cfclient.utils import download_image_with_retry
 from cfclient.models import ImageModel
 
+from .common import cleanup
 from .common import init_sd_ms
 from .common import get_sd_from
 from .common import get_sd_inpainting
@@ -14,6 +15,7 @@ from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import IAlgorithm
 from .common import Txt2ImgModel
+from .parameters import save_memory
 
 
 txt2img_sd_endpoint = "/txt2img/sd"
@@ -38,9 +40,10 @@ class Txt2ImgSD(IAlgorithm):
 
     async def run(self, data: Txt2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
-        t = time.time()
-        size = data.w, data.h
+        t0 = time.time()
         m = get_sd_from(self.ms, data)
+        t1 = time.time()
+        size = data.w, data.h
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.txt2img(
             data.text,
@@ -49,7 +52,15 @@ class Txt2ImgSD(IAlgorithm):
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        self.log_times({"inference": time.time() - t})
+        t2 = time.time()
+        cleanup(m)
+        self.log_times(
+            {
+                "get_model": t1 - t0,
+                "inference": t2 - t1,
+                "cleanup": time.time() - t2,
+            }
+        )
         return Response(content=content, media_type="image/png")
 
 
@@ -88,6 +99,9 @@ class Txt2ImgSDInpainting(IAlgorithm):
         image = await download_image_with_retry(self.http_client.session, data.url)
         mask = await download_image_with_retry(self.http_client.session, data.mask_url)
         t1 = time.time()
+        if save_memory():
+            self.m.to("cuda:0", use_half=True)
+        t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
         img_arr = self.m.txt2img_inpainting(
             data.text,
@@ -98,7 +112,16 @@ class Txt2ImgSDInpainting(IAlgorithm):
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        self.log_times({"download": t1 - t0, "inference": time.time() - t1})
+        t3 = time.time()
+        cleanup(self.m)
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "get_model": t2 - t1,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
+            }
+        )
         return Response(content=content, media_type="image/png")
 
 
@@ -116,6 +139,9 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         t0 = time.time()
         image = await download_image_with_retry(self.http_client.session, data.url)
         t1 = time.time()
+        if save_memory():
+            self.m.to("cuda:0", use_half=True)
+        t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
         img_arr = self.m.outpainting(
             data.text,
@@ -125,7 +151,16 @@ class Txt2ImgSDOutpainting(IAlgorithm):
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        self.log_times({"download": t1 - t0, "inference": time.time() - t1})
+        t3 = time.time()
+        cleanup(self.m)
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "get_model": t2 - t1,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
+            }
+        )
         return Response(content=content, media_type="image/png")
 
 

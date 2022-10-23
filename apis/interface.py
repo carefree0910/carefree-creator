@@ -174,8 +174,11 @@ register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 @app.on_event("startup")
 async def startup() -> None:
     http_client.start()
+    OPT["save_memory"] = True
     for k, v in loaded_algorithms.items():
         v.initialize()
+    print("> Server is Ready!")
+
 
 @app.on_event("shutdown")
 async def shutdown() -> None:
