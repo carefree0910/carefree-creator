@@ -1,10 +1,8 @@
 import os
 import json
-import time
 import yaml
 import redis
 import datetime
-import requests
 import logging.config
 
 from enum import Enum
@@ -56,6 +54,7 @@ with open(os.path.join(root, "config.yml")) as f:
 
 excluded_endpoints = {"/health", "/redoc", "/docs", "/openapi.json"}
 
+
 class EndpointFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if not record.args:
@@ -65,6 +64,7 @@ class EndpointFilter(logging.Filter):
         if record.args[2] in excluded_endpoints:
             return False
         return True
+
 
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 logging.getLogger("dicttoxml").disabled = True
@@ -92,6 +92,7 @@ DOCS_DESCRIPTION = (
     "It also supports interacting with Triton Inference Server."
 )
 
+
 def carefree_schema() -> Dict[str, Any]:
     schema = get_openapi(
         title=DOCS_TITLE,
@@ -113,8 +114,10 @@ def carefree_schema() -> Dict[str, Any]:
 class HealthStatus(Enum):
     ALIVE = "alive"
 
+
 class HealthCheckResponse(BaseModel):
     status: HealthStatus
+
 
 @app.get("/health", response_model=HealthCheckResponse)
 async def health_check() -> HealthCheckResponse:
@@ -192,7 +195,10 @@ def get_pending_queue() -> list:
 @app.get("/server_status", responses=get_responses(ServerStatusModel))
 async def server_status() -> ServerStatusModel:
     members = kafka_admin.describe_consumer_groups(["creator-consumer-1"])[0].members
-    return ServerStatusModel(is_ready=len(members) > 0, num_pending=len(get_pending_queue()))
+    return ServerStatusModel(
+        is_ready=len(members) > 0,
+        num_pending=len(get_pending_queue()),
+    )
 
 
 class Status(str, Enum):
@@ -249,6 +255,7 @@ async def get_status(uid: str) -> StatusModel:
 @app.on_event("startup")
 async def startup() -> None:
     pass
+
 
 @app.on_event("shutdown")
 async def shutdown() -> None:
