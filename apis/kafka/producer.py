@@ -200,6 +200,7 @@ class Status(str, Enum):
     WORKING = "working"
     FINISHED = "finished"
     EXCEPTION = "exception"
+    NOT_FOUND = "not_found"
 
 
 class StatusModel(BaseModel):
@@ -216,7 +217,7 @@ class StatusData(NamedTuple):
 def fetch_redis(uid: str) -> StatusData:
     data = redis_client.get(uid)
     if data is None:
-        return StatusData(status="pending", data=None)
+        return StatusData(status="not_found", pending=-1, data=None)
     return StatusData(**json.loads(data))
 
 
