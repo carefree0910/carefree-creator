@@ -1,12 +1,13 @@
 OPT = dict(
-    save_memory=False,
+    save_gpu_ram=False,
 )
 
-def save_memory() -> bool:
-    return OPT["save_memory"]
+
+def save_gpu_ram() -> bool:
+    return OPT["save_gpu_ram"]
 
 
 __all__ = [
     "OPT",
-    "save_memory",
+    "save_gpu_ram",
 ]

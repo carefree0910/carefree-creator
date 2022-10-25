@@ -25,7 +25,7 @@ from .common import get_bytes_from_translator
 from .common import IAlgorithm
 from .common import Img2ImgModel
 from .common import Img2ImgDiffusionModel
-from .parameters import save_memory
+from .parameters import save_gpu_ram
 
 
 img2img_sd_endpoint = "/img2img/sd"
@@ -150,7 +150,7 @@ class Img2ImgInpainting(IAlgorithm):
         else:
             mask = await download_image_with_retry(self.http_client.session, mask_url)
         t1 = time.time()
-        if save_memory():
+        if save_gpu_ram():
             self.m.to("cuda:0", use_half=True)
         t2 = time.time()
         refine_fidelity = data.refine_fidelity if data.use_refine else None
@@ -250,7 +250,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
         semantic_arr = semantic_arr.reshape([h, w])
         semantic = Image.fromarray(semantic_arr)
         t3 = time.time()
-        if save_memory():
+        if save_gpu_ram():
             self.m.to("cuda:0", use_half=True)
         t4 = time.time()
         if not data.keep_alpha:

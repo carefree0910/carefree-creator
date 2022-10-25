@@ -19,7 +19,7 @@ from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 
-from .parameters import save_memory
+from .parameters import save_gpu_ram
 
 
 apis = {}
@@ -29,7 +29,7 @@ def _get(key: str, init: Callable) -> Union[DiffusionAPI, TranslatorAPI]:
     m = apis.get(key)
     if m is not None:
         return m
-    if save_memory():
+    if save_gpu_ram():
         print("> init", key)
         m = init("cpu")
     else:
@@ -216,13 +216,13 @@ def init_sd_ms() -> Dict[str, DiffusionAPI]:
 
 def get_sd_from(ms: Dict[str, DiffusionAPI], data: SDParameters) -> DiffusionAPI:
     m = ms["anime"] if data.is_anime else ms[data.version]
-    if save_memory():
+    if save_gpu_ram():
         m.to("cuda:0", use_half=True)
     return m
 
 
 def cleanup(m: DiffusionAPI) -> None:
-    if save_memory():
+    if save_gpu_ram():
         m.to("cpu")
         torch.cuda.empty_cache()
 

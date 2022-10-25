@@ -15,7 +15,7 @@ from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import IAlgorithm
 from .common import Txt2ImgModel
-from .parameters import save_memory
+from .parameters import save_gpu_ram
 
 
 txt2img_sd_endpoint = "/txt2img/sd"
@@ -99,7 +99,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
         image = await download_image_with_retry(self.http_client.session, data.url)
         mask = await download_image_with_retry(self.http_client.session, data.mask_url)
         t1 = time.time()
-        if save_memory():
+        if save_gpu_ram():
             self.m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
@@ -139,7 +139,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         t0 = time.time()
         image = await download_image_with_retry(self.http_client.session, data.url)
         t1 = time.time()
-        if save_memory():
+        if save_gpu_ram():
             self.m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
