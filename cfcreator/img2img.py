@@ -37,12 +37,17 @@ img2img_semantic2img_endpoint = "/img2img/semantic2img"
 class Img2ImgSDModel(Img2ImgDiffusionModel):
     text: str = Field(..., description="The text that we want to handle.")
     fidelity: float = Field(0.2, description="The fidelity of the input image.")
-    keep_alpha: bool = Field(True, description="""
+    keep_alpha: bool = Field(
+        True,
+        description="""
 Whether the returned image should keep the alpha-channel of the input image or not.
 > If the input image is a sketch image, then `keep_alpha` needs to be False in most of the time.  
-"""
+""",
     )
-    is_anime: bool = Field(False, description="Whether should we generate anime images or not.")
+    is_anime: bool = Field(
+        False,
+        description="Whether should we generate anime images or not.",
+    )
 
 
 @IAlgorithm.auto_register()
@@ -87,7 +92,10 @@ class Img2ImgSD(IAlgorithm):
 
 
 class Img2ImgSRModel(Img2ImgModel):
-    is_anime: bool = Field(False, description="Whether the input image is an anime image or not.")
+    is_anime: bool = Field(
+        False,
+        description="Whether the input image is an anime image or not.",
+    )
 
 
 @IAlgorithm.auto_register()
@@ -184,8 +192,7 @@ Mapping of color -> (semantic) label.
     )
     keep_alpha: bool = Field(
         False,
-        description="Whether the returned image should keep the "
-                    "alpha-channel of the input image or not.",
+        description="Whether the returned image should keep the alpha-channel of the input image or not.",
     )
 
 
@@ -207,7 +214,10 @@ class Img2ImgSemantic2Img(IAlgorithm):
     async def run(self, data: Img2ImgSemantic2ImgModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        raw_semantic = await download_image_with_retry(self.http_client.session, data.url)
+        raw_semantic = await download_image_with_retry(
+            self.http_client.session,
+            data.url,
+        )
         t1 = time.time()
         w, h = raw_semantic.size
         raw_arr = np.array(raw_semantic)
@@ -257,7 +267,11 @@ class Img2ImgSemantic2Img(IAlgorithm):
             alpha = None
         elif alpha is not None:
             alpha = alpha[None, None].astype(np.float32) / 255.0
-        img_arr = self.m.semantic2img(semantic, alpha=alpha, max_wh=data.max_wh).numpy()[0]
+        img_arr = self.m.semantic2img(
+            semantic,
+            alpha=alpha,
+            max_wh=data.max_wh,
+        ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t5 = time.time()
         cleanup(self.m)
