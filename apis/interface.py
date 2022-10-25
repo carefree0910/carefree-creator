@@ -181,7 +181,7 @@ register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 @app.on_event("startup")
 async def startup() -> None:
     http_client.start()
-    OPT["save_gpu_ram"] = True
+    # OPT["save_gpu_ram"] = True
     for k, v in loaded_algorithms.items():
         v.initialize()
     print("> Server is Ready!")
