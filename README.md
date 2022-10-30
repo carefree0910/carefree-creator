@@ -432,7 +432,7 @@ Not perfect, but I'm pretty satisfied because what I've done is just some simple
 
 `carefree-creator` is built on top of `carefree-learn`, and requires:
 - Python 3.8 / 3.9
-- `pytorch>=1.9.0`. Please refer to [PyTorch](https://pytorch.org/get-started/locally/)'s official website, and it is highly recommended to pre-install PyTorch with conda.
+- `pytorch>=1.12.0`. Please refer to [PyTorch](https://pytorch.org/get-started/locally/)'s official website, and it is highly recommended to pre-install PyTorch with conda.
 
 ## Prepare
 
