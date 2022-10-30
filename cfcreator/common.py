@@ -126,6 +126,7 @@ Seed of the variation generation.
         description="Negative prompt for classifier-free guidance.",
     )
     version: str = Field("", description="Version of the diffusion model")
+    sampler: str = Field("klms", description="Sampler of the diffusion model")
 
 
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
@@ -163,6 +164,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         num_steps=data.num_steps,
         unconditional_guidance_scale=data.guidance_scale,
         unconditional_cond=unconditional_cond,
+        sampler=data.sampler,
     )
 
 
