@@ -76,8 +76,7 @@ pending_queue_key = "KAFKA_PENDING_QUEUE"
 
 # algorithms
 loaded_algorithms: Dict[str, AlgorithmBase] = {
-    k: v(clients)
-    for k, v in algorithms.items()
+    k: v(clients) for k, v in algorithms.items()
 }
 
 
