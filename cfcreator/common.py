@@ -19,6 +19,7 @@ from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 
+from .parameters import verbose
 from .parameters import save_gpu_ram
 
 
@@ -165,6 +166,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         unconditional_guidance_scale=data.guidance_scale,
         unconditional_cond=unconditional_cond,
         sampler=data.sampler,
+        verbose=verbose(),
     )
 
 

@@ -25,6 +25,7 @@ from .common import get_bytes_from_translator
 from .common import IAlgorithm
 from .common import Img2ImgModel
 from .common import Img2ImgDiffusionModel
+from .parameters import verbose
 from .parameters import save_gpu_ram
 
 
@@ -167,6 +168,7 @@ class Img2ImgInpainting(IAlgorithm):
             mask,
             max_wh=data.max_wh,
             refine_fidelity=refine_fidelity,
+            verbose=verbose(),
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
@@ -271,6 +273,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
             semantic,
             alpha=alpha,
             max_wh=data.max_wh,
+            verbose=verbose(),
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t5 = time.time()

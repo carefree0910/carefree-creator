@@ -1,6 +1,11 @@
 OPT = dict(
+    verbose=True,
     save_gpu_ram=False,
 )
+
+
+def verbose() -> bool:
+    return OPT["verbose"]
 
 
 def save_gpu_ram() -> bool:
