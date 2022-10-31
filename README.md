@@ -42,6 +42,7 @@ An open sourced, AI-powered creator for everyone.
   - [Super Resolution](#super-resolution)
   - [Inpainting](#inpainting)
 - [Installation](#installation)
+  - [Hardware Requirements](#hardware-requirements)
   - [Prepare](#prepare)
   - [pip installation](#pip-installation)
     - [Run](#run)
@@ -54,11 +55,14 @@ An open sourced, AI-powered creator for everyone.
     - [How do I save / load my project?](#how-do-i-save--load-my-project)
     - [How can I contribute to `carefree-creator`?](#how-can-i-contribute-to-carefree-creator)
     - [How can I get my own models interactable on the **WebUI**?](#how-can-i-get-my-own-models-interactable-on-the-webui)
+      - [But is there a handy way? For example, put my checkpoints somewhere and being able to access them?](#but-is-there-a-handy-way-for-example-put-my-checkpoints-somewhere-and-being-able-to-access-them)
+      - [Advanced way](#advanced-way)
     - [Why no `GFPGAN`?](#why-no-gfpgan)
     - [Is it FREE?](#is-it-free)
     - [Do you like cats?](#do-you-like-cats)
     - [What about dogs?](#what-about-dogs)
     - [Why did you build this project?](#why-did-you-build-this-project)
+    - [How is this different from other WebUIs?](#how-is-this-different-from-other-webuis)
     - [Will there be a Discord Community?](#will-there-be-a-discord-community)
     - [What is `Nolibox`???](#what-is-nolibox)
 - [Known Issues](#known-issues)
@@ -70,7 +74,9 @@ An open sourced, AI-powered creator for everyone.
 - Almost EVERY feature about Stable Diffusion (txt2img, img2img, sketch2img, **variations**, outpainting, circular/tiling textures, sharing, ...).
 - Many useful image editing methods (**super resolution**, inpainting, ...).
 - Integrations of different Stable Diffusion versions (waifu diffusion, ...).
-- GPU RAM optimizations, which makes it possible to enjoy these features with an **NVIDIA GeForce GTX 1080 Ti**!
+- GPU RAM optimizations, which makes it possible to enjoy these features with an **NVIDIA GeForce GTX 1080 Ti** (*)!
+
+> *: As the project grows more and more complicated, I have to introduce a lazy-loading technique to exchange GPU RAM with RAM. See [this section](#hardware-requirements) for more details.
 
 It might be fair to consider this as:
 - An AI-powered, open sourced(*) **Figma**.
@@ -432,7 +438,22 @@ Not perfect, but I'm pretty satisfied because what I've done is just some simple
 
 `carefree-creator` is built on top of `carefree-learn`, and requires:
 - Python 3.8 / 3.9
+  - Not compatible with other Python versions (Related issue: [#9](https://github.com/carefree0910/carefree-creator/issues/9)) *yet*, but I'm trying to improve!
 - `pytorch>=1.12.0`. Please refer to [PyTorch](https://pytorch.org/get-started/locally/)'s official website, and it is highly recommended to pre-install PyTorch with conda.
+
+## Hardware Requirements
+
+> Related issue: [#10](https://github.com/carefree0910/carefree-creator/issues/10).
+
+This project will eat up 11~13 GB of GPU RAM if no modifications are made, because it actually integrates FOUR different SD versions together, and many other models as well 🤣.
+
+There are two ways that can reduce the usage of GPU RAM:
+- Uncomment [this line](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/apis/interface.py#L184). After that, we will first load the models to RAM and then use GPU RAM only when needed!
+  - But as an exchange, your RAM will be eaten up!
+- Reduce the models that are loaded. For example, you can comment out the [following lines](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/apis/interface.py#L169-L176).
+  - If that's not enough, you can comment out [this line](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/cfcreator/common.py#L213).
+  - If that's still not enough, you can comment out [this line](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/cfcreator/common.py#L215).
+  - If that's still not enough... Then maybe you can try the [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server.ipynb) based solution 😆.
 
 ## Prepare
 
@@ -508,7 +529,35 @@ The development guide is on our [TODO](#todo) list, but here are some brief intr
 
 ### How can I get my own models interactable on the **WebUI**?
 
+> Related issue: [#8](https://github.com/carefree0910/carefree-creator/issues/8).
+
 As long as we open sourced the **WebUI** you can implement your own UIs, but for now you can contribute to this `carefree-creator` repo and then ask me to do the UI jobs for you (yes, you can be my boss 😆).
+
+#### But is there a handy way? For example, put my checkpoints somewhere and being able to access them?
+
+If you need a handy method (e.g. placing any `*.ckpt` in some directory and get it working), it is *currently* not supported (it's on my [TODO](#todo) though), but we have:
+
+#### Advanced way
+
+I haven't documented these stuffs yet, but here are some brief guides:
+
+1. The local APIs are exposed from [here](https://github.com/carefree0910/carefree-creator/blob/63ff1778175a7ee9bfa19b6955f1eae95398547a/apis/interface.py#L168) on.
+> ↑ You can ignore this if you just want to change the existing models, instead of introducing new models / endpoints / features!
+2. The APIs are implemented in [txt2img.py](https://github.com/carefree0910/carefree-creator/blob/dev/cfcreator/txt2img.py) and [img2img.py](https://github.com/carefree0910/carefree-creator/blob/dev/cfcreator/img2img.py).
+3. I'm currently using my own library ([carefree-learn](https://github.com/carefree0910/carefree-learn)) to implement the APIs, but you can re-implement the APIs with whatever you want! Take the basic `text2img` feature as an example:
+
+    a. Rewrite the [`initialize`](https://github.com/carefree0910/carefree-creator/blob/63ff1778175a7ee9bfa19b6955f1eae95398547a/cfcreator/txt2img.py#L41) method, where you can initialize your models.
+    b. Rewrite the [`run`](https://github.com/carefree0910/carefree-creator/blob/63ff1778175a7ee9bfa19b6955f1eae95398547a/cfcreator/txt2img.py#L44) method, where you need to generate the output (image) based on the input (the `Txt2ImgSDModel`, which contains almost all the necessary arguments)
+
+Once all the modifications are done (on your own fork / a PR to a new branch of this project), you can modify the `Install carefree-creator` section in the Google Colab, and change this line:
+
+```bash
+!git clone https://github.com/carefree0910/carefree-creator.git
+```
+
+into the corresponding git-clone-url, so the Colab will install your own customized version and serve it!
+
+Feel free to create issues if you encountered any trouble! 😆
 
 ### Why no `GFPGAN`?
 
@@ -558,7 +607,19 @@ This will further break the wall between the academic world and the non-academic
 
 And now, with the ability to do **local deployment**, along with the fantastic **infinite draw board** as the **WebUI**, these pain points will all be solved. Not to mention with some inference technique (such as the `ZeRO` from `deepspeed`), it is possible to deploy huge, huge models even on your laptop, so don't worry about the capability of this system - everything will be possible!
 
+### How is this different from other WebUIs?
+
+> Related issue: [#11](https://github.com/carefree0910/carefree-creator/issues/11).
+
+I think the main difference is that this project:
+
+1. separates the frontend and the backend, so you can either make your own frontend, or focus on developing the backend and 'requires' the frontend from me.
+2. provides an easier, smoother, and more 'integrated' way for users to enjoy multiple AI magics together. The extremely popular automatic1111 repo is great, and can somehow do the tricks, but in general it is sort of a one-pass-generation-tool, and the workflow is linear. This project on the other hand has a non-linear workflow, and gives you more freedom to combine various techniques and create something that a single AI model can hardly achieve.
+3. can integrate many other techniques as well. Here's my future plan: I'm going to integrate natural language generation, music generation, video generation... Into this project, so you can make something really cool with and only with AI 😆!
+
 ### Will there be a Discord Community?
+
+**UPDATE**: [Here](https://github.com/carefree0910/carefree-creator/issues/6)'s the related issue!
 
 Unfortunately I'm not familiar with Discord, so if someone can help me build it I will be really appreciated!
 
@@ -577,9 +638,14 @@ Unfortunately I'm not familiar with Discord, so if someone can help me build it 
 # TODO
 
 - [ ] User Guide
+- [ ] Development Guide
+- [ ] Other AI generation Techniques
+  - [ ] Natural Language Generation (NLG)
+  - [ ] Music Generation
+  - [ ] Video Generation
+- [ ] Handy way to use custom checkpoints
 - [ ] Textual Inversion
 - [ ] Better Outpainting Techniques
-- [ ] Development Guide
 - [ ] And much more...
 
 
