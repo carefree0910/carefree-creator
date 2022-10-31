@@ -88,7 +88,7 @@ clients = dict(
 
 
 # algorithms
-loaded_algorithms: Dict[str, AlgorithmBase] = {
+all_algorithms: Dict[str, AlgorithmBase] = {
     k: v(clients) for k, v in algorithms.items()
 }
 
@@ -140,7 +140,7 @@ async def health_check() -> HealthCheckResponse:
 
 @app.post(demo_hello_endpoint, responses=get_responses(HelloResponse))
 async def hello(data: HelloModel) -> HelloResponse:
-    return await run_algorithm(loaded_algorithms["demo.hello"], data)
+    return await run_algorithm(all_algorithms["demo.hello"], data)
 
 
 # get prompt
@@ -155,9 +155,14 @@ def get_prompt(data: GetPromptModel) -> GetPromptResponse:
 # meta
 
 
+registered_algorithms = set()
+
+
 def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
     name = endpoint[1:].replace("/", "_")
-    algorithm = loaded_algorithms[endpoint2algorithm(endpoint)]
+    algorithm_name = endpoint2algorithm(endpoint)
+    algorithm = all_algorithms[algorithm_name]
+    registered_algorithms.add(algorithm_name)
 
     @app.post(endpoint, **get_image_response_kwargs(), name=name)
     async def _(data: data_model) -> Response:
@@ -182,8 +187,9 @@ register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 async def startup() -> None:
     http_client.start()
     # OPT["save_gpu_ram"] = True
-    for k, v in loaded_algorithms.items():
-        v.initialize()
+    for k, v in all_algorithms.items():
+        if k in registered_algorithms:
+            v.initialize()
     print("> Server is Ready!")
 
 
