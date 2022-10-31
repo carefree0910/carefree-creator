@@ -97,6 +97,8 @@ def get_pending_queue() -> list:
 
 # kafka & redis
 async def consume() -> None:
+    OPT["verbose"] = False
+
     topic = "creator"
     expire_seconds = 10 * 365 * 24 * 3600
 
