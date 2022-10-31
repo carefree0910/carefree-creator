@@ -57,6 +57,7 @@ An open sourced, AI-powered creator for everyone.
     - [How can I get my own models interactable on the **WebUI**?](#how-can-i-get-my-own-models-interactable-on-the-webui)
       - [But is there a handy way? For example, put my checkpoints somewhere and being able to access them?](#but-is-there-a-handy-way-for-example-put-my-checkpoints-somewhere-and-being-able-to-access-them)
       - [Advanced way](#advanced-way)
+      - [API Mappings](#api-mappings)
     - [Why no `GFPGAN`?](#why-no-gfpgan)
     - [Is it FREE?](#is-it-free)
     - [Do you like cats?](#do-you-like-cats)
@@ -558,6 +559,22 @@ Once all the modifications are done (on your own fork / a PR to a new branch of 
 into the corresponding git-clone-url, so the Colab will install your own customized version and serve it!
 
 Feel free to create issues if you encountered any trouble! 😆
+
+#### API Mappings
+
+Here are the mappings between `endpoint` and `feature`:
+- `txt2img_sd_endpoint` ↔ `Text to Image`, `Generate Cats`
+- `txt2img_sd_inpainting_endpoint` ↔ `Erase & Replace`
+- `txt2img_sd_outpainting_endpoint` ↔ `Outpainting`
+- `img2img_sd_endpoint` ↔ `Image Translation`
+- `img2img_sr_endpoint` ↔ `Super Resolution`
+- `img2img_inpainting_endpoint` ↔ `Inpainting`
+- `img2img_semantic2img_endpoint` ↔ `Landscape Synthesis`
+
+And there are some features that depend on multiple endpoints:
+- `Parameters to Image` ↔ `all endpoints`
+- `Variation Generation` ↔ `sd endpoints`
+- `Negative Prompt` ↔ `sd endpoints`
 
 ### Why no `GFPGAN`?
 
