@@ -1,5 +1,7 @@
 import os
+import sys
 import json
+import time
 import yaml
 import redis
 import asyncio
@@ -122,10 +124,13 @@ async def consume() -> None:
             if existing is not None:
                 existing = json.loads(existing)
                 print(">>> existing", existing)
-                if existing["status"] == "finished":
+                if existing["status"] != "pending":
                     continue
             print(">>> working", uid)
-            redis_client.set(uid, json.dumps(dict(status="working", data=None)))
+            data = existing["data"] or {}
+            start_time = time.time()
+            data["start_time"] = start_time
+            redis_client.set(uid, json.dumps(dict(status="working", data=data)))
             try:
                 algorithm = loaded_algorithms[task]
                 model = algorithm.model_class(**params)  # type: ignore
@@ -135,17 +140,24 @@ async def consume() -> None:
                     audit = audit_image(cos_client, urls.path)
                 else:
                     audit = AuditResponse(safe=True, reason="")
-                result = dict(
+                data = dict(
                     cdn=urls.cdn if audit.safe else "",
                     cos=urls.cos if audit.safe else "",
                     safe=audit.safe,
                     reason=audit.reason,
                 )
-                redis_client.set(uid, json.dumps(dict(status="finished", data=result)))
+                end_time = time.time()
+                data["end_time"] = end_time
+                data["duration"] = end_time - start_time
+                redis_client.set(uid, json.dumps(dict(status="finished", data=data)))
             except Exception as err:
+                end_time = time.time()
+                data["reason"] = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
+                data["end_time"] = end_time
+                data["duration"] = end_time - start_time
                 redis_client.set(
                     uid,
-                    json.dumps(dict(status="exception", data={"reason": str(err)})),
+                    json.dumps(dict(status="exception", data=data)),
                 )
             # maintain queue
             queue = get_pending_queue()

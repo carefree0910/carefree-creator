@@ -176,7 +176,8 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     queue = get_pending_queue()
     queue.append(uid)
     redis_client.set(pending_queue_key, json.dumps(queue))
-    redis_client.set(uid, json.dumps(dict(status="pending", data=None)))
+    data = dict(create_time=time.time())
+    redis_client.set(uid, json.dumps(dict(status="pending", data=data)))
     return ProducerResponseModel(uid=uid)
 
 
