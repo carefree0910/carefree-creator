@@ -183,6 +183,9 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     clear_indices = []
     for i, uid in enumerate(queue):
         uid_pack = redis_client.get(uid)
+        if uid_pack is None:
+            continue
+        uid_pack = json.loads(uid_pack)
         create_time = uid_pack.get("data", {}).get("create_time", None)
         if create_time is not None:
             if time.time() - create_time >= queue_timeout_threshold:
