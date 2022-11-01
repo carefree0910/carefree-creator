@@ -176,9 +176,15 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
             continue
         uid_pack = json.loads(uid_pack)
         create_time = (uid_pack.get("data", {}) or {}).get("create_time", None)
-        if create_time is not None:
-            if time.time() - create_time >= queue_timeout_threshold:
-                clear_indices.append(i)
+        start_time = (uid_pack.get("data", {}) or {}).get("start_time", None)
+        i_cleared = False
+        for t in [create_time, start_time]:
+            if i_cleared:
+                break
+            if t is not None:
+                if time.time() - t >= queue_timeout_threshold:
+                    clear_indices.append(i)
+                    i_cleared = True
     for idx in clear_indices[::-1]:
         queue.pop(idx)
     # check redundant
