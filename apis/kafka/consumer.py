@@ -141,16 +141,17 @@ async def consume() -> None:
                     audit = audit_image(cos_client, urls.path)
                 else:
                     audit = AuditResponse(safe=True, reason="")
-                data = dict(
+                result = dict(
                     cdn=urls.cdn if audit.safe else "",
                     cos=urls.cos if audit.safe else "",
                     safe=audit.safe,
                     reason=audit.reason,
                 )
+                result.update(data)
                 end_time = time.time()
-                data["end_time"] = end_time
-                data["duration"] = end_time - create_time
-                redis_client.set(uid, json.dumps(dict(status="finished", data=data)))
+                result["end_time"] = end_time
+                result["duration"] = end_time - create_time
+                redis_client.set(uid, json.dumps(dict(status="finished", data=result)))
             except Exception as err:
                 end_time = time.time()
                 data["reason"] = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
