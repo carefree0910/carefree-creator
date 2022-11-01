@@ -160,6 +160,10 @@ class ProducerResponseModel(BaseModel):
     uid: str
 
 
+# 30min = timeout
+queue_timeout_threshold = 30 * 60
+
+
 @app.post("/push/{topic}", responses=get_responses(ProducerResponseModel))
 async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     uid = random_hash()
@@ -175,6 +179,17 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
         ).encode("utf-8"),
     )
     queue = get_pending_queue()
+    # check timeout
+    clear_indices = []
+    for i, uid in enumerate(queue):
+        uid_pack = redis_client.get(uid)
+        create_time = uid_pack.get("data", {}).get("create_time", None)
+        if create_time is not None:
+            if time.time() - create_time >= queue_timeout_threshold:
+                clear_indices.append(i)
+    for idx in clear_indices[::-1]:
+        queue.pop(idx)
+    # append new uid and dump
     queue.append(uid)
     redis_client.set(pending_queue_key, json.dumps(queue))
     data = dict(create_time=time.time())
