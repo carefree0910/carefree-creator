@@ -186,7 +186,7 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
         if uid_pack is None:
             continue
         uid_pack = json.loads(uid_pack)
-        create_time = uid_pack.get("data", {}).get("create_time", None)
+        create_time = (uid_pack.get("data", {}) or {}).get("create_time", None)
         if create_time is not None:
             if time.time() - create_time >= queue_timeout_threshold:
                 clear_indices.append(i)
