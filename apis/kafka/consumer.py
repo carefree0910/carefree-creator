@@ -161,6 +161,7 @@ async def consume() -> None:
                     uid,
                     json.dumps(dict(status="exception", data=data)),
                 )
+                raise
             # maintain queue
             queue = get_pending_queue()
             if uid in queue:
@@ -169,6 +170,7 @@ async def consume() -> None:
     finally:
         # clean up
         await http_client.stop()
+        print(">>> end")
 
 
 asyncio.run(consume())
