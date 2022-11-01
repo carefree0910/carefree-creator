@@ -148,13 +148,13 @@ async def consume() -> None:
                 )
                 end_time = time.time()
                 data["end_time"] = end_time
-                data["duration"] = end_time - start_time
+                data["duration"] = end_time - data.get("create_time", start_time)
                 redis_client.set(uid, json.dumps(dict(status="finished", data=data)))
             except Exception as err:
                 end_time = time.time()
                 data["reason"] = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
                 data["end_time"] = end_time
-                data["duration"] = end_time - start_time
+                data["duration"] = end_time - data.get("create_time", start_time)
                 redis_client.set(
                     uid,
                     json.dumps(dict(status="exception", data=data)),
