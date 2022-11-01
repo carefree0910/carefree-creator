@@ -127,7 +127,7 @@ async def consume() -> None:
                 if existing["status"] in ("finished", "exception"):
                     continue
             print(">>> working", uid)
-            data = existing["data"] or {}
+            data = {} if existing is None else (existing.get("data", {}) or {})
             start_time = time.time()
             data["start_time"] = start_time
             create_time = data.get("create_time", start_time)
