@@ -192,6 +192,16 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
                 clear_indices.append(i)
     for idx in clear_indices[::-1]:
         queue.pop(idx)
+    # check redundant
+    exist = set()
+    clear_indices = []
+    for i, uid in enumerate(queue):
+        if uid not in exist:
+            exist.add(uid)
+        else:
+            clear_indices.append(i)
+    for idx in clear_indices[::-1]:
+        queue.pop(idx)
     # append new uid and dump
     queue.append(uid)
     redis_client.set(pending_queue_key, json.dumps(queue))
