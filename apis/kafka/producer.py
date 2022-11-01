@@ -167,17 +167,6 @@ queue_timeout_threshold = 30 * 60
 @app.post("/push/{topic}", responses=get_responses(ProducerResponseModel))
 async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     new_uid = random_hash()
-    kafka_producer.send(
-        topic,
-        json.dumps(
-            dict(
-                uid=new_uid,
-                task=data.task,
-                params=data.params,
-            ),
-            ensure_ascii=False,
-        ).encode("utf-8"),
-    )
     queue = get_pending_queue()
     # check timeout
     clear_indices = []
@@ -207,6 +196,18 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     redis_client.set(pending_queue_key, json.dumps(queue))
     data = dict(create_time=time.time())
     redis_client.set(new_uid, json.dumps(dict(status="pending", data=data)))
+    # send to kafka
+    kafka_producer.send(
+        topic,
+        json.dumps(
+            dict(
+                uid=new_uid,
+                task=data.task,
+                params=data.params,
+            ),
+            ensure_ascii=False,
+        ).encode("utf-8"),
+    )
     return ProducerResponseModel(uid=new_uid)
 
 
