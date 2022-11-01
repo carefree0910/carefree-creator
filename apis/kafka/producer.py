@@ -194,8 +194,10 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     # append new uid and dump
     queue.append(new_uid)
     redis_client.set(pending_queue_key, json.dumps(queue))
-    data = dict(create_time=time.time())
-    redis_client.set(new_uid, json.dumps(dict(status="pending", data=data)))
+    redis_client.set(
+        new_uid,
+        json.dumps(dict(status="pending", data=dict(create_time=time.time()))),
+    )
     # send to kafka
     kafka_producer.send(
         topic,
