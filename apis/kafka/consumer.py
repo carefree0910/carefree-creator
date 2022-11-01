@@ -130,6 +130,7 @@ async def consume() -> None:
             data = existing["data"] or {}
             start_time = time.time()
             data["start_time"] = start_time
+            create_time = data.get("create_time", start_time)
             redis_client.set(uid, json.dumps(dict(status="working", data=data)))
             try:
                 algorithm = loaded_algorithms[task]
@@ -148,13 +149,13 @@ async def consume() -> None:
                 )
                 end_time = time.time()
                 data["end_time"] = end_time
-                data["duration"] = end_time - data.get("create_time", start_time)
+                data["duration"] = end_time - create_time
                 redis_client.set(uid, json.dumps(dict(status="finished", data=data)))
             except Exception as err:
                 end_time = time.time()
                 data["reason"] = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
                 data["end_time"] = end_time
-                data["duration"] = end_time - data.get("create_time", start_time)
+                data["duration"] = end_time - create_time
                 redis_client.set(
                     uid,
                     json.dumps(dict(status="exception", data=data)),
