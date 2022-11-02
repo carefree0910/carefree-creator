@@ -132,15 +132,20 @@ async def consume() -> None:
             data["start_time"] = start_time
             create_time = data.get("create_time", start_time)
             redis_client.set(uid, json.dumps(dict(status="working", data=data)))
+            procedure = "start"
             try:
                 algorithm = loaded_algorithms[task]
                 model = algorithm.model_class(**params)  # type: ignore
+                procedure = "start -> run_algorithm"
                 res: Response = await run_algorithm(algorithm, model)
+                procedure = "run_algorithm -> upload_temp_image"
                 urls = upload_temp_image(cos_client, res.body)
+                procedure = "upload_temp_image -> audit_image"
                 if task != "img2img.sr":
                     audit = audit_image(cos_client, urls.path)
                 else:
                     audit = AuditResponse(safe=True, reason="")
+                procedure = "audit_image -> redis"
                 result = dict(
                     cdn=urls.cdn if audit.safe else "",
                     cos=urls.cos if audit.safe else "",
@@ -152,9 +157,11 @@ async def consume() -> None:
                 result["end_time"] = end_time
                 result["duration"] = end_time - create_time
                 redis_client.set(uid, json.dumps(dict(status="finished", data=result)))
+                procedure = "done"
             except Exception as err:
                 end_time = time.time()
-                data["reason"] = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
+                reason = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
+                data["reason"] = f"{procedure} : {reason}"
                 data["end_time"] = end_time
                 data["duration"] = end_time - create_time
                 redis_client.set(
