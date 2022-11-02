@@ -11,6 +11,7 @@ from typing import BinaryIO
 from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
+
 try:
     from qcloud_cos import CosConfig
     from qcloud_cos import CosS3Client
@@ -35,7 +36,10 @@ TEMP_IMAGE_FOLDER = "tmp"
 class UploadTextResponse(BaseModel):
     path: str = Field(..., description="The path on the cloud.")
     cdn: str = Field(..., description="The `cdn` url of the input text.")
-    cos: str = Field(..., description="The `cos` url of the input text, which should be used internally.")
+    cos: str = Field(
+        ...,
+        description="The `cos` url of the input text, which should be used internally.",
+    )
 
 
 class AuditResponse(BaseModel):
@@ -46,7 +50,10 @@ class AuditResponse(BaseModel):
 class UploadImageResponse(BaseModel):
     path: str = Field(..., description="The path on the cloud.")
     cdn: str = Field(..., description="The `cdn` url of the input image.")
-    cos: str = Field(..., description="The `cos` url of the input image, which should be used internally.")
+    cos: str = Field(
+        ...,
+        description="The `cos` url of the input image, which should be used internally.",
+    )
 
 
 def upload_text(
@@ -59,12 +66,19 @@ def upload_text(
 ) -> UploadTextResponse:
     path = f"{folder}/{uuid.uuid4().hex}.txt"
     text_io = io.StringIO(text)
-    client.upload_file_from_buffer(BUCKET, path, text_io, PartSize=part_size, MAXThread=max_thread)
+    client.upload_file_from_buffer(
+        BUCKET,
+        path,
+        text_io,
+        PartSize=part_size,
+        MAXThread=max_thread,
+    )
     return UploadTextResponse(
         path=path,
         cdn=f"{CDN_HOST}/{path}",
         cos=f"{COS_HOST}/{path}",
     )
+
 
 def upload_temp_text(
     client: CosS3Client,
@@ -89,8 +103,14 @@ def parse_audit_text(res: dict) -> Optional[AuditResponse]:
     label = detail["Label"]
     return AuditResponse(safe=label == "Normal", reason=label)
 
+
 def audit_text(client: CosS3Client, text: str) -> AuditResponse:
-    res = client.ci_auditing_text_submit(BUCKET, "", Content=text.encode("utf-8"), BizType=TEXT_BIZ_TYPE)
+    res = client.ci_auditing_text_submit(
+        BUCKET,
+        "",
+        Content=text.encode("utf-8"),
+        BizType=TEXT_BIZ_TYPE,
+    )
     job_id = res["JobsDetail"]["JobId"]
     parsed = parse_audit_text(res)
     patience = 20
@@ -123,12 +143,19 @@ def upload_image(
         img_bytes.seek(0)
     else:
         img_bytes = inp
-    client.upload_file_from_buffer(BUCKET, path, img_bytes, PartSize=part_size, MAXThread=max_thread)
+    client.upload_file_from_buffer(
+        BUCKET,
+        path,
+        img_bytes,
+        PartSize=part_size,
+        MAXThread=max_thread,
+    )
     return UploadImageResponse(
         path=path,
         cdn=f"{CDN_HOST}/{path}",
         cos=f"{COS_HOST}/{path}",
     )
+
 
 def upload_temp_image(
     client: CosS3Client,
@@ -147,7 +174,11 @@ def upload_temp_image(
 
 
 def audit_image(client: CosS3Client, path: str) -> AuditResponse:
-    res = client.get_object_sensitive_content_recognition(BUCKET, path, BizType=IMAGE_BIZ_TYPE)
+    res = client.get_object_sensitive_content_recognition(
+        BUCKET,
+        path,
+        BizType=IMAGE_BIZ_TYPE,
+    )
     label = res["Label"]
     return AuditResponse(safe=label == "Normal", reason=label)
 
