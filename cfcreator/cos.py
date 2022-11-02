@@ -131,7 +131,7 @@ def upload_image(
     inp: Union[bytes, np.ndarray, BinaryIO],
     *,
     folder: str,
-    part_size: int = 10,
+    part_size: int = 20,
     max_thread: int = 10,
 ) -> UploadImageResponse:
     path = f"{folder}/{uuid.uuid4().hex}.png"
@@ -161,7 +161,7 @@ def upload_temp_image(
     client: CosS3Client,
     inp: Union[bytes, np.ndarray, BinaryIO],
     *,
-    part_size: int = 10,
+    part_size: int = 20,
     max_thread: int = 10,
 ) -> UploadImageResponse:
     return upload_image(
