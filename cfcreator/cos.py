@@ -32,7 +32,7 @@ SECRET_KEY = os.getenv("SECRETKEY")
 
 TEMP_TEXT_FOLDER = "tmp_txt"
 TEMP_IMAGE_FOLDER = "tmp"
-PART_SIZE = 25
+PART_SIZE = 5
 MAX_THREAD = 5
 
 
