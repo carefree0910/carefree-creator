@@ -56,7 +56,12 @@ constants = dict(
 
 # clients
 ## cos client
-config = CosConfig(Region=REGION, SecretId=SECRET_ID, SecretKey=SECRET_KEY)
+config = CosConfig(
+    Region=REGION,
+    SecretId=SECRET_ID,
+    SecretKey=SECRET_KEY,
+    Scheme=SCHEME,
+)
 cos_client = CosS3Client(config)
 ## http client
 http_client = HttpClient()

@@ -20,6 +20,7 @@ except:
     CosS3Client = None
 
 
+SCHEME = "http"
 REGION = "ap-shanghai"
 BUCKET = "ailab-1310750649"
 CDN_HOST = "https://ailabcdn.nolibox.com"
@@ -186,6 +187,7 @@ def audit_image(client: CosS3Client, path: str) -> AuditResponse:
 
 
 __all__ = [
+    "SCHEME",
     "REGION",
     "SECRET_ID",
     "SECRET_KEY",
