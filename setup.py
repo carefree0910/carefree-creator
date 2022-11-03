@@ -12,7 +12,7 @@ setup(
     version=VERSION,
     packages=find_packages(exclude=("tests",)),
     install_requires=[
-        "carefree-client>=0.1.2",
+        "carefree-client>=0.1.3",
         "carefree-learn[cv]>=0.3.3.11",
     ],
     extras_require={
