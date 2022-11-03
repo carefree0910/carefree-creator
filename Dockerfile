@@ -4,6 +4,7 @@ COPY . .
 RUN rm -rf /opt/conda/lib/python3.8/site-packages/cv2 && \
     pip install -U pip && \
     pip install . && \
+    pip install --upgrade Pillow && \
     rm -rf ./*
 
 COPY apis apis
