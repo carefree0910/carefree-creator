@@ -147,7 +147,10 @@ async def consume() -> None:
                 urls = upload_temp_image(cos_client, res.body)
                 procedure = "upload_temp_image -> audit_image"
                 if task != "img2img.sr":
-                    audit = audit_image(cos_client, urls.path)
+                    try:
+                        audit = audit_image(cos_client, urls.path)
+                    except:
+                        audit = AuditResponse(safe=False, reason="unknown")
                 else:
                     audit = AuditResponse(safe=True, reason="")
                 procedure = "audit_image -> redis"
