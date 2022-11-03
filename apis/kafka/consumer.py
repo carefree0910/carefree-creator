@@ -169,7 +169,8 @@ async def consume() -> None:
             except Exception as err:
                 end_time = time.time()
                 reason = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
-                data["reason"] = f"{procedure} : {reason}"
+                reason = f"{task} -> {json.dumps(params)} -> {procedure} : {reason}"
+                data["reason"] = reason
                 data["end_time"] = end_time
                 data["duration"] = end_time - create_time
                 redis_client.set(
