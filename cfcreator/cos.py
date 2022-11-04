@@ -193,11 +193,13 @@ def audit_image(client: CosS3Client, path: str) -> AuditResponse:
 async def download_image_with_retry(
     session: ClientSession,
     url: str,
+    *,
     retry: int = 3,
+    interval: int = 1,
 ) -> Image.Image:
     if use_cos() and url.startswith(CDN_HOST):
         url = url.replace(CDN_HOST, COS_HOST)
-    return await download(session, url, retry)
+    return await download(session, url, retry=retry, interval=interval)
 
 
 __all__ = [
