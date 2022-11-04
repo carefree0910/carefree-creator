@@ -180,6 +180,7 @@ def upload_image(
         try:
             raw_data = requests.get(cos_url).content
             Image.open(BytesIO(raw_data)).verify()
+            logger.info("\n\ntried to get url after exception and succeeded!!!\n\n")
         except Exception:
             logger.exception("\n\ntried to get url after exception but failed!!!\n\n")
             raise
