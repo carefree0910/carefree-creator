@@ -2,9 +2,11 @@ import io
 import os
 import time
 import uuid
+import requests
 
 import numpy as np
 
+from io import BytesIO
 from PIL import Image
 from typing import Union
 from typing import BinaryIO
@@ -155,23 +157,35 @@ def upload_image(
         img_bytes.seek(0)
     else:
         img_bytes = inp
+
+    cdn_url = f"{CDN_HOST}/{path}"
+    cos_url = f"{COS_HOST}/{path}"
+
     original_retry = client._retry
     original_timeout = client._conf._timeout
     client._retry = retry
     client._conf._timeout = timeout
-    client.upload_file_from_buffer(
-        BUCKET,
-        path,
-        img_bytes,
-        PartSize=part_size,
-        MAXThread=max_thread,
-    )
-    client._retry = original_retry
-    client._conf._timeout = original_timeout
+    try:
+        client.upload_file_from_buffer(
+            BUCKET,
+            path,
+            img_bytes,
+            PartSize=part_size,
+            MAXThread=max_thread,
+        )
+    except Exception:
+        try:
+            raw_data = requests.get(cos_url).content
+            Image.open(BytesIO(raw_data)).verify()
+        except Exception:
+            raise
+    finally:
+        client._retry = original_retry
+        client._conf._timeout = original_timeout
     return UploadImageResponse(
         path=path,
-        cdn=f"{CDN_HOST}/{path}",
-        cos=f"{COS_HOST}/{path}",
+        cdn=cdn_url,
+        cos=cos_url,
     )
 
 
