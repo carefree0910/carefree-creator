@@ -37,9 +37,9 @@ SECRET_KEY = os.getenv("SECRETKEY")
 TEMP_TEXT_FOLDER = "tmp_txt"
 TEMP_IMAGE_FOLDER = "tmp"
 RETRY = 3
-PART_SIZE = 4
-MAX_THREAD = 4
-UPLOAD_TIMEOUT = 5
+PART_SIZE = 20
+MAX_THREAD = 1
+UPLOAD_TIMEOUT = 15
 
 
 class UploadTextResponse(BaseModel):
