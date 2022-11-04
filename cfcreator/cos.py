@@ -2,6 +2,7 @@ import io
 import os
 import time
 import uuid
+import logging
 import requests
 
 import numpy as np
@@ -43,6 +44,8 @@ PART_SIZE = 20
 MAX_THREAD = 1
 UPLOAD_RETRY = 1
 UPLOAD_TIMEOUT = 30
+
+logger = logging.getLogger(__name__)
 
 
 class UploadTextResponse(BaseModel):
@@ -178,6 +181,7 @@ def upload_image(
             raw_data = requests.get(cos_url).content
             Image.open(BytesIO(raw_data)).verify()
         except Exception:
+            logger.exception("\n\ntried to get url after exception but failed!!!\n\n")
             raise
     finally:
         client._retry = original_retry
