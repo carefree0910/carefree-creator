@@ -4,9 +4,9 @@ from enum import Enum
 from typing import Any
 from fastapi import Response
 from pydantic import Field
-from cfclient.utils import download_image_with_retry
 from cfclient.models import ImageModel
 
+from .cos import download_image_with_retry
 from .common import cleanup
 from .common import init_sd_ms
 from .common import get_sd_from

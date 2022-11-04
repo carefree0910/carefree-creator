@@ -9,9 +9,9 @@ from typing import List
 from fastapi import Response
 from pydantic import Field
 from scipy.interpolate import NearestNDInterpolator
-from cfclient.utils import download_image_with_retry
 from cfcv.misc.toolkit import to_rgb
 
+from .cos import download_image_with_retry
 from .common import cleanup
 from .common import get_esr
 from .common import init_sd_ms
