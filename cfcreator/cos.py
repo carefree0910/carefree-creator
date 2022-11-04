@@ -36,8 +36,10 @@ SECRET_KEY = os.getenv("SECRETKEY")
 
 TEMP_TEXT_FOLDER = "tmp_txt"
 TEMP_IMAGE_FOLDER = "tmp"
-PART_SIZE = 5
-MAX_THREAD = 5
+RETRY = 3
+PART_SIZE = 4
+MAX_THREAD = 4
+UPLOAD_TIMEOUT = 5
 
 
 class UploadTextResponse(BaseModel):
@@ -138,6 +140,8 @@ def upload_image(
     inp: Union[bytes, np.ndarray, BinaryIO],
     *,
     folder: str,
+    retry: int = RETRY,
+    timeout: int = UPLOAD_TIMEOUT,
     part_size: int = PART_SIZE,
     max_thread: int = MAX_THREAD,
 ) -> UploadImageResponse:
@@ -150,6 +154,10 @@ def upload_image(
         img_bytes.seek(0)
     else:
         img_bytes = inp
+    original_retry = client._retry
+    original_timeout = client._conf._timeout
+    client._retry = retry
+    client._conf._timeout = timeout
     client.upload_file_from_buffer(
         BUCKET,
         path,
@@ -157,6 +165,8 @@ def upload_image(
         PartSize=part_size,
         MAXThread=max_thread,
     )
+    client._retry = original_retry
+    client._conf._timeout = original_timeout
     return UploadImageResponse(
         path=path,
         cdn=f"{CDN_HOST}/{path}",
@@ -194,7 +204,7 @@ async def download_image_with_retry(
     session: ClientSession,
     url: str,
     *,
-    retry: int = 3,
+    retry: int = RETRY,
     interval: int = 1,
 ) -> Image.Image:
     if use_cos() and url.startswith(CDN_HOST):
