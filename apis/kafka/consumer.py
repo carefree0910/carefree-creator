@@ -166,6 +166,11 @@ async def consume() -> None:
                 result["duration"] = end_time - create_time
                 redis_client.set(uid, json.dumps(dict(status="finished", data=result)))
                 procedure = "done"
+                # maintain queue
+                queue = get_pending_queue()
+                if uid in queue:
+                    queue.remove(uid)
+                    redis_client.set(pending_queue_key, json.dumps(queue))
             except Exception as err:
                 end_time = time.time()
                 reason = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
@@ -177,12 +182,6 @@ async def consume() -> None:
                     uid,
                     json.dumps(dict(status="exception", data=data)),
                 )
-                raise
-            # maintain queue
-            queue = get_pending_queue()
-            if uid in queue:
-                queue.remove(uid)
-                redis_client.set(pending_queue_key, json.dumps(queue))
     finally:
         # clean up
         await http_client.stop()
