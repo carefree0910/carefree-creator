@@ -39,7 +39,8 @@ TEMP_IMAGE_FOLDER = "tmp"
 RETRY = 3
 PART_SIZE = 20
 MAX_THREAD = 1
-UPLOAD_TIMEOUT = 45
+UPLOAD_RETRY = 1
+UPLOAD_TIMEOUT = 30
 
 
 class UploadTextResponse(BaseModel):
@@ -140,7 +141,7 @@ def upload_image(
     inp: Union[bytes, np.ndarray, BinaryIO],
     *,
     folder: str,
-    retry: int = RETRY,
+    retry: int = UPLOAD_RETRY,
     timeout: int = UPLOAD_TIMEOUT,
     part_size: int = PART_SIZE,
     max_thread: int = MAX_THREAD,
