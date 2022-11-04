@@ -9,8 +9,10 @@ from PIL import Image
 from typing import Union
 from typing import BinaryIO
 from typing import Optional
+from aiohttp import ClientSession
 from pydantic import Field
 from pydantic import BaseModel
+from cfclient.utils import download_image_with_retry as download
 
 try:
     from qcloud_cos import CosConfig
@@ -184,6 +186,16 @@ def audit_image(client: CosS3Client, path: str) -> AuditResponse:
     )
     label = res["Label"]
     return AuditResponse(safe=label == "Normal", reason=label)
+
+
+async def download_image_with_retry(
+    session: ClientSession,
+    url: str,
+    retry: int = 3,
+) -> Image.Image:
+    if url.startswith(CDN_HOST):
+        url = url.replace(CDN_HOST, COS_HOST)
+    return await download(session, url, retry)
 
 
 __all__ = [
