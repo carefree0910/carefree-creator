@@ -39,7 +39,7 @@ TEMP_IMAGE_FOLDER = "tmp"
 RETRY = 3
 PART_SIZE = 20
 MAX_THREAD = 1
-UPLOAD_TIMEOUT = 15
+UPLOAD_TIMEOUT = 45
 
 
 class UploadTextResponse(BaseModel):
