@@ -186,6 +186,7 @@ register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 @app.on_event("startup")
 async def startup() -> None:
     http_client.start()
+    OPT["use_cos"] = False
     # OPT["save_gpu_ram"] = True
     for k, v in all_algorithms.items():
         if k in registered_algorithms:

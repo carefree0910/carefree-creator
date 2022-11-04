@@ -14,6 +14,8 @@ from pydantic import Field
 from pydantic import BaseModel
 from cfclient.utils import download_image_with_retry as download
 
+from .parameters import use_cos
+
 try:
     from qcloud_cos import CosConfig
     from qcloud_cos import CosS3Client
@@ -193,7 +195,7 @@ async def download_image_with_retry(
     url: str,
     retry: int = 3,
 ) -> Image.Image:
-    if url.startswith(CDN_HOST):
+    if use_cos() and url.startswith(CDN_HOST):
         url = url.replace(CDN_HOST, COS_HOST)
     return await download(session, url, retry)
 
