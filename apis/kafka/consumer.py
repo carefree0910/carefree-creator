@@ -17,6 +17,7 @@ from qcloud_cos import CosS3Client
 from cfclient.models import *
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
+from cfclient.utils import get_err_msg
 from cfclient.utils import run_algorithm
 
 # This is necessary to register the algorithms
@@ -173,8 +174,7 @@ async def consume() -> None:
                     redis_client.set(pending_queue_key, json.dumps(queue))
             except Exception as err:
                 end_time = time.time()
-                reason = " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
-                reason = f"{task} -> {json.dumps(params, ensure_ascii=False)} -> {procedure} : {reason}"
+                reason = f"{task} -> {json.dumps(params, ensure_ascii=False)} -> {procedure} : {get_err_msg(err)}"
                 data["reason"] = reason
                 data["end_time"] = end_time
                 data["duration"] = end_time - create_time
