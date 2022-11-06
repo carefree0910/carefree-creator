@@ -1,5 +1,7 @@
 import os
 import yaml
+import cflearn
+import logging
 import datetime
 import logging.config
 
@@ -17,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from cfclient.models import *
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
+from cfclient.utils import get_err_msg
 from cfclient.utils import get_responses
 from cfclient.utils import run_algorithm
 from cfclient.utils import get_image_response_kwargs
@@ -43,6 +46,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# models
+model_root = os.path.join(root, "models")
 
 # logging
 logging_root = os.path.join(root, "logs")
@@ -150,6 +156,45 @@ async def hello(data: HelloModel) -> HelloResponse:
 @app.post("/get_prompt")
 def get_prompt(data: GetPromptModel) -> GetPromptResponse:
     return GetPromptResponse(text=data.text, success=True, reason="")
+
+
+# switch local checkpoint
+
+
+class SwitchCheckpointModel(BaseModel):
+    key: str
+    model: str
+    is_full_path: bool = False
+
+
+class SwitchCheckpointResponse(BaseModel):
+    success: bool
+    reason: str
+
+
+@app.post("/switch")
+def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
+    api = get_api(data.key)
+    if api is None:
+        return SwitchCheckpointResponse(
+            success=False,
+            reason=f"'{data.key}' is not a valid key, available keys are: {', '.join(available_apis())}",
+        )
+    if data.is_full_path:
+        model_path = data.model
+    else:
+        model_path = os.path.join(model_root, data.model)
+    if not os.path.isfile(model_path):
+        return SwitchCheckpointResponse(
+            success=False,
+            reason=f"cannot find '{data.model}' under '{model_root}'",
+        )
+    try:
+        cflearn.scripts.sd.convert(model_path, api, load=True)
+        return SwitchCheckpointResponse(success=True, reason="")
+    except Exception as err:
+        logging.exception(err)
+        return SwitchCheckpointResponse(success=False, reason=get_err_msg(err))
 
 
 # meta
