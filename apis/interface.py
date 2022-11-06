@@ -8,6 +8,7 @@ import logging.config
 from enum import Enum
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Type
 from fastapi import FastAPI
 from fastapi import Response
@@ -170,6 +171,15 @@ class SwitchCheckpointModel(BaseModel):
 class SwitchCheckpointResponse(BaseModel):
     success: bool
     reason: str
+
+
+class AvailableVersions(BaseModel):
+    versions: List[str]
+
+
+@app.get("/available_versions")
+def get_available_api_versions() -> AvailableVersions:
+    return AvailableVersions(versions=available_apis())
 
 
 @app.post("/switch")
