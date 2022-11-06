@@ -266,7 +266,7 @@ def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
 
     @app.post(endpoint, **get_image_response_kwargs(), name=name)
     async def _(data: data_model) -> Response:
-        if isinstance(data, DiffusionModel):
+        if isinstance(data, DiffusionModel) and not data.custom_embeddings:
             data.custom_embeddings = custom_embeddings
         return await run_algorithm(algorithm, data)
 
