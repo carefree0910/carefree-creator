@@ -9,6 +9,7 @@ from typing import List
 from typing import Type
 from typing import Union
 from typing import Callable
+from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
 from functools import partial
@@ -24,9 +25,10 @@ from .parameters import save_gpu_ram
 
 
 apis = {}
+api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
-def _get(key: str, init: Callable) -> Union[DiffusionAPI, TranslatorAPI]:
+def _get(key: str, init: Callable) -> api_type:
     m = apis.get(key)
     if m is not None:
         return m
@@ -231,6 +233,14 @@ def cleanup(m: DiffusionAPI) -> None:
         torch.cuda.empty_cache()
 
 
+def get_api(key: str) -> Optional[api_type]:
+    return apis.get(key)
+
+
+def available_apis() -> List[str]:
+    return sorted(apis)
+
+
 __all__ = [
     "endpoint2algorithm",
     "Txt2ImgModel",
@@ -238,4 +248,6 @@ __all__ = [
     "Img2ImgDiffusionModel",
     "GetPromptModel",
     "GetPromptResponse",
+    "get_api",
+    "available_apis",
 ]
