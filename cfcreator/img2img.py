@@ -115,9 +115,21 @@ class Img2ImgSR(IAlgorithm):
         image = await download_image_with_retry(self.http_client.session, data.url)
         t1 = time.time()
         m = self.esr_anime if data.is_anime else self.esr
+        if save_gpu_ram():
+            m.to("cuda:0", use_half=True)
+        t2 = time.time()
         img_arr = m.sr(image, max_wh=data.max_wh).numpy()[0]
         content = get_bytes_from_translator(img_arr)
-        self.log_times({"download": t1 - t0, "inference": time.time() - t1})
+        t3 = time.time()
+        cleanup(m)
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "get_model": t2 - t1,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
+            }
+        )
         return Response(content=content, media_type="image/png")
 
 
