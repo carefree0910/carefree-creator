@@ -1,5 +1,6 @@
 import os
 import yaml
+import torch
 import cflearn
 import logging
 import datetime
@@ -14,6 +15,7 @@ from fastapi import FastAPI
 from fastapi import Response
 from pydantic import BaseModel
 from pkg_resources import get_distribution
+from cftool.array import tensor_dict_type
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -50,6 +52,7 @@ app.add_middleware(
 
 # models
 model_root = os.path.join(root, "models")
+token_root = os.path.join(root, "tokens")
 
 # logging
 logging_root = os.path.join(root, "logs")
@@ -207,6 +210,48 @@ def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
         return SwitchCheckpointResponse(success=False, reason=get_err_msg(err))
 
 
+# inject custom tokens
+
+
+custom_embeddings: tensor_dict_type = {}
+
+
+def _inject_custom_tokens(root: str) -> tensor_dict_type:
+    local_customs: tensor_dict_type = {}
+    if not os.path.isdir(root):
+        return local_customs
+    for file in os.listdir(root):
+        try:
+            path = os.path.join(root, file)
+            d = torch.load(path, map_location="cpu")
+            local_customs.update({k: v.tolist() for k, v in d.items()})
+        except:
+            continue
+    if local_customs:
+        print(f"> Following tokens are loaded: {', '.join(sorted(local_customs))}")
+        custom_embeddings.update(local_customs)
+    return local_customs
+
+
+class InjectCustomTokenModel(BaseModel):
+    root: str
+
+
+class InjectCustomTokenResponse(BaseModel):
+    success: bool
+    reason: str
+
+
+@app.post("/inject_tokens")
+def inject_custom_tokens(data: InjectCustomTokenModel) -> InjectCustomTokenResponse:
+    if not _inject_custom_tokens(data.root):
+        return InjectCustomTokenResponse(
+            success=False,
+            reason=f"cannot find any tokens under '{data.root}'",
+        )
+    return InjectCustomTokenResponse(success=True, reason="")
+
+
 # meta
 
 
@@ -221,6 +266,8 @@ def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
 
     @app.post(endpoint, **get_image_response_kwargs(), name=name)
     async def _(data: data_model) -> Response:
+        if isinstance(data, DiffusionModel):
+            data.custom_embeddings = custom_embeddings
         return await run_algorithm(algorithm, data)
 
 
@@ -246,6 +293,7 @@ async def startup() -> None:
     for k, v in all_algorithms.items():
         if k in registered_algorithms:
             v.initialize()
+    _inject_custom_tokens(token_root)
     print("> Server is Ready!")
 
 
