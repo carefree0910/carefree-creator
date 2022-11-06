@@ -130,6 +130,10 @@ Seed of the variation generation.
     )
     version: str = Field("", description="Version of the diffusion model")
     sampler: str = Field("klms", description="Sampler of the diffusion model")
+    custom_embeddings: Dict[str, List[List[float]]] = Field(
+        {},
+        description="Custom embeddings, often used in textual inversion.",
+    )
 
 
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
@@ -169,6 +173,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         unconditional_cond=unconditional_cond,
         sampler=data.sampler,
         verbose=verbose(),
+        custom_embeddings=data.custom_embeddings or None,
     )
 
 
@@ -243,6 +248,7 @@ def available_apis() -> List[str]:
 
 __all__ = [
     "endpoint2algorithm",
+    "DiffusionModel",
     "Txt2ImgModel",
     "Img2ImgModel",
     "Img2ImgDiffusionModel",
