@@ -154,8 +154,8 @@ async def hello(data: HelloModel) -> HelloResponse:
 # get prompt
 
 
-@app.post("/translate")
-@app.post("/get_prompt")
+@app.post("/translate", responses=get_responses(GetPromptResponse))
+@app.post("/get_prompt", responses=get_responses(GetPromptResponse))
 def get_prompt(data: GetPromptModel) -> GetPromptResponse:
     return GetPromptResponse(text=data.text, success=True, reason="")
 
@@ -221,7 +221,7 @@ def get_available_local_models() -> AvailableModels:
     return AvailableModels(models=_get_available_local_models(constants["model_root"]))
 
 
-@app.post("/switch")
+@app.post("/switch", responses=get_responses(SwitchCheckpointResponse))
 def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
     api = get_api(data.key)
     if api is None:
@@ -246,7 +246,7 @@ def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
         return SwitchCheckpointResponse(success=False, reason=get_err_msg(err))
 
 
-@app.post("/switch_root")
+@app.post("/switch_root", responses=get_responses(SwitchCheckpointRootResponse))
 def switch_root(data: SwitchCheckpointRootModel) -> SwitchCheckpointRootResponse:
     if not _get_available_local_models(data.root):
         return SwitchCheckpointRootResponse(
@@ -289,7 +289,7 @@ class InjectCustomTokenResponse(BaseModel):
     reason: str
 
 
-@app.post("/inject_tokens")
+@app.post("/inject_tokens", responses=get_responses(InjectCustomTokenResponse))
 def inject_custom_tokens(data: InjectCustomTokenModel) -> InjectCustomTokenResponse:
     if not _inject_custom_tokens(data.root):
         return InjectCustomTokenResponse(
