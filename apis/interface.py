@@ -180,9 +180,25 @@ class AvailableVersions(BaseModel):
     versions: List[str]
 
 
+class AvailableModels(BaseModel):
+    models: List[str]
+
+
 @app.get("/available_versions")
 def get_available_api_versions() -> AvailableVersions:
     return AvailableVersions(versions=available_apis())
+
+
+@app.get("/available_models")
+def get_available_local_models() -> AvailableModels:
+    return AvailableModels(
+        models=list(
+            filter(
+                lambda file: file.endswith(".pt") or file.endswith(".ckpt"),
+                os.listdir(model_root),
+            )
+        )
+    )
 
 
 @app.post("/switch")
