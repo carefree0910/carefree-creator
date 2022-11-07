@@ -30,13 +30,15 @@ from cfclient.utils import get_image_response_kwargs
 from cfcreator import *
 
 
+app = FastAPI()
+root = os.path.dirname(__file__)
+
 constants = dict(
     triton_host=None,
     triton_port=8000,
+    model_root=os.path.join(root, "models"),
+    token_root=os.path.join(root, "tokens"),
 )
-
-app = FastAPI()
-root = os.path.dirname(__file__)
 
 origins = [
     "*",
@@ -49,10 +51,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# models
-model_root = os.path.join(root, "models")
-token_root = os.path.join(root, "tokens")
 
 # logging
 logging_root = os.path.join(root, "logs")
@@ -195,7 +193,7 @@ def get_available_local_models() -> AvailableModels:
         models=list(
             filter(
                 lambda file: file.endswith(".pt") or file.endswith(".ckpt"),
-                os.listdir(model_root),
+                os.listdir(constants["model_root"]),
             )
         )
     )
@@ -212,11 +210,11 @@ def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
     if data.is_full_path:
         model_path = data.model
     else:
-        model_path = os.path.join(model_root, data.model)
+        model_path = os.path.join(constants["model_root"], data.model)
     if not os.path.isfile(model_path):
         return SwitchCheckpointResponse(
             success=False,
-            reason=f"cannot find '{data.model}' under '{model_root}'",
+            reason=f"cannot find '{data.model}' under '{constants['model_root']}'",
         )
     try:
         cflearn.scripts.sd.convert(model_path, api, load=True)
@@ -309,7 +307,7 @@ async def startup() -> None:
     for k, v in all_algorithms.items():
         if k in registered_algorithms:
             v.initialize()
-    _inject_custom_tokens(token_root)
+    _inject_custom_tokens(constants["token_root"])
     print("> Server is Ready!")
 
 
