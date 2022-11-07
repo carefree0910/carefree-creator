@@ -182,6 +182,17 @@ class AvailableModels(BaseModel):
     models: List[str]
 
 
+def _get_available_local_models(root: str) -> List[str]:
+    if not os.path.isdir(root):
+        return []
+    return list(
+        filter(
+            lambda file: file.endswith(".pt") or file.endswith(".ckpt"),
+            os.listdir(root),
+        )
+    )
+
+
 @app.get("/available_versions")
 def get_available_api_versions() -> AvailableVersions:
     return AvailableVersions(versions=available_apis())
@@ -189,14 +200,7 @@ def get_available_api_versions() -> AvailableVersions:
 
 @app.get("/available_models")
 def get_available_local_models() -> AvailableModels:
-    return AvailableModels(
-        models=list(
-            filter(
-                lambda file: file.endswith(".pt") or file.endswith(".ckpt"),
-                os.listdir(constants["model_root"]),
-            )
-        )
-    )
+    return AvailableModels(models=_get_available_local_models(constants["model_root"]))
 
 
 @app.post("/switch")
