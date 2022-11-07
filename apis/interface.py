@@ -186,6 +186,15 @@ class AvailableModels(BaseModel):
     models: List[str]
 
 
+class SwitchCheckpointRootModel(BaseModel):
+    root: str
+
+
+class SwitchCheckpointRootResponse(BaseModel):
+    success: bool
+    reason: str
+
+
 def _get_available_local_models(root: str) -> List[str]:
     if not os.path.isdir(root):
         return []
@@ -235,6 +244,17 @@ def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
     except Exception as err:
         logging.exception(err)
         return SwitchCheckpointResponse(success=False, reason=get_err_msg(err))
+
+
+@app.post("/switch_root")
+def switch_root(data: SwitchCheckpointRootModel) -> SwitchCheckpointRootResponse:
+    if not _get_available_local_models(data.root):
+        return SwitchCheckpointRootResponse(
+            success=False,
+            reason=f"cannot find any checkpoints under '{data.root}'",
+        )
+    constants["model_root"] = data.root
+    return SwitchCheckpointRootResponse(success=True, reason="")
 
 
 # inject custom tokens
