@@ -206,17 +206,17 @@ def _get_available_local_models(root: str) -> List[str]:
     )
 
 
-@app.get("/model_root")
+@app.post("/model_root", responses=get_responses(GetPromptResponse))
 def get_model_root() -> ModelRootResponse:
     return ModelRootResponse(root=constants["model_root"])
 
 
-@app.get("/available_versions")
+@app.post("/available_versions", responses=get_responses(GetPromptResponse))
 def get_available_api_versions() -> AvailableVersions:
     return AvailableVersions(versions=available_apis())
 
 
-@app.get("/available_models")
+@app.post("/available_models", responses=get_responses(GetPromptResponse))
 def get_available_local_models() -> AvailableModels:
     return AvailableModels(models=_get_available_local_models(constants["model_root"]))
 
