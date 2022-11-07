@@ -163,6 +163,10 @@ def get_prompt(data: GetPromptModel) -> GetPromptResponse:
 # switch local checkpoint
 
 
+class ModelRootResponse(BaseModel):
+    root: str
+
+
 class SwitchCheckpointModel(BaseModel):
     key: str
     model: str
@@ -191,6 +195,11 @@ def _get_available_local_models(root: str) -> List[str]:
             os.listdir(root),
         )
     )
+
+
+@app.get("/model_root")
+def get_model_root() -> ModelRootResponse:
+    return ModelRootResponse(root=constants["model_root"])
 
 
 @app.get("/available_versions")
