@@ -78,9 +78,9 @@ logging.getLogger("kafka.consumer.subscription_state").disabled = True
 # clients
 config = CosConfig(Region=REGION, SecretId=SECRET_ID, SecretKey=SECRET_KEY)
 cos_client = CosS3Client(config)
-redis_client = redis.Redis(host="localhost", port=6379, db=0)
-kafka_admin = KafkaAdminClient(bootstrap_servers="172.17.16.8:9092")
-kafka_producer = KafkaProducer(bootstrap_servers="172.17.16.8:9092")
+redis_client = redis.Redis(**redis_kwargs())
+kafka_admin = KafkaAdminClient(bootstrap_servers=kafka_server())
+kafka_producer = KafkaProducer(bootstrap_servers=kafka_server())
 
 
 # schema
@@ -233,7 +233,7 @@ def get_pending_queue() -> list:
 
 @app.get("/server_status", responses=get_responses(ServerStatusModel))
 async def server_status() -> ServerStatusModel:
-    members = kafka_admin.describe_consumer_groups(["creator-consumer-1"])[0].members
+    members = kafka_admin.describe_consumer_groups([kafka_group_id()])[0].members
     return ServerStatusModel(
         is_ready=len(members) > 0,
         num_pending=len(get_pending_queue()),
