@@ -41,6 +41,12 @@ An open sourced, AI-powered creator for everyone.
 - [Image Processing Features](#image-processing-features)
   - [Super Resolution](#super-resolution)
   - [Inpainting](#inpainting)
+  - [Erase & Replace](#erase--replace)
+- [Advanced Usages](#advanced-usages)
+  - [Custom Checkpoints](#custom-checkpoints)
+  - [Textual Inversion](#textual-inversion)
+    - [Features](#features)
+    - [Usage](#usage)
 - [Installation](#installation)
   - [Hardware Requirements](#hardware-requirements)
   - [Prepare](#prepare)
@@ -55,7 +61,7 @@ An open sourced, AI-powered creator for everyone.
     - [How do I save / load my project?](#how-do-i-save--load-my-project)
     - [How can I contribute to `carefree-creator`?](#how-can-i-contribute-to-carefree-creator)
     - [How can I get my own models interactable on the **WebUI**?](#how-can-i-get-my-own-models-interactable-on-the-webui)
-      - [But is there a handy way? For example, put my checkpoints somewhere and being able to access them?](#but-is-there-a-handy-way-for-example-put-my-checkpoints-somewhere-and-being-able-to-access-them)
+      - [Handy way](#handy-way)
       - [Advanced way](#advanced-way)
       - [API Mappings](#api-mappings)
     - [Why no `GFPGAN`?](#why-no-gfpgan)
@@ -162,7 +168,7 @@ The last `komeiji koishi` somehow mimics the art style of `ZUN` 😆!
 
 <details>
 <summary>GIF</summary>
-<img src="https://github.com/carefree0910/datasets/releases/download/static/image_translation.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/image_translation.gif" alt="Image Translation" />
 </details>
 
 We support 'translating' any sketches to images with the given prompt. Although it is not required, we recommend adding an 'Empty Node' (with the 'plus' icon on the top) as a 'canvas' for you to draw on:
@@ -217,7 +223,7 @@ With this technique, you can actually upload your own images (for instance, the 
 
 <details>
 <summary>GIF</summary>
-<img src="https://github.com/carefree0910/datasets/releases/download/static/circular_textures.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/circular_textures.gif" alt="Circular Textures" />
 </details>
 
 So what are circular textures? Circular textures are images that can be 'tiled' together, and it is easy to specify `carefree-creator` to generate such textures by toggling the corresponding switch:
@@ -333,7 +339,7 @@ Still far from good, but it's quite interesting!
 
 <details>
 <summary>GIF</summary>
-<img src="https://github.com/carefree0910/datasets/releases/download/static/landscape.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/landscape.gif" alt="Landscape" />
 </details>
 
 Another interesting feature is that you can do landscape synthesis, similar to `GauGAN`:
@@ -398,7 +404,7 @@ As you can see, the result even looks like a vector graphic, nice!
 
 <details>
 <summary>GIF</summary>
-<img src="https://github.com/carefree0910/datasets/releases/download/static/inpainting.gif" alt="Variation Generation" />
+<img src="https://github.com/carefree0910/datasets/releases/download/static/inpainting.gif" alt="Inpainting" />
 </details>
 
 Annoyed that only a small part of a generated image is not what you want? Then our Inpainting feature can come to rescue. Let's say we've generated a nice portrait of `hakurei reimu`, but you might notice that there is something weird:
@@ -434,12 +440,83 @@ Not bad! But can we do something more?
 
 Not perfect, but I'm pretty satisfied because what I've done is just some simple clicking 😆.
 
+## Erase & Replace
+
+The Erase & Replace feature utilized the latest SD-inpaiting model, and its usage is almost the same as the [Inpainting](#inpainting) feature, except you need to specify what you want to 'Replace' into the image:
+
+![Erase & Replace](static/images/erase-and-replace.jpg)
+
+
+# Advanced Usages
+
+## Custom Checkpoints
+
+We now support using your own checkpoints to generate images, if you are using [Local Server](#webui--local-deployment):
+
+![use-local-model0](static/images/use-local-model0.png)
+
+After you toggled the `Use Local Model` switch, we'll do two things:
+- fetch the available `version`s from your local server.
+- scan the default model root (`apis/models`, where you can see a `put_your_sd_ckpt_here` file) and pick up the available `model`s.
+
+The `version` means the backend `algorithm` used behind the features. For example, most of the Stable Diffusion features are using the `sd_v1.5` `version`, and will use the `sd_anime` `version` if `Use Anime-Finetuned Model` is toggled.
+
+Here's the full list of `version`s:
+
+![use-local-model1](static/images/use-local-model1.png)
+
+> In most cases, we only care about `sd_v1.5` and `sd_anime`.
+
+This feature will be very useful if you want to use the WebUI features along with your own models. For example, if you want to use a specific version of `Waifu Diffusion`, you can simply download the checkpoint, put it into the `apis/models` folder, choose the `sd_anime` as the `version` and your `ckpt` as the `model`, press the `Switch to Local Model` button, and wait for the success message to pop up. After that, as long as you toggle the `Use Anime-Finetuned Model`, you will be using your own checkpoint to generate images!
+
+If you only need your own checkpoint to generate images, it will be handy to choose the `sd_v1.5` as the `version`. In this case, we'll use your checkpoint by default.
+
+> This process **CANNOT** be reversed! If you want to use the original model, you'll have to restart your server. 😔
+
+## Textual Inversion
+
+### Features
+
+- Support all embeddings from [here](https://cyberes.github.io/stable-diffusion-textual-inversion-models/).
+- Support multi-embedding for each token.
+  - For instance, the embedding shape of this [`<pekora>`](https://huggingface.co/carefree0910/carefree-learn/resolve/main/tokens/pekora.pt) token, originated from [here](https://drive.google.com/file/d/1MDSmzSbzkIcw5_aw_i79xfO3CRWQDl-8/view), is `[8, 768]`, which means we will use `8` embeddings to represent the `<pekora>` concept.
+
+### Usage
+
+Basically, you just need to put the `pt` files in the `apis/tokens` folder (where you can see a `put_your_tokens_here` file), and each `pt` file should be a dictionary, where:
+- Its key is the token.
+- Its value is the embedding, and multi-embedding is supported.
+
+Here's an example (you can download it [here](https://huggingface.co/carefree0910/carefree-learn/resolve/main/tokens/pekora.pt)):
+
+```text
+In [1]: torch.load("apis/tokens/pekora.pt")
+Out[1]: 
+{'<pekora>': tensor([[ 0.2215,  0.5360,  0.3351,  ..., -0.0127,  0.7670, -0.6736],
+         [ 0.3607,  0.0284,  0.2156,  ..., -0.0976, -0.1588, -0.6090],
+         [ 0.4083,  0.5128,  0.2997,  ...,  1.4237,  0.6810,  0.9344],
+         ...,
+         [-0.3016,  0.5349,  0.5534,  ..., -1.4518,  0.2553,  0.5909],
+         [ 0.0146,  0.1349,  0.2838,  ..., -0.1080, -0.5861, -0.0564],
+         [ 0.3456,  0.9846,  0.0444,  ..., -0.3427,  0.2672,  0.3489]],
+        device='cuda:0')}
+```
+
+After you've put the tokens in the `apis/tokens` folder, simply launch the local server and we'll scan all the possible tokens for you. If we found any valid tokens, something like this will be printed:
+
+```text
+> Following tokens are loaded: <pekora>
+```
+
+And then you can utilize the loaded tokens directly in the WebUI:
+
+![textual-inversion](static/images/textual-inversion.jpg)
+
 
 # Installation
 
 `carefree-creator` is built on top of `carefree-learn`, and requires:
-- Python 3.8 / 3.9
-  - Not compatible with other Python versions (Related issue: [#9](https://github.com/carefree0910/carefree-creator/issues/9)) *yet*, but I'm trying to improve!
+- `Python>=3.8`
 - `pytorch>=1.12.0`. Please refer to [PyTorch](https://pytorch.org/get-started/locally/)'s official website, and it is highly recommended to pre-install PyTorch with conda.
 
 ## Hardware Requirements
@@ -534,9 +611,15 @@ The development guide is on our [TODO](#todo) list, but here are some brief intr
 
 As long as we open sourced the **WebUI** you can implement your own UIs, but for now you can contribute to this `carefree-creator` repo and then ask me to do the UI jobs for you (yes, you can be my boss 😆).
 
-#### But is there a handy way? For example, put my checkpoints somewhere and being able to access them?
+> You'll need to use you local server to use your own models!
 
-If you need a handy method (e.g. placing any `*.ckpt` in some directory and get it working), it is *currently* not supported (it's on my [TODO](#todo) though), but we have:
+#### Handy way
+
+1. Place your checkpoints in the `apis/models` folder.
+2. Toggle the `Use Local Model` switch.
+3. Setup `version` & `model`, then press the `Switch to Local Model` button.
+
+> Detailed introductions can be found in the [Custom Checkpoints](#custom-checkpoints) section!
 
 #### Advanced way
 
@@ -654,14 +737,15 @@ Unfortunately I'm not familiar with Discord, so if someone can help me build it 
 
 # TODO
 
+- [x] Erase & Replace
+- [x] Handy way to use custom checkpoints
+- [x] Textual Inversion
 - [ ] User Guide
 - [ ] Development Guide
 - [ ] Other AI generation Techniques
   - [ ] Natural Language Generation (NLG)
   - [ ] Music Generation
   - [ ] Video Generation
-- [ ] Handy way to use custom checkpoints
-- [ ] Textual Inversion
 - [ ] Better Outpainting Techniques
 - [ ] And much more...
 
@@ -669,6 +753,7 @@ Unfortunately I'm not familiar with Discord, so if someone can help me build it 
 # Credits
 
 - [Stable Diffusion](https://github.com/CompVis/stable-diffusion), the foundation of various generation methods.
+- [Stable Diffusion from runwayml](https://github.com/runwayml/stable-diffusion), the adopted SD-inpainting method.
 - [Waifu Diffusion](https://github.com/harubaru/waifu-diffusion), the anime-finetuned version of Stable Diffusion.
 - [Real ESRGAN](https://github.com/xinntao/Real-ESRGAN), the adopted Super Resolution methods.
 - [Latent Diffusion](https://github.com/CompVis/latent-diffusion), the adopted Inpainting & Landscape Synthesis method.
