@@ -32,8 +32,8 @@ def _get(key: str, init: Callable) -> api_type:
     m = apis.get(key)
     if m is not None:
         return m
+    print("> init", key)
     if save_gpu_ram():
-        print("> init", key)
         m = init("cpu")
     else:
         m = init("cuda:0", use_half=True)
