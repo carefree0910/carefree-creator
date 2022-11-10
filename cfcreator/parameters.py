@@ -9,7 +9,9 @@ OPT = dict(
     use_cos=True,
     redis_kwargs=dict(host="localhost", port=6379, db=0),
     kafka_server="172.17.16.8:9092",
+    kafka_topic="creator",
     kafka_group_id="creator-consumer-1",
+    pending_queue_key="KAFKA_PENDING_QUEUE",
 )
 
 
@@ -33,8 +35,16 @@ def kafka_server() -> str:
     return OPT["kafka_server"]
 
 
+def kafka_topic() -> str:
+    return OPT["kafka_topic"]
+
+
 def kafka_group_id() -> str:
     return OPT["kafka_group_id"]
+
+
+def get_pending_queue_key() -> str:
+    return OPT["pending_queue_key"]
 
 
 __all__ = [
@@ -44,5 +54,7 @@ __all__ = [
     "save_gpu_ram",
     "redis_kwargs",
     "kafka_server",
+    "kafka_topic",
     "kafka_group_id",
+    "get_pending_queue_key",
 ]

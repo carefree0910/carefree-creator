@@ -79,7 +79,7 @@ clients = dict(
 )
 
 redis_client = redis.Redis(**redis_kwargs())
-pending_queue_key = "KAFKA_PENDING_QUEUE"
+pending_queue_key = get_pending_queue_key()
 
 
 # algorithms
@@ -106,7 +106,7 @@ def get_pending_queue() -> list:
 async def consume() -> None:
     OPT["verbose"] = False
 
-    topic = "creator"
+    topic = kafka_topic()
     expire_seconds = 10 * 365 * 24 * 3600
 
     redis_client.expire(pending_queue_key, expire_seconds)

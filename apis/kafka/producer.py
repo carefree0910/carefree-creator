@@ -141,7 +141,7 @@ def get_prompt(data: GetPromptModel) -> GetPromptResponse:
 # kafka & redis
 
 
-pending_queue_key = "KAFKA_PENDING_QUEUE"
+pending_queue_key = get_pending_queue_key()
 
 
 def get_redis_number(key: str) -> Optional[int]:
