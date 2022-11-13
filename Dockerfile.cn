@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:21.07-py3
+FROM nvcr.io/nvidia/pytorch:22.09-py3
 WORKDIR /workplace
 COPY . .
 RUN rm -rf /opt/conda/lib/python3.8/site-packages/cv2 && \
