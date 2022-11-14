@@ -103,10 +103,19 @@ def get_pending_queue() -> list:
     return json.loads(data)
 
 
-async def post_callback(url: str, data: Dict[str, Any]) -> None:
+async def post_callback(
+    url: str,
+    uid: str,
+    success: bool,
+    data: Dict[str, Any],
+) -> None:
     if url:
         try:
-            await post(url, data, http_client.session)
+            await post(
+                url,
+                dict(uid=uid, success=success, data=data),
+                http_client.session,
+            )
         except Exception as err:
             print(
                 f"\n\n!!! post to callback_url ({url}) failed "
@@ -187,7 +196,7 @@ async def consume() -> None:
                     json.dumps(dict(status=Status.FINISHED, data=result)),
                 )
                 procedure = "redis -> callback"
-                await post_callback(callback_url, result)
+                await post_callback(callback_url, uid, True, result)
                 procedure = "done"
                 # maintain queue
                 queue = get_pending_queue()
@@ -204,7 +213,7 @@ async def consume() -> None:
                     uid,
                     json.dumps(dict(status=Status.EXCEPTION, data=data)),
                 )
-                await post_callback(callback_url, data)
+                await post_callback(callback_url, uid, False, data)
     finally:
         # clean up
         await http_client.stop()
