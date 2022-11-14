@@ -148,8 +148,8 @@ def upload_image(
     folder: str,
     retry: int = UPLOAD_RETRY,
     timeout: int = UPLOAD_TIMEOUT,
-    part_size: int = PART_SIZE,
-    max_thread: int = MAX_THREAD,
+    # part_size: int = PART_SIZE,
+    # max_thread: int = MAX_THREAD,
 ) -> UploadImageResponse:
     path = f"{folder}/{uuid.uuid4().hex}.png"
     if isinstance(inp, bytes):
@@ -169,12 +169,11 @@ def upload_image(
     client._retry = retry
     client._conf._timeout = timeout
     try:
-        client.upload_file_from_buffer(
-            BUCKET,
-            path,
-            img_bytes,
-            PartSize=part_size,
-            MAXThread=max_thread,
+        client.put_object(
+            Key=path,
+            Body=img_bytes,
+            Bucket=BUCKET,
+            StorageClass="STANDARD",
         )
     except Exception:
         try:
@@ -197,16 +196,16 @@ def upload_image(
 def upload_temp_image(
     client: CosS3Client,
     inp: Union[bytes, np.ndarray, BinaryIO],
-    *,
-    part_size: int = PART_SIZE,
-    max_thread: int = MAX_THREAD,
+    # *,
+    # part_size: int = PART_SIZE,
+    # max_thread: int = MAX_THREAD,
 ) -> UploadImageResponse:
     return upload_image(
         client,
         inp,
         folder=TEMP_IMAGE_FOLDER,
-        part_size=part_size,
-        max_thread=max_thread,
+        # part_size=part_size,
+        # max_thread=max_thread,
     )
 
 
