@@ -219,6 +219,27 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     return ProducerResponseModel(uid=new_uid)
 
 
+class InterruptModel(BaseModel):
+    uid: str
+
+
+class InterruptResponse(BaseModel):
+    success: bool
+    reason: str
+
+
+@app.post("/interrupt", responses=get_responses(InterruptResponse))
+async def interrupt(data: InterruptModel) -> InterruptResponse:
+    existing = redis_client.get(data.uid)
+    if existing is None:
+        return InterruptResponse(success=False, reason="not found")
+    existing = json.loads(existing)
+    redis_client.set(
+        data.uid,
+        json.dumps(dict(status=Status.INTERRUPTED, data=existing.get("data"))),
+    )
+
+
 class ServerStatusModel(BaseModel):
     is_ready: bool
     num_pending: int
@@ -245,6 +266,7 @@ class Status(str, Enum):
     WORKING = "working"
     FINISHED = "finished"
     EXCEPTION = "exception"
+    INTERRUPTED = "interrupted"
     NOT_FOUND = "not_found"
 
 

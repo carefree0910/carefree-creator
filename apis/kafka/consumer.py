@@ -130,7 +130,7 @@ async def consume() -> None:
             if existing is not None:
                 existing = json.loads(existing)
                 print(">>> existing", existing)
-                if existing["status"] in ("finished", "exception"):
+                if existing["status"] in ("finished", "exception", "interrupted"):
                     continue
             print(">>> working", uid)
             data = {} if existing is None else (existing.get("data", {}) or {})
