@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import time
 import yaml
@@ -9,6 +8,7 @@ import datetime
 import logging.config
 
 from kafka import KafkaConsumer
+from typing import Any
 from typing import Dict
 from fastapi import Response
 from qcloud_cos import CosConfig
@@ -17,6 +17,7 @@ from qcloud_cos import CosS3Client
 from cfclient.models import *
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
+from cfclient.utils import post
 from cfclient.utils import get_err_msg
 from cfclient.utils import run_algorithm
 
@@ -102,6 +103,17 @@ def get_pending_queue() -> list:
     return json.loads(data)
 
 
+async def post_callback(url: str, data: Dict[str, Any]) -> None:
+    if url:
+        try:
+            await post(url, data, http_client.session)
+        except Exception as err:
+            print(
+                f"\n\n!!! post to callback_url ({url}) failed "
+                f"({get_err_msg(err)}) !!!\n\n"
+            )
+
+
 # kafka & redis
 async def consume() -> None:
     OPT["verbose"] = False
@@ -126,6 +138,7 @@ async def consume() -> None:
             uid = data["uid"]
             task = data["task"]
             params = data["params"]
+            callback_url = params.get("callback_url", "")
             existing = redis_client.get(uid)
             if existing is not None:
                 existing = json.loads(existing)
@@ -166,6 +179,8 @@ async def consume() -> None:
                 result["end_time"] = end_time
                 result["duration"] = end_time - create_time
                 redis_client.set(uid, json.dumps(dict(status="finished", data=result)))
+                procedure = "redis -> callback"
+                await post_callback(callback_url, result)
                 procedure = "done"
                 # maintain queue
                 queue = get_pending_queue()
@@ -182,6 +197,7 @@ async def consume() -> None:
                     uid,
                     json.dumps(dict(status="exception", data=data)),
                 )
+                await post_callback(callback_url, data)
     finally:
         # clean up
         await http_client.stop()

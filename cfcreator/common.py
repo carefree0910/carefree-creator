@@ -84,6 +84,10 @@ def get_bytes_from_diffusion(img_arr: np.ndarray) -> bytes:
     return np_to_bytes(img_arr)
 
 
+class CallbackModel(BaseModel):
+    callback_url: str = Field("", description="callback url to post to")
+
+
 class MaxWHModel(BaseModel):
     max_wh: int = Field(1024, description="The maximum resolution.")
 
@@ -93,7 +97,7 @@ class VariationModel(BaseModel):
     strength: float = Field(..., description="Strength of the variation.")
 
 
-class DiffusionModel(BaseModel):
+class DiffusionModel(CallbackModel):
     use_circular: bool = Field(
         False,
         description="Whether should we use circular pattern (e.g. generate textures).",

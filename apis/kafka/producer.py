@@ -14,6 +14,7 @@ from typing import Dict
 from typing import Optional
 from typing import NamedTuple
 from fastapi import FastAPI
+from pydantic import Field
 from pydantic import BaseModel
 from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
@@ -154,6 +155,7 @@ def get_redis_number(key: str) -> Optional[int]:
 class ProducerModel(BaseModel):
     task: str
     params: Dict[str, Any]
+    notify_url: str = Field("", description="callback url to post to")
 
 
 class ProducerResponseModel(BaseModel):
@@ -205,6 +207,7 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
         json.dumps(dict(status="pending", data=dict(create_time=time.time()))),
     )
     # send to kafka
+    data.params["callback_url"] = data.notify_url
     kafka_producer.send(
         topic,
         json.dumps(

@@ -24,6 +24,7 @@ from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
 from .common import IAlgorithm
 from .common import Img2ImgModel
+from .common import CallbackModel
 from .common import Img2ImgDiffusionModel
 from .parameters import verbose
 from .parameters import save_gpu_ram
@@ -92,7 +93,7 @@ class Img2ImgSD(IAlgorithm):
         return Response(content=content, media_type="image/png")
 
 
-class Img2ImgSRModel(Img2ImgModel):
+class Img2ImgSRModel(Img2ImgModel, CallbackModel):
     is_anime: bool = Field(
         False,
         description="Whether the input image is an anime image or not.",
