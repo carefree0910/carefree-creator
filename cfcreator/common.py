@@ -84,6 +84,9 @@ def get_bytes_from_diffusion(img_arr: np.ndarray) -> bytes:
     return np_to_bytes(img_arr)
 
 
+# API models
+
+
 class CallbackModel(BaseModel):
     callback_url: str = Field("", description="callback url to post to")
 
@@ -181,6 +184,20 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     )
 
 
+class GetPromptModel(BaseModel):
+    text: str
+    need_translate: bool = Field(
+        True,
+        description="Whether we need to translate the input text.",
+    )
+
+
+class GetPromptResponse(BaseModel):
+    text: str
+    success: bool
+    reason: str
+
+
 def endpoint2algorithm(endpoint: str) -> str:
     return endpoint[1:].replace("/", ".")
 
@@ -194,23 +211,6 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
             return cls.register(endpoint2algorithm(cls_.endpoint))(cls_)
 
         return _register
-
-
-# API models
-
-
-class GetPromptModel(BaseModel):
-    text: str
-    need_translate: bool = Field(
-        True,
-        description="Whether we need to translate the input text.",
-    )
-
-
-class GetPromptResponse(BaseModel):
-    text: str
-    success: bool
-    reason: str
 
 
 # shortcuts
