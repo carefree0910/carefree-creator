@@ -204,7 +204,7 @@ async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
     redis_client.set(pending_queue_key, json.dumps(queue))
     redis_client.set(
         new_uid,
-        json.dumps(dict(status="pending", data=dict(create_time=time.time()))),
+        json.dumps(dict(status=Status.PENDING, data=dict(create_time=time.time()))),
     )
     # send to kafka
     data.params["callback_url"] = data.notify_url
@@ -278,20 +278,20 @@ class StatusData(NamedTuple):
 def fetch_redis(uid: str) -> StatusData:
     data = redis_client.get(uid)
     if data is None:
-        return StatusData(status="not_found", data=None)
+        return StatusData(status=Status.NOT_FOUND, data=None)
     return StatusData(**json.loads(data))
 
 
 @app.get("/status/{uid}", responses=get_responses(StatusModel))
 async def get_status(uid: str) -> StatusModel:
     record = fetch_redis(uid)
-    if record.status == "finished":
+    if record.status == Status.FINISHED:
         lag = 0
     else:
         queue = get_pending_queue()
         pop_indices = []
         for i, i_uid in enumerate(queue):
-            if fetch_redis(i_uid).status == "finished":
+            if fetch_redis(i_uid).status == Status.FINISHED:
                 pop_indices.append(i)
         for idx in pop_indices[::-1]:
             queue.pop(idx)

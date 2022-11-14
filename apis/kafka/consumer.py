@@ -143,14 +143,18 @@ async def consume() -> None:
             if existing is not None:
                 existing = json.loads(existing)
                 print(">>> existing", existing)
-                if existing["status"] in ("finished", "exception", "interrupted"):
+                if existing["status"] in (
+                    Status.FINISHED,
+                    Status.EXCEPTION,
+                    Status.INTERRUPTED,
+                ):
                     continue
             print(">>> working", uid)
             data = {} if existing is None else (existing.get("data", {}) or {})
             start_time = time.time()
             data["start_time"] = start_time
             create_time = data.get("create_time", start_time)
-            redis_client.set(uid, json.dumps(dict(status="working", data=data)))
+            redis_client.set(uid, json.dumps(dict(status=Status.WORKING, data=data)))
             procedure = "start"
             try:
                 algorithm = loaded_algorithms[task]
@@ -178,7 +182,10 @@ async def consume() -> None:
                 end_time = time.time()
                 result["end_time"] = end_time
                 result["duration"] = end_time - create_time
-                redis_client.set(uid, json.dumps(dict(status="finished", data=result)))
+                redis_client.set(
+                    uid,
+                    json.dumps(dict(status=Status.FINISHED, data=result)),
+                )
                 procedure = "redis -> callback"
                 await post_callback(callback_url, result)
                 procedure = "done"
@@ -195,7 +202,7 @@ async def consume() -> None:
                 data["duration"] = end_time - create_time
                 redis_client.set(
                     uid,
-                    json.dumps(dict(status="exception", data=data)),
+                    json.dumps(dict(status=Status.EXCEPTION, data=data)),
                 )
                 await post_callback(callback_url, data)
     finally:
