@@ -264,15 +264,6 @@ async def server_status() -> ServerStatusModel:
     )
 
 
-class Status(str, Enum):
-    PENDING = "pending"
-    WORKING = "working"
-    FINISHED = "finished"
-    EXCEPTION = "exception"
-    INTERRUPTED = "interrupted"
-    NOT_FOUND = "not_found"
-
-
 class StatusModel(BaseModel):
     status: Status
     pending: int

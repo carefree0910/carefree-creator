@@ -3,6 +3,7 @@ import torch
 import numpy as np
 
 from abc import ABCMeta
+from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
@@ -213,6 +214,18 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         return _register
 
 
+# kafka
+
+
+class Status(str, Enum):
+    PENDING = "pending"
+    WORKING = "working"
+    FINISHED = "finished"
+    EXCEPTION = "exception"
+    INTERRUPTED = "interrupted"
+    NOT_FOUND = "not_found"
+
+
 # shortcuts
 
 
@@ -258,6 +271,7 @@ __all__ = [
     "Img2ImgDiffusionModel",
     "GetPromptModel",
     "GetPromptResponse",
+    "Status",
     "get_api",
     "available_apis",
 ]
