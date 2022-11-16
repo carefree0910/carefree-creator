@@ -15,6 +15,7 @@ from typing import Optional
 from aiohttp import ClientSession
 from pydantic import Field
 from pydantic import BaseModel
+from cfclient.utils import get_err_msg
 from cfclient.utils import download_image_with_retry as download
 
 from .parameters import use_cos
@@ -210,13 +211,14 @@ def upload_temp_image(
 
 
 def audit_image(client: CosS3Client, path: str) -> AuditResponse:
-    res = client.get_object_sensitive_content_recognition(
-        BUCKET,
-        path,
-        BizType=IMAGE_BIZ_TYPE,
-    )
-    label = res["Label"]
-    return AuditResponse(safe=label == "Normal", reason=label)
+    time.sleep(1)
+    try:
+        res = client.get_object_acl(BUCKET, path)
+        safe = res["CannedACL"] != "private"
+        reason = "" if safe else "unknown"
+        return AuditResponse(safe=safe, reason=reason)
+    except Exception as err:
+        return AuditResponse(safe=False, reason=get_err_msg(err))
 
 
 async def download_image_with_retry(
