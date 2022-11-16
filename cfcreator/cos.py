@@ -32,8 +32,8 @@ REGION = "ap-shanghai"
 BUCKET = "ailab-1310750649"
 CDN_HOST = "https://ailabcdn.nolibox.com"
 COS_HOST = "https://ailab-1310750649.cos.ap-shanghai.myqcloud.com"
-TEXT_BIZ_TYPE = "56daee337ae2d847e55838c0ddb6d547"
-IMAGE_BIZ_TYPE = "aeb9f1736399386b4bdcc5496ece5289"
+TEXT_BIZ_TYPE = "721ba17a279d5074cccd53587610dec4"
+IMAGE_BIZ_TYPE = "f64516c2fdf256f9a5d0c45cd4e756a0"
 SECRET_ID = os.getenv("SECRETID")
 SECRET_KEY = os.getenv("SECRETKEY")
 
