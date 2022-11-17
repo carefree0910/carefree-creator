@@ -304,6 +304,21 @@ async def get_status(uid: str) -> StatusModel:
     return StatusModel(status=record.status, data=record.data, pending=lag)
 
 
+# audit
+
+
+class AuditCallbackModel(BaseModel):
+    EventName: str
+    JobsDetail: AuditJobsDetailModel
+
+
+async def audit_callback(data: AuditCallbackModel) -> None:
+    redis_client.set(
+        data.JobsDetail.Url,
+        json.dumps(data.JobsDetail.dict()),
+    )
+
+
 # events
 
 

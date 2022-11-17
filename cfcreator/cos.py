@@ -9,6 +9,8 @@ import numpy as np
 
 from io import BytesIO
 from PIL import Image
+from enum import Enum
+from redis import Redis
 from typing import Union
 from typing import BinaryIO
 from typing import Optional
@@ -221,6 +223,20 @@ def audit_image(client: CosS3Client, path: str) -> AuditResponse:
         return AuditResponse(safe=False, reason=get_err_msg(err))
 
 
+class ForbidEnum(int, Enum):
+    NONE = 0
+    FROZEN = 1
+    MIGRATED = 2
+
+
+class AuditJobsDetailModel(BaseModel):
+    Url: str
+    Label: str
+    Category: str
+    SubLabel: str
+    ForbidState: ForbidEnum
+
+
 async def download_image_with_retry(
     session: ClientSession,
     url: str,
@@ -244,6 +260,8 @@ __all__ = [
     "upload_image",
     "upload_temp_image",
     "audit_image",
+    "ForbidEnum",
+    "AuditJobsDetailModel",
     "AuditResponse",
     "UploadImageResponse",
 ]
