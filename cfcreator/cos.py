@@ -1,5 +1,6 @@
 import io
 import os
+import json
 import time
 import uuid
 import logging
@@ -16,15 +17,16 @@ from typing import Optional
 from aiohttp import ClientSession
 from pydantic import Field
 from pydantic import BaseModel
-from cfclient.utils import get_err_msg
 from cfclient.utils import download_image_with_retry as download
 
 from .parameters import use_cos
 
 try:
+    from redis import Redis
     from qcloud_cos import CosConfig
     from qcloud_cos import CosS3Client
 except:
+    Redis = None
     CosConfig = None
     CosS3Client = None
 
@@ -211,17 +213,6 @@ def upload_temp_image(
     )
 
 
-def audit_image(client: CosS3Client, path: str) -> AuditResponse:
-    time.sleep(1)
-    try:
-        res = client.get_object_acl(BUCKET, path)
-        safe = res["CannedACL"] != "private"
-        reason = "" if safe else "unknown"
-        return AuditResponse(safe=safe, reason=reason)
-    except Exception as err:
-        return AuditResponse(safe=False, reason=get_err_msg(err))
-
-
 class ForbidEnum(int, Enum):
     NONE = 0
     FROZEN = 1
@@ -234,6 +225,25 @@ class AuditJobsDetailModel(BaseModel):
     Category: str
     SubLabel: str
     ForbidState: ForbidEnum
+
+
+def audit_image(audit_client: Redis, path: str, timeout: int = 3) -> AuditResponse:
+    t = time.time()
+    while time.time() - t <= timeout:
+        res = audit_client.get(path)
+        if res is None:
+            time.sleep(0.1)
+            continue
+        data = AuditJobsDetailModel(**json.loads(res))
+        if data.Label == "Normal" and data.ForbidState == ForbidEnum.NONE:
+            return AuditResponse(safe=True, reason="")
+        reason = data.Label
+        if data.Category:
+            reason = f"{reason}/{data.Category}"
+        if data.SubLabel:
+            reason = f"{reason}/{data.SubLabel}"
+        return AuditResponse(safe=False, reason=reason)
+    return AuditResponse(safe=False, reason="timeout")
 
 
 async def download_image_with_retry(
@@ -267,8 +277,16 @@ __all__ = [
 
 
 if __name__ == "__main__":
+    import redis
+    from cfcreator.parameters import audit_redis_kwargs
+
     config = CosConfig(Region=REGION, SecretId=SECRET_ID, SecretKey=SECRET_KEY)
     cos_client = CosS3Client(config)
+    redis_client = redis.Redis(**audit_redis_kwargs())
     print(">>> start uploading")
-    print(upload_temp_image(cos_client, np.zeros([64, 64], np.uint8)))
+    # res = upload_temp_image(cos_client, np.zeros([64, 64], np.uint8))
+    res = upload_temp_image(cos_client, np.array(Image.open("test.jpg")))
+    print(res)
+    print(">>> audit image")
+    print(audit_image(redis_client, res.path))
     print(">>> upload completed")

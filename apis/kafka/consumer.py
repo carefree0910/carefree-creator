@@ -80,6 +80,7 @@ clients = dict(
 )
 
 redis_client = redis.Redis(**redis_kwargs())
+audit_redis_client = redis.Redis(**audit_redis_kwargs())
 pending_queue_key = get_pending_queue_key()
 
 
@@ -175,7 +176,7 @@ async def consume() -> None:
                 procedure = "upload_temp_image -> audit_image"
                 if task != "img2img.sr":
                     try:
-                        audit = audit_image(cos_client, urls.path)
+                        audit = audit_image(audit_redis_client, urls.path)
                     except:
                         audit = AuditResponse(safe=False, reason="unknown")
                 else:
