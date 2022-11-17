@@ -10,7 +10,6 @@ import numpy as np
 from io import BytesIO
 from PIL import Image
 from enum import Enum
-from redis import Redis
 from typing import Union
 from typing import BinaryIO
 from typing import Optional
