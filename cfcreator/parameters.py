@@ -8,6 +8,7 @@ OPT = dict(
     save_gpu_ram=False,
     use_cos=True,
     redis_kwargs=dict(host="localhost", port=6379, db=0),
+    audit_redis_kwargs=dict(host="172.17.16.7", port=6379, db=1),
     kafka_server="172.17.16.8:9092",
     kafka_topic="creator",
     kafka_group_id="creator-consumer-1",
@@ -29,6 +30,10 @@ def use_cos() -> bool:
 
 def redis_kwargs() -> Dict[str, Any]:
     return shallow_copy_dict(OPT["redis_kwargs"])
+
+
+def audit_redis_kwargs() -> Dict[str, Any]:
+    return shallow_copy_dict(OPT["audit_redis_kwargs"])
 
 
 def kafka_server() -> str:
@@ -53,6 +58,7 @@ __all__ = [
     "verbose",
     "save_gpu_ram",
     "redis_kwargs",
+    "audit_redis_kwargs",
     "kafka_server",
     "kafka_topic",
     "kafka_group_id",
