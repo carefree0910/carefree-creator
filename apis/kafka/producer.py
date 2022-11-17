@@ -314,8 +314,10 @@ class AuditCallbackModel(BaseModel):
 
 @app.post("/audit_callback")
 async def audit_callback(data: AuditCallbackModel) -> None:
+    key = data.JobsDetail.Object
+    redis_client.expire(key, 3600)
     redis_client.set(
-        data.JobsDetail.Object,
+        key,
         json.dumps(data.JobsDetail.dict()),
     )
 
