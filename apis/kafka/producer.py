@@ -312,6 +312,7 @@ class AuditCallbackModel(BaseModel):
     JobsDetail: AuditJobsDetailModel
 
 
+@app.post("/audit_callback")
 async def audit_callback(data: AuditCallbackModel) -> None:
     redis_client.set(
         data.JobsDetail.Url,
