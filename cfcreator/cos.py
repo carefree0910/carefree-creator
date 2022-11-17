@@ -229,7 +229,7 @@ class ForbidEnum(int, Enum):
 
 
 class AuditJobsDetailModel(BaseModel):
-    Url: str
+    Object: str
     Label: str
     Category: str
     SubLabel: str
