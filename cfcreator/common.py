@@ -127,7 +127,7 @@ Seed of the variation generation.
         description="Strength of the variation generation.",
     )
     variations: List[VariationModel] = Field([], description="Variation ingredients")
-    num_steps: int = Field(50, description="Number of sampling steps", ge=5, le=100)
+    num_steps: int = Field(25, description="Number of sampling steps", ge=5, le=100)
     guidance_scale: float = Field(
         7.5,
         description="Guidance scale for classifier-free guidance.",
@@ -136,8 +136,8 @@ Seed of the variation generation.
         "",
         description="Negative prompt for classifier-free guidance.",
     )
-    version: str = Field("", description="Version of the diffusion model")
-    sampler: str = Field("klms", description="Sampler of the diffusion model")
+    version: str = Field("v1.5", description="Version of the diffusion model")
+    sampler: str = Field("solver", description="Sampler of the diffusion model")
     custom_embeddings: Dict[str, List[List[float]]] = Field(
         {},
         description="Custom embeddings, often used in textual inversion.",
