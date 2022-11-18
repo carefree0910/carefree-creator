@@ -109,6 +109,8 @@ class DiffusionModel(CallbackModel):
     use_seed: bool = Field(False, description="Whether should we use seed.")
     seed: int = Field(
         0,
+        ge=0,
+        lt=2**32,
         description="""
 Seed of the generation.
 > Only take effects when `use_refine` is set to True.
