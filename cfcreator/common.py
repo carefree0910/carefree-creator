@@ -127,7 +127,7 @@ Seed of the variation generation.
         description="Strength of the variation generation.",
     )
     variations: List[VariationModel] = Field([], description="Variation ingredients")
-    num_steps: int = Field(50, description="Number of sampling steps")
+    num_steps: int = Field(50, description="Number of sampling steps", ge=5, le=100)
     guidance_scale: float = Field(
         7.5,
         description="Guidance scale for classifier-free guidance.",
