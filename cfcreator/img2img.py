@@ -38,7 +38,12 @@ img2img_semantic2img_endpoint = "/img2img/semantic2img"
 
 class Img2ImgSDModel(Img2ImgDiffusionModel):
     text: str = Field(..., description="The text that we want to handle.")
-    fidelity: float = Field(0.2, description="The fidelity of the input image.")
+    fidelity: float = Field(
+        0.2,
+        ge=0.0,
+        le=1.0,
+        description="The fidelity of the input image.",
+    )
     keep_alpha: bool = Field(
         True,
         description="""
