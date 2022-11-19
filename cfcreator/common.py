@@ -26,19 +26,21 @@ from .parameters import save_gpu_ram
 
 
 apis = {}
+init_fns = {}
 api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
-def _get(key: str, init: Callable) -> api_type:
+def _get(key: str, init_fn: Callable) -> api_type:
     m = apis.get(key)
     if m is not None:
         return m
     print("> init", key)
     if save_gpu_ram():
-        m = init("cpu")
+        m = init_fn("cpu")
     else:
-        m = init("cuda:0", use_half=True)
+        m = init_fn("cuda:0", use_half=True)
     apis[key] = m
+    init_fns[key] = init_fn
     return m
 
 
@@ -238,8 +240,8 @@ class SDParameters(BaseModel):
 
 def init_sd_ms() -> Dict[str, DiffusionAPI]:
     return {
-        "": get_sd(),
-        "v1.5": get_sd_version("v1.5"),
+        # "": get_sd(),
+        # "v1.5": get_sd_version("v1.5"),
         "anime": get_sd_anime(),
     }
 
@@ -261,6 +263,10 @@ def get_api(key: str) -> Optional[api_type]:
     return apis.get(key)
 
 
+def get_init_fn(key: str) -> Optional[Callable]:
+    return init_fns.get(key)
+
+
 def available_apis() -> List[str]:
     return sorted(apis)
 
@@ -275,5 +281,6 @@ __all__ = [
     "GetPromptResponse",
     "Status",
     "get_api",
+    "get_init_fn",
     "available_apis",
 ]
