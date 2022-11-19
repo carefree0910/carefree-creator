@@ -240,8 +240,8 @@ class SDParameters(BaseModel):
 
 def init_sd_ms() -> Dict[str, DiffusionAPI]:
     return {
-        # "": get_sd(),
-        # "v1.5": get_sd_version("v1.5"),
+        "": get_sd(),
+        "v1.5": get_sd_version("v1.5"),
         "anime": get_sd_anime(),
     }
 
