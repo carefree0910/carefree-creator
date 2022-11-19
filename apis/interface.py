@@ -194,6 +194,15 @@ class SwitchCheckpointRootResponse(BaseModel):
     reason: str
 
 
+class ResetCheckpointModel(BaseModel):
+    version: str
+
+
+class ResetCheckpointResponse(BaseModel):
+    success: bool
+    reason: str
+
+
 def _get_available_local_models(root: str) -> List[str]:
     if not os.path.isdir(root):
         return []
@@ -240,6 +249,24 @@ def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
     except Exception as err:
         logging.exception(err)
         return SwitchCheckpointResponse(success=False, reason=get_err_msg(err))
+
+
+@app.post("/reset", responses=get_responses(ResetCheckpointResponse))
+def reset_checkpoint(data: ResetCheckpointModel) -> ResetCheckpointResponse:
+    err_msg = f"'{data.version}' is not a valid version, available versions are: {', '.join(available_apis())}"
+    current = get_api(data.version)
+    if current is None:
+        return ResetCheckpointResponse(success=False, reason=err_msg)
+    init_fn = get_init_fn(data.version)
+    if init_fn is None:
+        return ResetCheckpointResponse(success=False, reason=err_msg)
+    try:
+        with init_fn("cpu").load_context() as wrapper:
+            od = wrapper.state_dict()
+        cflearn.scripts.sd.inject(od, current)
+        return ResetCheckpointResponse(success=True, reason="")
+    except Exception as err:
+        return ResetCheckpointResponse(success=False, reason=get_err_msg(err))
 
 
 @app.post("/switch_root", responses=get_responses(SwitchCheckpointRootResponse))
