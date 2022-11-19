@@ -170,7 +170,6 @@ class ModelRootResponse(BaseModel):
 class SwitchCheckpointModel(BaseModel):
     key: str
     model: str
-    is_full_path: bool = False
 
 
 class SwitchCheckpointResponse(BaseModel):
@@ -229,10 +228,7 @@ def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
             success=False,
             reason=f"'{data.key}' is not a valid key, available keys are: {', '.join(available_apis())}",
         )
-    if data.is_full_path:
-        model_path = data.model
-    else:
-        model_path = os.path.join(constants["model_root"], data.model)
+    model_path = os.path.join(constants["model_root"], data.model)
     if not os.path.isfile(model_path):
         return SwitchCheckpointResponse(
             success=False,
