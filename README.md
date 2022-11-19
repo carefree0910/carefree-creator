@@ -471,7 +471,7 @@ This feature will be very useful if you want to use the WebUI features along wit
 
 If you only need your own checkpoint to generate images, it will be handy to choose the `sd_v1.5` as the `version`. In this case, we'll use your checkpoint by default.
 
-> This process **CANNOT** be reversed! If you want to use the original model, you'll have to restart your server. 😔
+> This process can be reversed by pressing the `Reset` button! 😉
 
 ## Textual Inversion
 
