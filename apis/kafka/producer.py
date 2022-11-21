@@ -306,6 +306,9 @@ async def get_status(uid: str) -> StatusModel:
             redis_client.set(pending_queue_key, json.dumps(queue))
         try:
             lag = queue.index(uid)
+            for i in range(lag):
+                if fetch_redis(queue[i]).status == Status.EXCEPTION:
+                    lag -= 1
         except:
             lag = len(queue) - 1
     return StatusModel(status=record.status, data=record.data, pending=lag)
