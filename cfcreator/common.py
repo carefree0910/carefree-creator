@@ -30,6 +30,12 @@ init_fns = {}
 api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
+class SDVersions(str, Enum):
+    v1_4 = ""
+    v1_5 = "v1.5"
+    ANIME = "anime"
+
+
 def _get(key: str, init_fn: Callable) -> api_type:
     m = apis.get(key)
     if m is not None:
@@ -48,7 +54,7 @@ def get_sd() -> DiffusionAPI:
     return _get("sd", DiffusionAPI.from_sd)
 
 
-def get_sd_version(version: str) -> DiffusionAPI:
+def get_sd_version(version: SDVersions) -> DiffusionAPI:
     return _get(f"sd_{version}", partial(DiffusionAPI.from_sd_version, version))
 
 
@@ -140,7 +146,10 @@ Seed of the variation generation.
         "",
         description="Negative prompt for classifier-free guidance.",
     )
-    version: str = Field("v1.5", description="Version of the diffusion model")
+    version: SDVersions = Field(
+        SDVersions.v1_5,
+        description="Version of the diffusion model",
+    )
     sampler: str = Field("solver", description="Sampler of the diffusion model")
     custom_embeddings: Dict[str, List[List[float]]] = Field(
         {},
