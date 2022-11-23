@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from cfclient.utils import download_image_with_retry as download
 
 from .parameters import use_cos
+from .parameters import bypass_audit
 
 try:
     from redis import Redis
@@ -228,6 +229,8 @@ class AuditJobsDetailModel(BaseModel):
 
 
 def audit_image(audit_client: Redis, path: str, timeout: int = 3) -> AuditResponse:
+    if bypass_audit():
+        return AuditResponse(safe=True, reason="")
     t = time.time()
     while time.time() - t <= timeout:
         res = audit_client.get(path)

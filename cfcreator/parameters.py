@@ -9,6 +9,7 @@ OPT = dict(
     use_cos=True,
     redis_kwargs=dict(host="localhost", port=6379, db=0),
     audit_redis_kwargs=dict(host="172.17.16.7", port=6379, db=1),
+    bypass_audit=False,
     kafka_server="172.17.16.8:9092",
     kafka_topic="creator",
     kafka_group_id="creator-consumer-1",
@@ -34,6 +35,10 @@ def redis_kwargs() -> Dict[str, Any]:
 
 def audit_redis_kwargs() -> Dict[str, Any]:
     return shallow_copy_dict(OPT["audit_redis_kwargs"])
+
+
+def bypass_audit() -> bool:
+    return OPT["bypass_audit"]
 
 
 def kafka_server() -> str:
