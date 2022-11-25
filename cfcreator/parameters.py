@@ -1,5 +1,6 @@
 from typing import Any
 from typing import Dict
+from fastapi import Response
 from cftool.misc import shallow_copy_dict
 
 
@@ -7,6 +8,7 @@ OPT = dict(
     verbose=True,
     save_gpu_ram=False,
     use_cos=True,
+    request_domain="localhost",
     redis_kwargs=dict(host="localhost", port=6379, db=0),
     audit_redis_kwargs=dict(host="172.17.16.7", port=6379, db=1),
     bypass_audit=False,
@@ -27,6 +29,10 @@ def save_gpu_ram() -> bool:
 
 def use_cos() -> bool:
     return OPT["use_cos"]
+
+
+def inject_headers(response: Response) -> None:
+    response.headers["X-Request-Domain"] = OPT["request_domain"]
 
 
 def redis_kwargs() -> Dict[str, Any]:
@@ -62,6 +68,7 @@ __all__ = [
     "use_cos",
     "verbose",
     "save_gpu_ram",
+    "inject_headers",
     "redis_kwargs",
     "audit_redis_kwargs",
     "kafka_server",

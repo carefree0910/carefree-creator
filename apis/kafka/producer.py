@@ -14,6 +14,7 @@ from typing import Dict
 from typing import Optional
 from typing import NamedTuple
 from fastapi import FastAPI
+from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
 from qcloud_cos import CosConfig
@@ -131,7 +132,8 @@ async def health_check() -> HealthCheckResponse:
 
 @app.post("/translate")
 @app.post("/get_prompt")
-def get_prompt(data: GetPromptModel) -> GetPromptResponse:
+def get_prompt(data: GetPromptModel, response: Response) -> GetPromptResponse:
+    inject_headers(response)
     text = data.text
     audit = audit_text(cos_client, text)
     if not audit.safe:
@@ -167,7 +169,12 @@ queue_timeout_threshold = 30 * 60
 
 
 @app.post("/push/{topic}", responses=get_responses(ProducerResponseModel))
-async def push(data: ProducerModel, topic: str) -> ProducerResponseModel:
+async def push(
+    data: ProducerModel,
+    topic: str,
+    response: Response,
+) -> ProducerResponseModel:
+    inject_headers(response)
     new_uid = random_hash()
     queue = get_pending_queue()
     # check timeout
@@ -232,7 +239,8 @@ class InterruptResponse(BaseModel):
 
 
 @app.post("/interrupt", responses=get_responses(InterruptResponse))
-async def interrupt(data: InterruptModel) -> InterruptResponse:
+async def interrupt(data: InterruptModel, response: Response) -> InterruptResponse:
+    inject_headers(response)
     existing = redis_client.get(data.uid)
     if existing is None:
         return InterruptResponse(success=False, reason="not found")
@@ -290,7 +298,8 @@ def fetch_redis(uid: str) -> StatusData:
 
 
 @app.get("/status/{uid}", responses=get_responses(StatusModel))
-async def get_status(uid: str) -> StatusModel:
+async def get_status(uid: str, response: Response) -> StatusModel:
+    inject_headers(response)
     record = fetch_redis(uid)
     if record.status == Status.FINISHED:
         lag = 0
