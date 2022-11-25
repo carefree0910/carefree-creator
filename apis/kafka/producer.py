@@ -270,12 +270,21 @@ def get_pending_queue() -> list:
     return json.loads(data)
 
 
+def get_real_lag(queue: list) -> int:
+    lag = len(queue)
+    for uid in queue:
+        if fetch_redis(uid).status == Status.EXCEPTION:
+            lag -= 1
+    return lag
+
+
 @app.get("/server_status", responses=get_responses(ServerStatusModel))
-async def server_status() -> ServerStatusModel:
+async def server_status(response: Response) -> ServerStatusModel:
+    inject_headers(response)
     members = kafka_admin.describe_consumer_groups([kafka_group_id()])[0].members
     return ServerStatusModel(
         is_ready=len(members) > 0,
-        num_pending=len(get_pending_queue()),
+        num_pending=get_real_lag(get_pending_queue()),
     )
 
 
