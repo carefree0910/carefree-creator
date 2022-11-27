@@ -140,6 +140,8 @@ async def consume() -> None:
         topic,
         group_id=kafka_group_id(),
         bootstrap_servers=kafka_server(),
+        max_poll_records=kafka_max_poll_records(),
+        max_poll_interval_ms=kafka_max_poll_interval_ms(),
     )
     # main loop
     try:

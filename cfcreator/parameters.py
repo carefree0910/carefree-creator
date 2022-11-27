@@ -15,6 +15,8 @@ OPT = dict(
     kafka_server="172.17.16.8:9092",
     kafka_topic="creator",
     kafka_group_id="creator-consumer-1",
+    kafka_max_poll_records=1,
+    kafka_max_poll_interval_ms=5 * 60 * 1000,
     pending_queue_key="KAFKA_PENDING_QUEUE",
 )
 
@@ -59,6 +61,14 @@ def kafka_group_id() -> str:
     return OPT["kafka_group_id"]
 
 
+def kafka_max_poll_records() -> int:
+    return OPT["kafka_max_poll_records"]
+
+
+def kafka_max_poll_interval_ms() -> int:
+    return OPT["kafka_max_poll_interval_ms"]
+
+
 def get_pending_queue_key() -> str:
     return OPT["pending_queue_key"]
 
@@ -74,5 +84,7 @@ __all__ = [
     "kafka_server",
     "kafka_topic",
     "kafka_group_id",
+    "kafka_max_poll_records",
+    "kafka_max_poll_interval_ms",
     "get_pending_queue_key",
 ]
