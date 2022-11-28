@@ -281,7 +281,7 @@ def get_real_lag(queue: List[str]) -> int:
     lag = len(queue)
     for uid in queue:
         status = fetch_redis(uid).status
-        if status == Status.FINISHED or status == Status.EXCEPTION:
+        if status in (Status.FINISHED, Status.EXCEPTION, Status.INTERRUPTED):
             lag -= 1
     return lag
 
