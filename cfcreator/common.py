@@ -109,6 +109,15 @@ class VariationModel(BaseModel):
     strength: float = Field(..., description="Strength of the variation.")
 
 
+class SDSamplers(str, Enum):
+    DDIM = "ddim"
+    PLMS = "plms"
+    KLMS = "klms"
+    SOLVER = "solver"
+    K_EULER = "k_euler"
+    K_EULER_A = "k_euler_a"
+
+
 class DiffusionModel(CallbackModel):
     use_circular: bool = Field(
         False,
@@ -150,7 +159,10 @@ Seed of the variation generation.
         SDVersions.v1_5,
         description="Version of the diffusion model",
     )
-    sampler: str = Field("solver", description="Sampler of the diffusion model")
+    sampler: SDSamplers = Field(
+        SDSamplers.SOLVER,
+        description="Sampler of the diffusion model",
+    )
     custom_embeddings: Dict[str, List[List[float]]] = Field(
         {},
         description="Custom embeddings, often used in textual inversion.",
