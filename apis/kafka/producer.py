@@ -318,7 +318,7 @@ def fetch_redis(uid: str) -> StatusData:
 async def get_status(uid: str, response: Response) -> StatusModel:
     inject_headers(response)
     record = fetch_redis(uid)
-    if record.status == Status.FINISHED:
+    if record.status != Status.PENDING:
         lag = 0
     else:
         queue = get_pending_queue()
@@ -334,9 +334,11 @@ async def get_status(uid: str, response: Response) -> StatusModel:
         if pop_indices and queue_size == len(latest_queue):
             redis_client.set(pending_queue_key, json.dumps(queue))
         try:
-            lag = get_real_lag(latest_queue[: latest_queue.index(uid)])
+            lag = get_real_lag(latest_queue[: latest_queue.index(uid)]) + 1
         except:
-            lag = len(latest_queue) - 1
+            lag = len(latest_queue) + 1
+            latest_queue.append(uid)
+            redis_client.set(pending_queue_key, json.dumps(latest_queue))
     return StatusModel(status=record.status, data=record.data, pending=lag)
 
 
