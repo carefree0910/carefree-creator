@@ -169,12 +169,8 @@ class ProducerResponseModel(BaseModel):
 queue_timeout_threshold = 30 * 60
 
 
-@app.post("/push/{topic}", responses=get_responses(ProducerResponseModel))
-async def push(
-    data: ProducerModel,
-    topic: str,
-    response: Response,
-) -> ProducerResponseModel:
+@app.post("/push", responses=get_responses(ProducerResponseModel))
+async def push(data: ProducerModel, response: Response) -> ProducerResponseModel:
     def get_clean_queue() -> List[str]:
         queue = get_pending_queue()
         queue_size = len(queue)
@@ -227,7 +223,7 @@ async def push(
     # send to kafka
     data.params["callback_url"] = data.notify_url
     kafka_producer.send(
-        topic,
+        kafka_topic(),
         json.dumps(
             dict(
                 uid=new_uid,
