@@ -11,6 +11,7 @@ from kafka import KafkaProducer
 from kafka import KafkaAdminClient
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import NamedTuple
 from fastapi import FastAPI
@@ -174,39 +175,49 @@ async def push(
     topic: str,
     response: Response,
 ) -> ProducerResponseModel:
+    def get_clean_queue() -> List[str]:
+        queue = get_pending_queue()
+        queue_size = len(queue)
+        # check timeout
+        clear_indices = []
+        for i, uid in enumerate(queue):
+            uid_pack = redis_client.get(uid)
+            if uid_pack is None:
+                continue
+            uid_pack = json.loads(uid_pack)
+            create_time = (uid_pack.get("data", {}) or {}).get("create_time", None)
+            start_time = (uid_pack.get("data", {}) or {}).get("start_time", None)
+            i_cleared = False
+            for t in [create_time, start_time]:
+                if i_cleared:
+                    break
+                if t is not None:
+                    if time.time() - t >= queue_timeout_threshold:
+                        clear_indices.append(i)
+                        i_cleared = True
+        for idx in clear_indices[::-1]:
+            queue.pop(idx)
+        # check redundant
+        exist = set()
+        clear_indices = []
+        for i, uid in enumerate(queue):
+            if uid not in exist:
+                exist.add(uid)
+            else:
+                clear_indices.append(i)
+        for idx in clear_indices[::-1]:
+            queue.pop(idx)
+        # if pending queue is already updated, ignore the cleanups and return the latest queue
+        latest_queue = get_pending_queue()
+        if queue_size != len(latest_queue):
+            return latest_queue
+        # otherwise, return the latest queue
+        return queue
+
     inject_headers(response)
     new_uid = random_hash()
-    queue = get_pending_queue()
-    # check timeout
-    clear_indices = []
-    for i, uid in enumerate(queue):
-        uid_pack = redis_client.get(uid)
-        if uid_pack is None:
-            continue
-        uid_pack = json.loads(uid_pack)
-        create_time = (uid_pack.get("data", {}) or {}).get("create_time", None)
-        start_time = (uid_pack.get("data", {}) or {}).get("start_time", None)
-        i_cleared = False
-        for t in [create_time, start_time]:
-            if i_cleared:
-                break
-            if t is not None:
-                if time.time() - t >= queue_timeout_threshold:
-                    clear_indices.append(i)
-                    i_cleared = True
-    for idx in clear_indices[::-1]:
-        queue.pop(idx)
-    # check redundant
-    exist = set()
-    clear_indices = []
-    for i, uid in enumerate(queue):
-        if uid not in exist:
-            exist.add(uid)
-        else:
-            clear_indices.append(i)
-    for idx in clear_indices[::-1]:
-        queue.pop(idx)
     # append new uid and dump
+    queue = get_clean_queue()
     queue.append(new_uid)
     redis_client.set(pending_queue_key, json.dumps(queue))
     redis_client.set(
@@ -263,17 +274,18 @@ class ServerStatusModel(BaseModel):
     num_pending: int
 
 
-def get_pending_queue() -> list:
+def get_pending_queue() -> List[str]:
     data = redis_client.get(pending_queue_key)
     if data is None:
         return []
     return json.loads(data)
 
 
-def get_real_lag(queue: list) -> int:
+def get_real_lag(queue: List[str]) -> int:
     lag = len(queue)
     for uid in queue:
-        if fetch_redis(uid).status == Status.EXCEPTION:
+        status = fetch_redis(uid).status
+        if status == Status.FINISHED or status == Status.EXCEPTION:
             lag -= 1
     return lag
 
@@ -314,18 +326,21 @@ async def get_status(uid: str, response: Response) -> StatusModel:
         lag = 0
     else:
         queue = get_pending_queue()
+        queue_size = len(queue)
         pop_indices = []
         for i, i_uid in enumerate(queue):
             if fetch_redis(i_uid).status == Status.FINISHED:
                 pop_indices.append(i)
         for idx in pop_indices[::-1]:
             queue.pop(idx)
-        if pop_indices:
+        # update pending queue only if it is not updated during the cleanup
+        latest_queue = get_pending_queue()
+        if pop_indices and queue_size == len(latest_queue):
             redis_client.set(pending_queue_key, json.dumps(queue))
         try:
-            lag = get_real_lag(queue[: queue.index(uid)])
+            lag = get_real_lag(latest_queue[: latest_queue.index(uid)])
         except:
-            lag = len(queue) - 1
+            lag = len(latest_queue) - 1
     return StatusModel(status=record.status, data=record.data, pending=lag)
 
 
