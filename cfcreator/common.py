@@ -130,7 +130,7 @@ class DiffusionModel(CallbackModel):
         lt=2**32,
         description="""
 Seed of the generation.
-> Only take effects when `use_refine` is set to True.
+> Only take effects when `use_seed` is set to True.
 """,
     )
     variation_seed: int = Field(
