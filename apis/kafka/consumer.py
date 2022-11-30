@@ -170,8 +170,10 @@ async def consume() -> None:
                 model = algorithm.model_class(**params)  # type: ignore
                 procedure = "start -> run_algorithm"
                 res: Response = await run_algorithm(algorithm, model)
+                t1 = time.time()
                 procedure = "run_algorithm -> upload_temp_image"
                 urls = upload_temp_image(cos_client, res.body)
+                t2 = time.time()
                 procedure = "upload_temp_image -> audit_image"
                 if task != "img2img.sr":
                     try:
@@ -180,6 +182,7 @@ async def consume() -> None:
                         audit = AuditResponse(safe=False, reason="unknown")
                 else:
                     audit = AuditResponse(safe=True, reason="")
+                t3 = time.time()
                 procedure = "audit_image -> redis"
                 result = dict(
                     cdn=urls.cdn if audit.safe else "",
@@ -191,12 +194,30 @@ async def consume() -> None:
                 end_time = time.time()
                 result["end_time"] = end_time
                 result["duration"] = end_time - create_time
+                result["elapsed_times"] = dict(
+                    run_algorithm=t1 - start_time,
+                    upload=t2 - t1,
+                    audit=t3 - t2,
+                )
                 redis_client.set(
                     uid,
                     json.dumps(dict(status=Status.FINISHED, data=result)),
                 )
+                t4 = time.time()
                 procedure = "redis -> callback"
                 await post_callback(callback_url, uid, True, result)
+                t5 = time.time()
+                procedure = "callback -> update_elapsed_times"
+                result["elapsed_times"].update(
+                    dict(
+                        redis=t4 - t3,
+                        callback=t5 - t4,
+                    )
+                )
+                redis_client.set(
+                    uid,
+                    json.dumps(dict(status=Status.FINISHED, data=result)),
+                )
                 procedure = "done"
                 # maintain queue
                 queue = get_pending_queue()
