@@ -84,7 +84,7 @@ pending_queue_key = get_pending_queue_key()
 
 
 # algorithms
-loaded_algorithms: Dict[str, AlgorithmBase] = {
+loaded_algorithms: Dict[str, IAlgorithm] = {
     k: v(clients) for k, v in algorithms.items()
 }
 
@@ -170,6 +170,7 @@ async def consume() -> None:
                 model = algorithm.model_class(**params)  # type: ignore
                 procedure = "start -> run_algorithm"
                 res: Response = await run_algorithm(algorithm, model)
+                latencies = algorithm.last_latencies
                 t1 = time.time()
                 procedure = "run_algorithm -> upload_temp_image"
                 urls = upload_temp_image(cos_client, res.body)
@@ -197,6 +198,7 @@ async def consume() -> None:
                 result["elapsed_times"] = dict(
                     pending=start_time - create_time,
                     run_algorithm=t1 - start_time,
+                    algorithm_latencies=latencies,
                     upload=t2 - t1,
                     audit=t3 - t2,
                 )

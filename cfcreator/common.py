@@ -230,6 +230,7 @@ def endpoint2algorithm(endpoint: str) -> str:
 
 class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     model_class: Type[BaseModel]
+    last_latencies: Dict[str, float] = {}
 
     @classmethod
     def auto_register(cls) -> Callable[[AlgorithmBase], AlgorithmBase]:
@@ -237,6 +238,10 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
             return cls.register(endpoint2algorithm(cls_.endpoint))(cls_)
 
         return _register
+
+    def log_times(self, latencies: Dict[str, float]) -> None:
+        super().log_times(latencies)
+        self.last_latencies = latencies
 
 
 # kafka
@@ -301,6 +306,7 @@ __all__ = [
     "GetPromptModel",
     "GetPromptResponse",
     "Status",
+    "IAlgorithm",
     "get_api",
     "get_init_fn",
     "available_apis",
