@@ -200,6 +200,7 @@ async def consume() -> None:
                     upload=t2 - t1,
                     audit=t3 - t2,
                 )
+                result["request"] = dict(task=task, model=model.dict())
                 redis_client.set(
                     uid,
                     json.dumps(dict(status=Status.FINISHED, data=result)),
