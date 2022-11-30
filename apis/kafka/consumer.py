@@ -195,6 +195,7 @@ async def consume() -> None:
                 result["end_time"] = end_time
                 result["duration"] = end_time - create_time
                 result["elapsed_times"] = dict(
+                    pending=start_time - create_time,
                     run_algorithm=t1 - start_time,
                     upload=t2 - t1,
                     audit=t3 - t2,
