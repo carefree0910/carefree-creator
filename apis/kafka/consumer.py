@@ -17,7 +17,6 @@ from qcloud_cos import CosS3Client
 from cfclient.models import *
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
-from cfclient.utils import post
 from cfclient.utils import get_err_msg
 from cfclient.utils import run_algorithm
 
@@ -112,11 +111,9 @@ async def post_callback(
 ) -> None:
     if url:
         try:
-            await post(
-                url,
-                dict(uid=uid, success=success, data=data),
-                http_client.session,
-            )
+            data = dict(uid=uid, success=success, data=data)
+            async with http_client.session.post(url, json=data, timeout=1) as res:
+                await res.json()
         except Exception as err:
             print(
                 f"\n\n!!! post to callback_url ({url}) failed "
