@@ -26,10 +26,6 @@ txt2img_sd_outpainting_endpoint = "/txt2img/sd.outpainting"
 class Txt2ImgSDModel(Txt2ImgModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
-    is_anime: bool = Field(
-        False,
-        description="Whether should we generate anime images or not.",
-    )
 
 
 @IAlgorithm.auto_register()

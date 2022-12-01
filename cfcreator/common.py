@@ -161,6 +161,10 @@ Seed of the variation generation.
         "",
         description="Negative prompt for classifier-free guidance.",
     )
+    is_anime: bool = Field(
+        False,
+        description="Whether should we generate anime images or not.",
+    )
     version: SDVersions = Field(
         SDVersions.v1_5,
         description="Version of the diffusion model",

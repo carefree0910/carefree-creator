@@ -51,10 +51,6 @@ Whether the returned image should keep the alpha-channel of the input image or n
 > If the input image is a sketch image, then `keep_alpha` needs to be False in most of the time.  
 """,
     )
-    is_anime: bool = Field(
-        False,
-        description="Whether should we generate anime images or not.",
-    )
 
 
 @IAlgorithm.auto_register()
