@@ -121,6 +121,7 @@ class SDSamplers(str, Enum):
     SOLVER = "solver"
     K_EULER = "k_euler"
     K_EULER_A = "k_euler_a"
+    K_HEUN = "k_heun"
 
 
 class DiffusionModel(CallbackModel):
