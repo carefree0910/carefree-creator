@@ -13,7 +13,7 @@ setup(
     packages=find_packages(exclude=("tests",)),
     install_requires=[
         "carefree-client>=0.1.6",
-        "carefree-learn[cv]>=0.3.3.21",
+        "carefree-learn[cv]>=0.3.3.22",
     ],
     extras_require={
         "kafka": [
