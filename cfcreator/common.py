@@ -106,7 +106,12 @@ class MaxWHModel(BaseModel):
 
 class VariationModel(BaseModel):
     seed: int = Field(..., description="Seed of the variation.")
-    strength: float = Field(..., description="Strength of the variation.")
+    strength: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Strength of the variation.",
+    )
 
 
 class SDSamplers(str, Enum):
@@ -143,6 +148,7 @@ Seed of the variation generation.
     variation_strength: float = Field(
         0.0,
         ge=0.0,
+        le=1.0,
         description="Strength of the variation generation.",
     )
     variations: List[VariationModel] = Field([], description="Variation ingredients")
