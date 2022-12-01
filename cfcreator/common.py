@@ -175,6 +175,15 @@ Seed of the variation generation.
         SDSamplers.SOLVER,
         description="Sampler of the diffusion model",
     )
+    clip_skip: int = Field(
+        -1,
+        ge=-1,
+        le=8,
+        description="""
+Number of CLIP layers that we want to skip.
+> If it is set to `-1`, then `clip_skip` = 1 if `is_anime` else 0.
+""",
+    )
     custom_embeddings: Dict[str, List[List[float]]] = Field(
         {},
         description="Custom embeddings, often used in textual inversion.",
@@ -206,6 +215,9 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         variations = [(v.seed, v.strength) for v in data.variations]
     m.switch_circular(data.use_circular)
     unconditional_cond = [data.negative_prompt] if data.negative_prompt else None
+    clip_skip = data.clip_skip
+    if clip_skip == -1:
+        clip_skip = 1 if data.is_anime else 0
     return dict(
         seed=seed,
         variation_seed=variation_seed,
@@ -216,6 +228,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         unconditional_cond=unconditional_cond,
         sampler=data.sampler,
         verbose=verbose(),
+        clip_skip=clip_skip,
         custom_embeddings=data.custom_embeddings or None,
     )
 
