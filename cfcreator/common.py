@@ -129,14 +129,13 @@ class DiffusionModel(CallbackModel):
         False,
         description="Whether should we use circular pattern (e.g. generate textures).",
     )
-    use_seed: bool = Field(False, description="Whether should we use seed.")
     seed: int = Field(
-        0,
-        ge=0,
+        -1,
+        ge=-1,
         lt=2**32,
         description="""
 Seed of the generation.
-> Only take effects when `use_seed` is set to True.
+> If `-1`, then random seed will be used.
 """,
     )
     variation_seed: int = Field(
@@ -189,9 +188,7 @@ class Img2ImgDiffusionModel(Img2ImgModel, DiffusionModel):
 
 
 def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:
-    seed = None
-    if data.use_seed:
-        seed = data.seed
+    seed = None if data.seed == -1 else data.seed
     variation_seed = None
     variation_strength = None
     if data.variation_strength > 0:
