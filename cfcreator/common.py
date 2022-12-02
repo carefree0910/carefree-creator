@@ -31,7 +31,7 @@ api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
 class SDVersions(str, Enum):
-    v1_4 = ""
+    v1_5_BC = ""
     v1_5 = "v1.5"
     ANIME = "anime"
 
@@ -48,10 +48,6 @@ def _get(key: str, init_fn: Callable) -> api_type:
     apis[key] = m
     init_fns[key] = init_fn
     return m
-
-
-def get_sd() -> DiffusionAPI:
-    return _get("sd", DiffusionAPI.from_sd)
 
 
 def get_sd_version(version: SDVersions) -> DiffusionAPI:
@@ -289,7 +285,7 @@ class SDParameters(BaseModel):
 
 def init_sd_ms() -> Dict[str, DiffusionAPI]:
     return {
-        "": get_sd(),
+        "": get_sd_version("v1.5"),
         "v1.5": get_sd_version("v1.5"),
         "anime": get_sd_anime(),
     }
