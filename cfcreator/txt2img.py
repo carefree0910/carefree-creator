@@ -115,7 +115,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
         m = self.ms[data.version if data.use_raw_inpainting else self.sd_inpainting_key]
         t1 = time.time()
         if save_gpu_ram():
-            self.m.to("cuda:0", use_half=True)
+            m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.txt2img_inpainting(
