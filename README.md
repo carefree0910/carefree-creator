@@ -49,11 +49,10 @@ An open sourced, AI-powered creator for everyone.
     - [Usage](#usage)
 - [Installation](#installation)
   - [Hardware Requirements](#hardware-requirements)
-  - [Prepare](#prepare)
   - [pip installation](#pip-installation)
     - [Run](#run)
   - [Docker](#docker)
-    - [Prepare](#prepare-1)
+    - [Prepare](#prepare)
     - [Build](#build)
     - [Run](#run-1)
 - [Q\&A](#qa)
@@ -533,16 +532,18 @@ There are two ways that can reduce the usage of GPU RAM:
   - If that's still not enough, you can comment out [this line](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/cfcreator/common.py#L215).
   - If that's still not enough... Then maybe you can try the [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server.ipynb) based solution 😆.
 
-## Prepare
-
-```bash
-git clone https://github.com/carefree0910/carefree-creator.git
-cd carefree-creator
-```
 
 ## pip installation
 
 ```bash
+pip install carefree-creator
+```
+
+If you are interested in the latest features, you may use `pip` to install from source as well:
+
+```bash
+git clone https://github.com/carefree0910/carefree-creator.git
+cd carefree-creator
 pip install -e .
 ```
 
@@ -584,6 +585,8 @@ cfcreator serve --help
 
 ```bash
 export TAG_NAME=cfcreator
+git clone https://github.com/carefree0910/carefree-creator.git
+cd carefree-creator
 ```
 
 ### Build
