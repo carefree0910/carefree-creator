@@ -11,6 +11,7 @@ setup(
     name=PACKAGE_NAME,
     version=VERSION,
     packages=find_packages(exclude=("tests",)),
+    include_package_data=True,
     entry_points={"console_scripts": ["cfcreator = cfcreator.cli:main"]},
     install_requires=[
         "click>=8.1.3",
