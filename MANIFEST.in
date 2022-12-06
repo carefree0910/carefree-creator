@@ -1,0 +1,5 @@
+include apis/config.yml
+include apis/interface.py
+include apis/kafka/config.yml
+include apis/kafka/producer.py
+include apis/kafka/consumer.py
