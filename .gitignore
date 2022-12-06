@@ -10,7 +10,7 @@ pip-wheel-metadata
 dist/*
 **/mlruns/*
 *.zip
-apis/logs/*
-apis/models/*.ckpt
-apis/tokens/*.pt
-apis/kafka/logs/*
+cfcreator/apis/logs/*
+cfcreator/apis/models/*.ckpt
+cfcreator/apis/tokens/*.pt
+cfcreator/apis/kafka/logs/*

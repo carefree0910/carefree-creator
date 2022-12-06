@@ -1,5 +1,5 @@
-include apis/config.yml
-include apis/interface.py
-include apis/kafka/config.yml
-include apis/kafka/producer.py
-include apis/kafka/consumer.py
+include cfcreator/apis/config.yml
+include cfcreator/apis/interface.py
+include cfcreator/apis/kafka/config.yml
+include cfcreator/apis/kafka/producer.py
+include cfcreator/apis/kafka/consumer.py

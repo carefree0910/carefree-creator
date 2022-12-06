@@ -48,12 +48,11 @@ def serve(*, port: int, save_gpu_ram: bool, focus: str):
         increment["save_gpu_ram"] = True
     if focus != "all":
         increment["focus"] = focus
-    root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
     with opt_env_context(increment):
         uvicorn.run(
-            "apis.interface:app",
+            "cfcreator.apis.interface:app",
             host="0.0.0.0",
             port=port,
             reload=True,
-            reload_dirs=root,
+            reload_dirs=os.path.dirname(__file__),
         )
