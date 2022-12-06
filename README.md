@@ -18,7 +18,7 @@ An open sourced, AI-powered creator for everyone.
 ### Table of Content
 
 - [tl;dr](#tldr)
-- [WebUI & Local Deployment](#webui--local-deployment)
+- [WebUI \& Local Deployment](#webui--local-deployment)
   - [Here is a Google Colab solution (Recommended!)](#here-is-a-google-colab-solution-recommended)
 - [Image Generating Features](#image-generating-features)
   - [Text to Image](#text-to-image)
@@ -41,7 +41,7 @@ An open sourced, AI-powered creator for everyone.
 - [Image Processing Features](#image-processing-features)
   - [Super Resolution](#super-resolution)
   - [Inpainting](#inpainting)
-  - [Erase & Replace](#erase--replace)
+  - [Erase \& Replace](#erase--replace)
 - [Advanced Usages](#advanced-usages)
   - [Custom Checkpoints](#custom-checkpoints)
   - [Textual Inversion](#textual-inversion)
@@ -56,7 +56,7 @@ An open sourced, AI-powered creator for everyone.
     - [Prepare](#prepare-1)
     - [Build](#build)
     - [Run](#run-1)
-- [Q&A](#qa)
+- [Q\&A](#qa)
     - [Where are my creations stored?](#where-are-my-creations-stored)
     - [How do I save / load my project?](#how-do-i-save--load-my-project)
     - [How can I contribute to `carefree-creator`?](#how-can-i-contribute-to-carefree-creator)
@@ -548,8 +548,34 @@ pip install -e .
 
 ### Run
 
+`carefree-creator` builds a CLI for you to setup your local service. For instance, we can:
+
 ```bash
-uvicorn apis.interface:app --host 0.0.0.0 --port 8123
+cfcreator serve
+```
+
+If your GPU RAM is not large enough, you may try:
+
+```bash
+cfcreator serve --save_gpu_ram
+```
+
+If you only want to try the SD basic endpoints, you may use:
+
+```bash
+cfcreator serve --focus sd.base
+```
+
+And if you only want to try the SD anime endpoints, you may use:
+
+```bash
+cfcreator serve --focus sd.anime
+```
+
+More usages could be found by:
+
+```bash
+cfcreator serve --help
 ```
 
 ## Docker
