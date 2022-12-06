@@ -11,7 +11,9 @@ setup(
     name=PACKAGE_NAME,
     version=VERSION,
     packages=find_packages(exclude=("tests",)),
+    entry_points={"console_scripts": ["cfcreator = cfcreator.cli:main"]},
     install_requires=[
+        "click>=8.1.3",
         "carefree-client>=0.1.6",
         "carefree-learn[cv]>=0.3.3.24",
     ],

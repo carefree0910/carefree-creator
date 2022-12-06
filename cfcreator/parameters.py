@@ -1,3 +1,6 @@
+import os
+import json
+
 from typing import Any
 from typing import Dict
 from fastapi import Response
@@ -19,6 +22,34 @@ OPT = dict(
     kafka_max_poll_interval_ms=5 * 60 * 1000,
     pending_queue_key="KAFKA_PENDING_QUEUE",
 )
+OPT_ENV_KEY = "CFCREATOR_ENV"
+
+
+class opt_context:
+    def __init__(self, increment: Dict[str, Any]) -> None:
+        self._increment = increment
+        self._backup = shallow_copy_dict(OPT)
+
+    def __enter__(self) -> None:
+        OPT.update(self._increment)
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        OPT.update(self._backup)
+
+
+class opt_env_context:
+    def __init__(self, increment: Dict[str, Any]) -> None:
+        self._increment = increment
+        self._backup = os.environ.get(OPT_ENV_KEY)
+
+    def __enter__(self) -> None:
+        os.environ[OPT_ENV_KEY] = json.dumps(self._increment)
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        if self._backup is None:
+            del os.environ[OPT_ENV_KEY]
+        else:
+            os.environ[OPT_ENV_KEY] = self._backup
 
 
 def verbose() -> bool:
@@ -75,6 +106,9 @@ def get_pending_queue_key() -> str:
 
 __all__ = [
     "OPT",
+    "OPT_ENV_KEY",
+    "opt_context",
+    "opt_env_context",
     "use_cos",
     "verbose",
     "save_gpu_ram",

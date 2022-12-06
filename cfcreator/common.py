@@ -21,6 +21,7 @@ from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 
+from .parameters import OPT
 from .parameters import verbose
 from .parameters import save_gpu_ram
 
@@ -284,11 +285,18 @@ class SDParameters(BaseModel):
 
 
 def init_sd_ms() -> Dict[str, DiffusionAPI]:
-    return {
-        "": get_sd_version("v1.5"),
-        "v1.5": get_sd_version("v1.5"),
-        "anime": get_sd_anime(),
-    }
+    focus = OPT.get("focus", "all")
+    ms = {}
+    if focus in ("all", "sd", "sd.base"):
+        ms.update(
+            {
+                "": get_sd_version("v1.5"),
+                "v1.5": get_sd_version("v1.5"),
+            }
+        )
+    if focus in ("all", "sd", "sd.anime"):
+        ms["anime"] = get_sd_anime()
+    return ms
 
 
 def get_sd_from(ms: Dict[str, DiffusionAPI], data: SDParameters) -> DiffusionAPI:

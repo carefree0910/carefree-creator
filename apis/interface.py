@@ -1,4 +1,5 @@
 import os
+import json
 import yaml
 import torch
 import cflearn
@@ -325,6 +326,10 @@ def inject_custom_tokens(data: InjectCustomTokenModel) -> InjectCustomTokenRespo
 # meta
 
 
+env_opt_json = os.environ.get(OPT_ENV_KEY)
+if env_opt_json is not None:
+    OPT.update(json.loads(env_opt_json))
+focus = OPT.get("focus", "all")
 registered_algorithms = set()
 
 
@@ -342,15 +347,19 @@ def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
 
 
 # txt2img
-register_endpoint(txt2img_sd_endpoint, Txt2ImgSDModel)
-register_endpoint(txt2img_sd_inpainting_endpoint, Txt2ImgSDInpaintingModel)
-register_endpoint(txt2img_sd_outpainting_endpoint, Txt2ImgSDOutpaintingModel)
+if focus != "sd.inpainting":
+    register_endpoint(txt2img_sd_endpoint, Txt2ImgSDModel)
+if focus not in ("sd.base", "sd.anime"):
+    register_endpoint(txt2img_sd_inpainting_endpoint, Txt2ImgSDInpaintingModel)
+    register_endpoint(txt2img_sd_outpainting_endpoint, Txt2ImgSDOutpaintingModel)
 
 # img2img
-register_endpoint(img2img_sd_endpoint, Img2ImgSDModel)
-register_endpoint(img2img_sr_endpoint, Img2ImgSRModel)
-register_endpoint(img2img_inpainting_endpoint, Img2ImgInpaintingModel)
-register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
+if focus != "sd.inpainting":
+    register_endpoint(img2img_sd_endpoint, Img2ImgSDModel)
+if focus == "all":
+    register_endpoint(img2img_sr_endpoint, Img2ImgSRModel)
+    register_endpoint(img2img_inpainting_endpoint, Img2ImgInpaintingModel)
+    register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 
 # events
 
@@ -359,7 +368,6 @@ register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 async def startup() -> None:
     http_client.start()
     OPT["use_cos"] = False
-    # OPT["save_gpu_ram"] = True
     for k, v in all_algorithms.items():
         if k in registered_algorithms:
             v.initialize()
