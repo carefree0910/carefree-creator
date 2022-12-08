@@ -281,7 +281,7 @@ class Status(str, Enum):
 
 class SDParameters(BaseModel):
     is_anime: bool
-    version: str
+    version: SDVersions
 
 
 def init_sd_ms() -> Dict[str, DiffusionAPI]:
