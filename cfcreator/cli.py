@@ -42,7 +42,16 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
 \n-
 """,
 )
-def serve(*, port: int, save_gpu_ram: bool, focus: str):
+@click.option(
+    "-r",
+    "--reload",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    type=bool,
+    help="This flag represents the `reload` argument of `uvicorn.run`.",
+)
+def serve(*, port: int, save_gpu_ram: bool, focus: str, reload: bool) -> None:
     increment = {}
     if save_gpu_ram:
         increment["save_gpu_ram"] = True
@@ -53,6 +62,6 @@ def serve(*, port: int, save_gpu_ram: bool, focus: str):
             "cfcreator.apis.interface:app",
             host="0.0.0.0",
             port=port,
-            reload=True,
-            reload_dirs=os.path.dirname(__file__),
+            reload=reload,
+            reload_dirs=os.path.dirname(__file__) if reload else None,
         )
