@@ -456,7 +456,7 @@ We now support using your own checkpoints to generate images, if you are using [
 
 After you toggled the `Use Local Model` switch, we'll do two things:
 - fetch the available `version`s from your local server.
-- scan the default model root (`apis/models`, where you can see a `put_your_sd_ckpt_here` file) and pick up the available `model`s.
+- scan the default model root (`cfcreator/apis/models`, where you can see a `put_your_sd_ckpt_here` file) and pick up the available `model`s.
 
 The `version` means the backend `algorithm` used behind the features. For example, most of the Stable Diffusion features are using the `sd_v1.5` `version`, and will use the `sd_anime` `version` if `Use Anime-Finetuned Model` is toggled.
 
@@ -466,7 +466,7 @@ Here's the full list of `version`s:
 
 > In most cases, we only care about `sd_v1.5` and `sd_anime`.
 
-This feature will be very useful if you want to use the WebUI features along with your own models. For example, if you want to use a specific version of `Waifu Diffusion`, you can simply download the checkpoint, put it into the `apis/models` folder, choose the `sd_anime` as the `version` and your `ckpt` as the `model`, press the `Switch to Local Model` button, and wait for the success message to pop up. After that, as long as you toggle the `Use Anime-Finetuned Model`, you will be using your own checkpoint to generate images!
+This feature will be very useful if you want to use the WebUI features along with your own models. For example, if you want to use a specific version of `Waifu Diffusion`, you can simply download the checkpoint, put it into the `cfcreator/apis/models` folder, choose the `sd_anime` as the `version` and your `ckpt` as the `model`, press the `Switch to Local Model` button, and wait for the success message to pop up. After that, as long as you toggle the `Use Anime-Finetuned Model`, you will be using your own checkpoint to generate images!
 
 If you only need your own checkpoint to generate images, it will be handy to choose the `sd_v1.5` as the `version`. In this case, we'll use your checkpoint by default.
 
@@ -482,14 +482,14 @@ If you only need your own checkpoint to generate images, it will be handy to cho
 
 ### Usage
 
-Basically, you just need to put the `pt` files in the `apis/tokens` folder (where you can see a `put_your_tokens_here` file), and each `pt` file should be a dictionary, where:
+Basically, you just need to put the `pt` files in the `cfcreator/apis/tokens` folder (where you can see a `put_your_tokens_here` file), and each `pt` file should be a dictionary, where:
 - Its key is the token.
 - Its value is the embedding, and multi-embedding is supported.
 
 Here's an example (you can download it [here](https://huggingface.co/carefree0910/carefree-learn/resolve/main/tokens/pekora.pt)):
 
 ```text
-In [1]: torch.load("apis/tokens/pekora.pt")
+In [1]: torch.load("cfcreator/apis/tokens/pekora.pt")
 Out[1]: 
 {'<pekora>': tensor([[ 0.2215,  0.5360,  0.3351,  ..., -0.0127,  0.7670, -0.6736],
          [ 0.3607,  0.0284,  0.2156,  ..., -0.0976, -0.1588, -0.6090],
@@ -501,7 +501,7 @@ Out[1]:
         device='cuda:0')}
 ```
 
-After you've put the tokens in the `apis/tokens` folder, simply launch the local server and we'll scan all the possible tokens for you. If we found any valid tokens, something like this will be printed:
+After you've put the tokens in the `cfcreator/apis/tokens` folder, simply launch the local server and we'll scan all the possible tokens for you. If we found any valid tokens, something like this will be printed:
 
 ```text
 > Following tokens are loaded: <pekora>
@@ -522,16 +522,9 @@ And then you can utilize the loaded tokens directly in the WebUI:
 
 > Related issue: [#10](https://github.com/carefree0910/carefree-creator/issues/10).
 
-This project will eat up 11~13 GB of GPU RAM if no modifications are made, because it actually integrates FOUR different SD versions together, and many other models as well 🤣.
+This project will eat up 11~13 GB of GPU RAM if no modifications are made, because it actually integrates FIVE different SD versions together, and many other models as well. 🤣
 
-There are two ways that can reduce the usage of GPU RAM:
-- Uncomment [this line](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/apis/interface.py#L184). After that, we will first load the models to RAM and then use GPU RAM only when needed!
-  - But as an exchange, your RAM will be eaten up!
-- Reduce the models that are loaded. For example, you can comment out the [following lines](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/apis/interface.py#L169-L176).
-  - If that's not enough, you can comment out [this line](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/cfcreator/common.py#L213).
-  - If that's still not enough, you can comment out [this line](https://github.com/carefree0910/carefree-creator/blob/238fb7161d682bd22fd5218ad876d153fd3b0708/cfcreator/common.py#L215).
-  - If that's still not enough... Then maybe you can try the [Google Colab](https://colab.research.google.com/github/carefree0910/carefree-creator/blob/dev/tests/server.ipynb) based solution 😆.
-
+There are two ways that can reduce the usage of GPU RAM - lazy loading and partial loading, see the following [`Run`](#run) section for more details.
 
 ## pip installation
 
@@ -560,6 +553,10 @@ If your GPU RAM is not large enough, you may try:
 ```bash
 cfcreator serve --save_gpu_ram
 ```
+
+> With the `--save_gpu_ram` flag, the models will be loaded to RAM, and only the executing model will be moved to GPU RAM.
+> 
+> So as an exchange, your RAM will be eaten up! 🤣
 
 If you only want to try the SD basic endpoints, you may use:
 
@@ -604,7 +601,7 @@ docker build -t $TAG_NAME -f Dockerfile.cn .
 ### Run
 
 ```bash
-docker run --gpus all --rm -p 8123:8123 -v /full/path/to/your/client/logs:/workplace/apis/logs $TAG_NAME:latest
+docker run --gpus all --rm -p 8123:8123 $TAG_NAME:latest
 ```
 
 
@@ -644,7 +641,7 @@ As long as we open sourced the **WebUI** you can implement your own UIs, but for
 
 #### Handy way
 
-1. Place your checkpoints in the `apis/models` folder.
+1. Place your checkpoints in the `cfcreator/apis/models` folder.
 2. Toggle the `Use Local Model` switch.
 3. Setup `version` & `model`, then press the `Switch to Local Model` button.
 
@@ -654,7 +651,7 @@ As long as we open sourced the **WebUI** you can implement your own UIs, but for
 
 I haven't documented these stuffs yet, but here are some brief guides:
 
-1. The local APIs are exposed from [here](https://github.com/carefree0910/carefree-creator/blob/63ff1778175a7ee9bfa19b6955f1eae95398547a/apis/interface.py#L168) on.
+1. The local APIs are exposed from [here](https://github.com/carefree0910/carefree-creator/blob/5c1ea3fb7514d17472caa7f07d135d8e43498136/cfcreator/apis/interface.py#L349) on.
 > ↑ You can ignore this if you just want to change the existing models, instead of introducing new models / endpoints / features!
 2. The APIs are implemented in [txt2img.py](https://github.com/carefree0910/carefree-creator/blob/dev/cfcreator/txt2img.py) and [img2img.py](https://github.com/carefree0910/carefree-creator/blob/dev/cfcreator/img2img.py).
 3. I'm currently using my own library ([carefree-learn](https://github.com/carefree0910/carefree-learn)) to implement the APIs, but you can re-implement the APIs with whatever you want! Take the basic `text2img` feature as an example:
