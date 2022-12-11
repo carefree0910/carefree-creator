@@ -348,7 +348,7 @@ def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
             data.custom_embeddings = {
                 token: embedding
                 for token, embedding in custom_embeddings.items()
-                if token in data.text
+                if token in data.text or token in data.negative_prompt
             }
         return await run_algorithm(algorithm, data)
 
