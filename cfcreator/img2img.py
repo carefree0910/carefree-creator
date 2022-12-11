@@ -6,6 +6,7 @@ from PIL import Image
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 from fastapi import Response
 from pydantic import Field
 from scipy.interpolate import NearestNDInterpolator
@@ -51,6 +52,10 @@ Whether the returned image should keep the alpha-channel of the input image or n
 > If the input image is a sketch image, then `keep_alpha` needs to be False in most of the time.  
 """,
     )
+    wh: Tuple[int, int] = Field(
+        (0, 0),
+        description="The output size, `0` means as-is",
+    )
 
 
 @IAlgorithm.auto_register()
@@ -69,8 +74,12 @@ class Img2ImgSD(IAlgorithm):
         t1 = time.time()
         if not data.keep_alpha:
             image = to_rgb(image)
-        m = get_sd_from(self.ms, data)
+        w, h = data.wh
+        if w > 0 and h > 0:
+            image = image.resize((w, h), Image.LANCZOS)
         t2 = time.time()
+        m = get_sd_from(self.ms, data)
+        t3 = time.time()
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.img2img(
             image,
@@ -81,13 +90,14 @@ class Img2ImgSD(IAlgorithm):
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
-        t3 = time.time()
+        t4 = time.time()
         cleanup(m)
         self.log_times(
             {
                 "download": t1 - t0,
-                "get_model": t2 - t1,
-                "inference": t3 - t2,
+                "preprocess": t2 - t1,
+                "get_model": t3 - t2,
+                "inference": t4 - t3,
                 "cleanup": time.time() - t3,
             }
         )
