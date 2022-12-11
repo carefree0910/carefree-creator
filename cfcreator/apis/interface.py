@@ -341,8 +341,15 @@ def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
 
     @app.post(endpoint, **get_image_response_kwargs(), name=name)
     async def _(data: data_model) -> Response:
-        if isinstance(data, DiffusionModel) and not data.custom_embeddings:
-            data.custom_embeddings = custom_embeddings
+        if (
+            isinstance(data, (Txt2ImgSDModel, Img2ImgSDModel))
+            and not data.custom_embeddings
+        ):
+            data.custom_embeddings = {
+                token: embedding
+                for token, embedding in custom_embeddings.items()
+                if token in data.text
+            }
         return await run_algorithm(algorithm, data)
 
 
