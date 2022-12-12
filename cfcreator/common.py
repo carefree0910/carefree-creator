@@ -36,6 +36,7 @@ class SDVersions(str, Enum):
     v1_5 = "v1.5"
     ANIME = "anime"
     ANIME_ANYTHING = "anime_anything"
+    ANIME_HYBRID = "anime_hybrid"
 
 
 def _get(key: str, init_fn: Callable) -> api_type:
@@ -304,6 +305,7 @@ def init_sd_ms() -> Dict[str, DiffusionAPI]:
     if focus in ("all", "sd", "sd.anime"):
         ms["anime"] = get_sd_anime()
         ms["anime_anything"] = get_sd_version("anime_anything_v3")
+        ms["anime_hybrid"] = get_sd_version("anime_hybrid_v1")
     return ms
 
 
@@ -311,10 +313,8 @@ def get_sd_from(ms: Dict[str, DiffusionAPI], data: SDParameters) -> DiffusionAPI
     if not data.is_anime:
         m = ms[data.version]
     else:
-        if data.version == SDVersions.ANIME_ANYTHING:
-            m = ms["anime_anything"]
-        else:
-            m = ms["anime"]
+        version = data.version if data.version.startswith("anime") else "anime"
+        m = ms[version]
     if save_gpu_ram():
         m.to("cuda:0", use_half=True)
     return m
