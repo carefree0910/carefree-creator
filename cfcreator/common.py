@@ -216,10 +216,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     unconditional_cond = [data.negative_prompt] if data.negative_prompt else None
     clip_skip = data.clip_skip
     if clip_skip == -1:
-        if data.is_anime or data.version in (
-            SDVersions.ANIME,
-            SDVersions.ANIME_ANYTHING,
-        ):
+        if data.is_anime or data.version.startswith("anime"):
             clip_skip = 1
         else:
             clip_skip = 0
