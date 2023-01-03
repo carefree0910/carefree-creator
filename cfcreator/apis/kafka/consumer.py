@@ -234,9 +234,23 @@ async def consume() -> None:
                 data["reason"] = reason
                 data["end_time"] = end_time
                 data["duration"] = end_time - create_time
+                try:
+                    data["request"] = dict(task=task, model=model.dict())
+                except Exception as err:
+                    try:
+                        data["request"] = dict(
+                            task=task,
+                            params=params,
+                            req_exec=get_err_msg(err),
+                        )
+                    except:
+                        pass
                 redis_client.set(
                     uid,
-                    json.dumps(dict(status=Status.EXCEPTION, data=data)),
+                    json.dumps(
+                        dict(status=Status.EXCEPTION, data=data),
+                        ensure_ascii=False,
+                    ),
                 )
                 await post_callback(callback_url, uid, False, data)
     finally:
