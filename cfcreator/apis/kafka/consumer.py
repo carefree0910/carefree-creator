@@ -186,6 +186,7 @@ async def consume() -> None:
                 t3 = time.time()
                 procedure = "audit_image -> redis"
                 result = dict(
+                    uid=uid,
                     cdn=urls.cdn if audit.safe else "",
                     cos=urls.cos if audit.safe else "",
                     safe=audit.safe,
@@ -231,6 +232,7 @@ async def consume() -> None:
             except Exception as err:
                 end_time = time.time()
                 reason = f"{task} -> {json.dumps(params, ensure_ascii=False)} -> {procedure} : {get_err_msg(err)}"
+                data["uid"] = uid
                 data["reason"] = reason
                 data["end_time"] = end_time
                 data["duration"] = end_time - create_time
