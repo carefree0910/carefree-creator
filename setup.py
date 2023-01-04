@@ -16,7 +16,7 @@ setup(
     install_requires=[
         "click>=8.1.3",
         "carefree-client>=0.1.6",
-        "carefree-learn[cv]>=0.3.3.30",
+        "carefree-learn[cv]>=0.3.3.31",
     ],
     extras_require={
         "kafka": [
