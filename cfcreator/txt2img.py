@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any
 from fastapi import Response
 from pydantic import Field
+from pydantic import BaseModel
 from cfclient.models import ImageModel
 
 from .cos import download_image_with_retry
@@ -68,7 +69,14 @@ class PaddingModes(str, Enum):
     CV2_TELEA = "cv2_telea"
 
 
-class Txt2ImgSDInpaintingModel(Txt2ImgModel, ImageModel):
+class CommonSDInpaintingModel(BaseModel):
+    keep_original: bool = Field(
+        False,
+        description="Whether strictly keep the original image identical in the output image.",
+    )
+
+
+class Txt2ImgSDInpaintingModel(Txt2ImgModel, ImageModel, CommonSDInpaintingModel):
     mask_url: str = Field(
         ...,
         description="""
@@ -92,7 +100,7 @@ Whether use the raw inpainting method.
     )
 
 
-class Txt2ImgSDOutpaintingModel(Txt2ImgModel, ImageModel):
+class Txt2ImgSDOutpaintingModel(Txt2ImgModel, ImageModel, CommonSDInpaintingModel):
     pass
 
 
@@ -124,6 +132,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
             mask,
             anchor=64,
             max_wh=data.max_wh,
+            keep_original=data.keep_original,
             use_raw_inpainting=data.use_raw_inpainting,
             raw_inpainting_fidelity=data.raw_inpainting_fidelity,
             **kwargs,
@@ -165,6 +174,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
             image,
             anchor=64,
             max_wh=data.max_wh,
+            keep_original=data.keep_original,
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
