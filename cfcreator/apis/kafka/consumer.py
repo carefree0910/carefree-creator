@@ -146,7 +146,7 @@ async def consume() -> None:
             data = json.loads(message.value)
             uid = data["uid"]
             task = data["task"]
-            if task == "fill-background":
+            if task == "scene-generation":
                 task = "txt2img.sd.outpainting"
             params = data["params"]
             callback_url = params.get("callback_url", "")
