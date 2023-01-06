@@ -237,32 +237,43 @@ async def push(data: ProducerModel, response: Response) -> ProducerResponseModel
 
 
 class InterruptModel(BaseModel):
-    uid: str
+    uid_list: List[str]
+
+
+class InterruptSingleResponse(BaseModel):
+    success: bool
+    reason: str
 
 
 class InterruptResponse(BaseModel):
-    success: bool
-    reason: str
+    results: List[InterruptSingleResponse]
 
 
 @app.post("/interrupt", responses=get_responses(InterruptResponse))
 async def interrupt(data: InterruptModel, response: Response) -> InterruptResponse:
     inject_headers(response)
-    existing = redis_client.get(data.uid)
-    if existing is None:
-        return InterruptResponse(success=False, reason="not found")
-    existing = json.loads(existing)
-    existing_status = existing.get("status")
-    if existing_status != Status.PENDING:
-        return InterruptResponse(
-            success=False,
-            reason=f"not pending ({existing_status})",
+    results = []
+    for uid in data.uid_list:
+        existing = redis_client.get(uid)
+        if existing is None:
+            results.append(InterruptSingleResponse(success=False, reason="not found"))
+            continue
+        existing = json.loads(existing)
+        existing_status = existing.get("status")
+        if existing_status != Status.PENDING:
+            results.append(
+                InterruptSingleResponse(
+                    success=False,
+                    reason=f"not in pending status ({existing_status})",
+                )
+            )
+            continue
+        redis_client.set(
+            uid,
+            json.dumps(dict(status=Status.INTERRUPTED, data=existing.get("data"))),
         )
-    redis_client.set(
-        data.uid,
-        json.dumps(dict(status=Status.INTERRUPTED, data=existing.get("data"))),
-    )
-    return InterruptResponse(success=True, reason="")
+        results.append(InterruptSingleResponse(success=True, reason=""))
+    return results
 
 
 class ServerStatusModel(BaseModel):
