@@ -167,6 +167,7 @@ async def consume() -> None:
             create_time = data.get("create_time", start_time)
             redis_client.set(uid, json.dumps(dict(status=Status.WORKING, data=data)))
             procedure = "start"
+            model = None
             try:
                 algorithm = loaded_algorithms[task]
                 model = algorithm.model_class(**params)  # type: ignore
@@ -238,17 +239,10 @@ async def consume() -> None:
                 data["reason"] = reason
                 data["end_time"] = end_time
                 data["duration"] = end_time - create_time
-                try:
+                if model is None:
+                    data["request"] = dict(task=task, params=params)
+                else:
                     data["request"] = dict(task=task, model=model.dict())
-                except Exception as err:
-                    try:
-                        data["request"] = dict(
-                            task=task,
-                            params=params,
-                            req_exec=get_err_msg(err),
-                        )
-                    except:
-                        pass
                 redis_client.set(
                     uid,
                     json.dumps(
