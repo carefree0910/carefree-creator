@@ -15,6 +15,7 @@ setup(
     entry_points={"console_scripts": ["cfcreator = cfcreator.cli:main"]},
     install_requires=[
         "click>=8.1.3",
+        "fastapi==0.88.0",
         "carefree-client>=0.1.6",
         "carefree-learn[cv]>=0.3.3.31",
     ],
