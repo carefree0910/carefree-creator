@@ -325,9 +325,7 @@ def fetch_redis(uid: str) -> StatusData:
     return StatusData(**json.loads(data))
 
 
-@app.get("/status/{uid}", responses=get_responses(StatusModel))
-async def get_status(uid: str, response: Response) -> StatusModel:
-    inject_headers(response)
+def _get_status(uid: str) -> StatusModel:
     record = fetch_redis(uid)
     if record.status != Status.PENDING:
         lag = 0
@@ -351,6 +349,29 @@ async def get_status(uid: str, response: Response) -> StatusModel:
             latest_queue.append(uid)
             redis_client.set(pending_queue_key, json.dumps(latest_queue))
     return StatusModel(status=record.status, data=record.data, pending=lag)
+
+
+@app.get("/status/{uid}", responses=get_responses(StatusModel))
+async def get_status(uid: str, response: Response) -> StatusModel:
+    inject_headers(response)
+    return _get_status(uid)
+
+
+class BatchStatusModel(BaseModel):
+    uid_list: List[str]
+
+
+class BatchStatusResponse(BaseModel):
+    results: List[StatusModel]
+
+
+@app.post("/batch_status", responses=get_responses(BatchStatusModel))
+async def get_batch_status(
+    data: BatchStatusModel,
+    response: Response,
+) -> BatchStatusResponse:
+    inject_headers(response)
+    return BatchStatusResponse(results=[_get_status(uid) for uid in data.uid_list])
 
 
 # audit
