@@ -161,7 +161,7 @@ class ProducerModel(BaseModel):
     notify_url: str = Field("", description="callback url to post to")
 
 
-class ProducerResponseModel(BaseModel):
+class ProducerResponse(BaseModel):
     uid: str
 
 
@@ -169,8 +169,8 @@ class ProducerResponseModel(BaseModel):
 queue_timeout_threshold = 30 * 60
 
 
-@app.post("/push", responses=get_responses(ProducerResponseModel))
-async def push(data: ProducerModel, response: Response) -> ProducerResponseModel:
+@app.post("/push", responses=get_responses(ProducerResponse))
+async def push(data: ProducerModel, response: Response) -> ProducerResponse:
     def get_clean_queue() -> List[str]:
         queue = get_pending_queue()
         queue_size = len(queue)
@@ -233,7 +233,7 @@ async def push(data: ProducerModel, response: Response) -> ProducerResponseModel
             ensure_ascii=False,
         ).encode("utf-8"),
     )
-    return ProducerResponseModel(uid=new_uid)
+    return ProducerResponse(uid=new_uid)
 
 
 class InterruptModel(BaseModel):
@@ -276,7 +276,7 @@ async def interrupt(data: InterruptModel, response: Response) -> InterruptRespon
     return results
 
 
-class ServerStatusModel(BaseModel):
+class ServerStatusResponse(BaseModel):
     is_ready: bool
     num_pending: int
 
@@ -297,17 +297,17 @@ def get_real_lag(queue: List[str]) -> int:
     return lag
 
 
-@app.get("/server_status", responses=get_responses(ServerStatusModel))
-async def server_status(response: Response) -> ServerStatusModel:
+@app.get("/server_status", responses=get_responses(ServerStatusResponse))
+async def server_status(response: Response) -> ServerStatusResponse:
     inject_headers(response)
     members = kafka_admin.describe_consumer_groups([kafka_group_id()])[0].members
-    return ServerStatusModel(
+    return ServerStatusResponse(
         is_ready=len(members) > 0,
         num_pending=get_real_lag(get_pending_queue()),
     )
 
 
-class StatusModel(BaseModel):
+class StatusResponse(BaseModel):
     status: Status
     pending: int
     data: Optional[Any]
@@ -325,7 +325,7 @@ def fetch_redis(uid: str) -> StatusData:
     return StatusData(**json.loads(data))
 
 
-def _get_status(uid: str) -> StatusModel:
+def _get_status(uid: str) -> StatusResponse:
     record = fetch_redis(uid)
     if record.status != Status.PENDING:
         lag = 0
@@ -348,11 +348,11 @@ def _get_status(uid: str) -> StatusModel:
             lag = len(latest_queue) + 1
             latest_queue.append(uid)
             redis_client.set(pending_queue_key, json.dumps(latest_queue))
-    return StatusModel(status=record.status, data=record.data, pending=lag)
+    return StatusResponse(status=record.status, data=record.data, pending=lag)
 
 
-@app.get("/status/{uid}", responses=get_responses(StatusModel))
-async def get_status(uid: str, response: Response) -> StatusModel:
+@app.get("/status/{uid}", responses=get_responses(StatusResponse))
+async def get_status(uid: str, response: Response) -> StatusResponse:
     inject_headers(response)
     return _get_status(uid)
 
@@ -362,7 +362,7 @@ class BatchStatusModel(BaseModel):
 
 
 class BatchStatusResponse(BaseModel):
-    results: List[StatusModel]
+    results: List[StatusResponse]
 
 
 @app.post("/batch_status", responses=get_responses(BatchStatusModel))
