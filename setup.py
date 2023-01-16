@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 PACKAGE_NAME = "carefree-creator"
 
 DESCRIPTION = "An AI-powered creator for everyone."
