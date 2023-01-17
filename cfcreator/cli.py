@@ -3,6 +3,7 @@ import click
 import uvicorn
 
 from cfcreator import opt_env_context
+from cflearn.parameters import OPT
 
 
 @click.group()
@@ -51,17 +52,36 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
     type=bool,
     help="This flag represents the `reload` argument of `uvicorn.run`.",
 )
-def serve(*, port: int, save_gpu_ram: bool, focus: str, reload: bool) -> None:
+@click.option(
+    "-d",
+    "--cache_dir",
+    default="",
+    show_default=True,
+    type=str,
+    help="Directory of the cache files.",
+)
+def serve(
+    *,
+    port: int,
+    save_gpu_ram: bool,
+    focus: str,
+    reload: bool,
+    cache_dir: str,
+) -> None:
     increment = {}
     if save_gpu_ram:
         increment["save_gpu_ram"] = True
     if focus != "all":
         increment["focus"] = focus
+    cflearn_increment = {}
+    if cache_dir:
+        cflearn_increment["cache_dir"] = cache_dir
     with opt_env_context(increment):
-        uvicorn.run(
-            "cfcreator.apis.interface:app",
-            host="0.0.0.0",
-            port=port,
-            reload=reload,
-            reload_dirs=os.path.dirname(__file__) if reload else None,
-        )
+        with OPT.opt_context(cflearn_increment):
+            uvicorn.run(
+                "cfcreator.apis.interface:app",
+                host="0.0.0.0",
+                port=port,
+                reload=reload,
+                reload_dirs=os.path.dirname(__file__) if reload else None,
+            )
