@@ -186,13 +186,14 @@ class Img2ImgInpainting(IAlgorithm):
         if save_gpu_ram():
             self.m.to("cuda:0", use_half=True)
         t2 = time.time()
+        kwargs = handle_diffusion_model(self.m, data)
         refine_fidelity = data.refine_fidelity if data.use_refine else None
         img_arr = self.m.inpainting(
             image,
             mask,
             max_wh=data.max_wh,
             refine_fidelity=refine_fidelity,
-            verbose=verbose(),
+            **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
