@@ -3,6 +3,7 @@ import time
 import numpy as np
 
 from PIL import Image
+from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
@@ -11,6 +12,10 @@ from fastapi import Response
 from pydantic import Field
 from scipy.interpolate import NearestNDInterpolator
 from cfcv.misc.toolkit import to_rgb
+from cfcv.misc.toolkit import np_to_bytes
+from cflearn.api.cv.models.common import read_image
+from cflearn.api.cv.third_party.lama import LaMa
+from cflearn.api.cv.third_party.lama import Config
 
 from .cos import download_image_with_retry
 from .common import cleanup
@@ -145,7 +150,16 @@ class Img2ImgSR(IAlgorithm):
         return Response(content=content, media_type="image/png")
 
 
+class InpaintingModels(str, Enum):
+    SD = "sd"
+    LAMA = "lama"
+
+
 class Img2ImgInpaintingModel(Img2ImgDiffusionModel):
+    model: InpaintingModels = Field(
+        InpaintingModels.SD,
+        description="The inpainting model that we want to use.",
+    )
     use_refine: bool = Field(False, description="Whether should we perform refining.")
     refine_fidelity: float = Field(
         0.8,
@@ -172,11 +186,13 @@ class Img2ImgInpainting(IAlgorithm):
 
     def initialize(self) -> None:
         self.m = get_inpainting()
+        self.lama = LaMa("cpu" if save_gpu_ram() else "cuda:0")
 
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await download_image_with_retry(self.http_client.session, data.url)
+        model = data.model
         mask_url = data.mask_url
         if not mask_url:
             mask = Image.new("L", image.size, color=0)
@@ -184,19 +200,43 @@ class Img2ImgInpainting(IAlgorithm):
             mask = await download_image_with_retry(self.http_client.session, mask_url)
         t1 = time.time()
         if save_gpu_ram():
-            self.m.to("cuda:0", use_half=True)
+            if model == InpaintingModels.SD:
+                self.m.to("cuda:0", use_half=True)
+            elif model == InpaintingModels.LAMA:
+                self.lama.model.to("cuda:0")
         t2 = time.time()
-        kwargs = handle_diffusion_model(self.m, data)
-        refine_fidelity = data.refine_fidelity if data.use_refine else None
-        img_arr = self.m.inpainting(
-            image,
-            mask,
-            max_wh=data.max_wh,
-            refine_fidelity=refine_fidelity,
-            **kwargs,
-        ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        if model == InpaintingModels.LAMA:
+            cfg = Config()
+            image_arr = read_image(
+                image,
+                None,
+                anchor=None,
+                to_torch_fmt=False,
+            ).image
+            mask_arr = read_image(
+                mask,
+                None,
+                anchor=None,
+                to_mask=True,
+                to_torch_fmt=False,
+            ).image
+            mask_arr[mask_arr > 0] = 1
+            result = self.lama(image_arr, mask_arr, cfg)
+            content = np_to_bytes(result)
+        else:
+            kwargs = handle_diffusion_model(self.m, data)
+            refine_fidelity = data.refine_fidelity if data.use_refine else None
+            img_arr = self.m.inpainting(
+                image,
+                mask,
+                max_wh=data.max_wh,
+                refine_fidelity=refine_fidelity,
+                **kwargs,
+            ).numpy()[0]
+            content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
+        if save_gpu_ram():
+            self.lama.model.to("cpu")
         cleanup(self.m)
         self.log_times(
             {
