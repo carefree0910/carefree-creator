@@ -189,6 +189,24 @@ Number of CLIP layers that we want to skip.
     )
 
 
+class CommonSDInpaintingModel(BaseModel):
+    keep_original: bool = Field(
+        False,
+        description="Whether strictly keep the original image identical in the output image.",
+    )
+    use_raw_inpainting: bool = Field(
+        False,
+        description="""
+Whether use the raw inpainting method.
+> This is useful when you want to apply inpainting with custom SD models.
+""",
+    )
+    raw_inpainting_fidelity: float = Field(
+        0.2,
+        ge=0.0,
+        le=1.0,
+        description="The fidelity of the input image when using raw inpainting.",
+    )
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
     pass
 

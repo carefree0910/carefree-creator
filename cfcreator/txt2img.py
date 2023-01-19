@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Any
 from fastapi import Response
 from pydantic import Field
-from pydantic import BaseModel
 from cfclient.models import ImageModel
 
 from .cos import download_image_with_retry
@@ -16,6 +15,7 @@ from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import IAlgorithm
 from .common import Txt2ImgModel
+from .common import CommonSDInpaintingModel
 from .parameters import save_gpu_ram
 
 
@@ -69,13 +69,6 @@ class PaddingModes(str, Enum):
     CV2_TELEA = "cv2_telea"
 
 
-class CommonSDInpaintingModel(BaseModel):
-    keep_original: bool = Field(
-        False,
-        description="Whether strictly keep the original image identical in the output image.",
-    )
-
-
 class Txt2ImgSDInpaintingModel(Txt2ImgModel, ImageModel, CommonSDInpaintingModel):
     mask_url: str = Field(
         ...,
@@ -84,19 +77,6 @@ The `cdn` / `cos` url of the user's mask.
 > `cos` url from `qcloud` is preferred.
 > If empty string is provided, then we will use an empty mask, which means we will simply perform an image-to-image transform.  
 """,
-    )
-    use_raw_inpainting: bool = Field(
-        False,
-        description="""
-Whether use the raw inpainting method.
-> This is useful when you want to apply inpainting with custom SD models.
-""",
-    )
-    raw_inpainting_fidelity: float = Field(
-        0.2,
-        ge=0.0,
-        le=1.0,
-        description="The fidelity of the input image when using raw inpainting.",
     )
 
 
