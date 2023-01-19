@@ -21,6 +21,7 @@ from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 
+from .cos import download_image_with_retry
 from .parameters import OPT
 from .parameters import verbose
 from .parameters import save_gpu_ram
@@ -207,6 +208,20 @@ Whether use the raw inpainting method.
         le=1.0,
         description="The fidelity of the input image when using raw inpainting.",
     )
+    ref_url: str = Field(
+        "",
+        description="""
+The `cdn` / `cos` url of the reference image.
+> `cos` url from cloud is preferred.
+> If empty string is provided, we will not use the reference feature.  
+""",
+    )
+    ref_fidelity: float = Field(
+        0.2,
+        description="Fidelity of the reference image (if provided)",
+    )
+
+
 class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
     pass
 
@@ -290,9 +305,16 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         self,
         data: CommonSDInpaintingModel,
     ) -> Dict[str, Any]:
+        if not data.ref_url:
+            reference = None
+        else:
+            sess = self.http_client.session
+            reference = await download_image_with_retry(sess, data.ref_url)
         return dict(
             use_raw_inpainting=data.use_raw_inpainting,
             raw_inpainting_fidelity=data.raw_inpainting_fidelity,
+            reference=reference,
+            reference_fidelity=data.ref_fidelity,
         )
 
 
