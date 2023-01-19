@@ -106,6 +106,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
             m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(m, data)
+        kwargs.update(await self.handle_diffusion_inpainting_model(data))
         img_arr = m.txt2img_inpainting(
             data.text,
             image,
@@ -113,8 +114,6 @@ class Txt2ImgSDInpainting(IAlgorithm):
             anchor=64,
             max_wh=data.max_wh,
             keep_original=data.keep_original,
-            use_raw_inpainting=data.use_raw_inpainting,
-            raw_inpainting_fidelity=data.raw_inpainting_fidelity,
             **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
@@ -149,6 +148,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
             self.m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
+        kwargs.update(await self.handle_diffusion_inpainting_model(data))
         img_arr = self.m.outpainting(
             data.text,
             image,

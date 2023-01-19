@@ -286,6 +286,15 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         super().log_times(latencies)
         self.last_latencies = latencies
 
+    async def handle_diffusion_inpainting_model(
+        self,
+        data: CommonSDInpaintingModel,
+    ) -> Dict[str, Any]:
+        return dict(
+            use_raw_inpainting=data.use_raw_inpainting,
+            raw_inpainting_fidelity=data.raw_inpainting_fidelity,
+        )
+
 
 # kafka
 
