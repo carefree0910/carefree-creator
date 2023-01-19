@@ -11,7 +11,6 @@ from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
 from cfcv.misc.toolkit import ImageProcessor
 
-from .cos import download_image_with_retry
 from .common import IAlgorithm
 
 
@@ -36,8 +35,8 @@ class HistogramMatch(IAlgorithm):
     async def run(self, data: HistogramMatchModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await download_image_with_retry(self.http_client.session, data.url)
-        bg = await download_image_with_retry(self.http_client.session, data.bg_url)
+        image = await self.download_image_with_retry(data.url)
+        bg = await self.download_image_with_retry(data.bg_url)
         t1 = time.time()
         to_normalized = lambda im: np.array(im).astype(np.float32) / 255.0
         rgba, bg_arr = map(to_normalized, [image, bg])

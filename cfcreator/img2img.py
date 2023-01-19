@@ -17,7 +17,6 @@ from cflearn.api.cv.models.common import read_image
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
 
-from .cos import download_image_with_retry
 from .common import cleanup
 from .common import get_esr
 from .common import init_sd_ms
@@ -75,7 +74,7 @@ class Img2ImgSD(IAlgorithm):
     async def run(self, data: Img2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await download_image_with_retry(self.http_client.session, data.url)
+        image = await self.download_image_with_retry(data.url)
         t1 = time.time()
         if not data.keep_alpha:
             image = to_rgb(image)
@@ -129,7 +128,7 @@ class Img2ImgSR(IAlgorithm):
     async def run(self, data: Img2ImgSRModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await download_image_with_retry(self.http_client.session, data.url)
+        image = await self.download_image_with_retry(data.url)
         t1 = time.time()
         m = self.esr_anime if data.is_anime else self.esr
         if save_gpu_ram():
@@ -191,13 +190,13 @@ class Img2ImgInpainting(IAlgorithm):
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await download_image_with_retry(self.http_client.session, data.url)
+        image = await self.download_image_with_retry(data.url)
         model = data.model
         mask_url = data.mask_url
         if not mask_url:
             mask = Image.new("L", image.size, color=0)
         else:
-            mask = await download_image_with_retry(self.http_client.session, mask_url)
+            mask = await self.download_image_with_retry(mask_url)
         t1 = time.time()
         if save_gpu_ram():
             if model == InpaintingModels.SD:
@@ -281,10 +280,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
     async def run(self, data: Img2ImgSemantic2ImgModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        raw_semantic = await download_image_with_retry(
-            self.http_client.session,
-            data.url,
-        )
+        raw_semantic = await self.download_image_with_retry(data.url)
         t1 = time.time()
         w, h = raw_semantic.size
         raw_arr = np.array(raw_semantic)

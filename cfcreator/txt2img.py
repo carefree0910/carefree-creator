@@ -6,7 +6,6 @@ from fastapi import Response
 from pydantic import Field
 from cfclient.models import ImageModel
 
-from .cos import download_image_with_retry
 from .common import cleanup
 from .common import init_sd_ms
 from .common import get_sd_from
@@ -98,8 +97,8 @@ class Txt2ImgSDInpainting(IAlgorithm):
     async def run(self, data: Txt2ImgSDInpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await download_image_with_retry(self.http_client.session, data.url)
-        mask = await download_image_with_retry(self.http_client.session, data.mask_url)
+        image = await self.download_image_with_retry(data.url)
+        mask = await self.download_image_with_retry(data.mask_url)
         m = self.ms[data.version if data.use_raw_inpainting else self.sd_inpainting_key]
         t1 = time.time()
         if save_gpu_ram():
@@ -142,7 +141,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
     async def run(self, data: Txt2ImgSDOutpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await download_image_with_retry(self.http_client.session, data.url)
+        image = await self.download_image_with_retry(data.url)
         t1 = time.time()
         if save_gpu_ram():
             self.m.to("cuda:0", use_half=True)

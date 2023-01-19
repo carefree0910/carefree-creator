@@ -3,6 +3,7 @@ import torch
 import numpy as np
 
 from abc import ABCMeta
+from PIL import Image
 from enum import Enum
 from typing import Any
 from typing import Dict
@@ -301,6 +302,9 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         super().log_times(latencies)
         self.last_latencies = latencies
 
+    async def download_image_with_retry(self, url: str) -> Image.Image:
+        return await download_image_with_retry(self.http_client.session, url)
+
     async def handle_diffusion_inpainting_model(
         self,
         data: CommonSDInpaintingModel,
@@ -308,8 +312,7 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         if not data.ref_url:
             reference = None
         else:
-            sess = self.http_client.session
-            reference = await download_image_with_retry(sess, data.ref_url)
+            reference = await self.download_image_with_retry(data.ref_url)
         return dict(
             use_raw_inpainting=data.use_raw_inpainting,
             raw_inpainting_fidelity=data.raw_inpainting_fidelity,
