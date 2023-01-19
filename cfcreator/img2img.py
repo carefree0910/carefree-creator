@@ -203,7 +203,7 @@ class Img2ImgInpainting(IAlgorithm):
             if model == InpaintingModels.SD:
                 self.m.to("cuda:0", use_half=True)
             elif model == InpaintingModels.LAMA:
-                self.lama.model.to("cuda:0")
+                self.lama.to("cuda:0")
         t2 = time.time()
         if model == InpaintingModels.LAMA:
             cfg = Config()
@@ -236,7 +236,7 @@ class Img2ImgInpainting(IAlgorithm):
             content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
         if save_gpu_ram():
-            self.lama.model.to("cpu")
+            self.lama.to("cpu")
         cleanup(self.m)
         self.log_times(
             {
