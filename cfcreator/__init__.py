@@ -1,3 +1,4 @@
+from .cv import *
 from .cos import *
 from .common import *
 from .txt2img import *

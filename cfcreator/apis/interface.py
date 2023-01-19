@@ -368,6 +368,9 @@ if focus == "all":
     register_endpoint(img2img_inpainting_endpoint, Img2ImgInpaintingModel)
     register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
 
+# cv
+register_endpoint(cv_histogram_match_endpoint, HistogramMatchModel)
+
 
 # events
 
