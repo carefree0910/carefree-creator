@@ -16,6 +16,7 @@ from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv.models.common import read_image
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
+from cflearn.api.cv.third_party.iharm import ImageHarmonizationAPI
 
 from .common import cleanup
 from .common import get_esr
@@ -28,6 +29,7 @@ from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
 from .common import IAlgorithm
+from .common import ImageModel
 from .common import Img2ImgModel
 from .common import CallbackModel
 from .common import Img2ImgDiffusionModel
@@ -39,6 +41,10 @@ img2img_sd_endpoint = "/img2img/sd"
 img2img_sr_endpoint = "/img2img/sr"
 img2img_inpainting_endpoint = "/img2img/inpainting"
 img2img_semantic2img_endpoint = "/img2img/semantic2img"
+img2img_harmonization_endpoint = "/img2img/harmonization"
+
+
+# img2img (stable diffusion)
 
 
 class Img2ImgSDModel(Img2ImgDiffusionModel):
@@ -108,6 +114,9 @@ class Img2ImgSD(IAlgorithm):
         return Response(content=content, media_type="image/png")
 
 
+# super resolution (Real-ESRGAN)
+
+
 class Img2ImgSRModel(Img2ImgModel, CallbackModel):
     is_anime: bool = Field(
         False,
@@ -147,6 +156,9 @@ class Img2ImgSR(IAlgorithm):
             }
         )
         return Response(content=content, media_type="image/png")
+
+
+# inpainting (LDM, LaMa)
 
 
 class InpaintingModels(str, Enum):
@@ -246,6 +258,9 @@ class Img2ImgInpainting(IAlgorithm):
             }
         )
         return Response(content=content, media_type="image/png")
+
+
+# semantic2img (LDM)
 
 
 class Img2ImgSemantic2ImgModel(Img2ImgDiffusionModel):
@@ -352,11 +367,76 @@ class Img2ImgSemantic2Img(IAlgorithm):
         return Response(content=content, media_type="image/png")
 
 
+# image harmonization (hrnet)
+
+
+class Img2ImgHarmonizationModel(ImageModel):
+    mask_url: str = Field(
+        ...,
+        description="The `cdn` / `cos` url of the harmonization mask. (`cos` url is preferred)",
+    )
+    strength: float = Field(1.0, description="Strength of the harmonization process.")
+
+
+@IAlgorithm.auto_register()
+class Img2ImgHarmonization(IAlgorithm):
+    model_class = Img2ImgHarmonizationModel
+
+    endpoint = img2img_harmonization_endpoint
+
+    def initialize(self) -> None:
+        self.m = ImageHarmonizationAPI("cpu" if save_gpu_ram() else "cuda:0")
+
+    async def run(self, data: Img2ImgHarmonizationModel, *args: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.download_image_with_retry(data.url)
+        mask = await self.download_image_with_retry(data.mask_url)
+        t1 = time.time()
+        if save_gpu_ram():
+            self.m.to("cuda:0")
+        t2 = time.time()
+        image_arr = read_image(
+            image,
+            None,
+            anchor=None,
+            normalize=False,
+            to_torch_fmt=False,
+        ).image
+        mask_arr = read_image(
+            mask,
+            None,
+            anchor=None,
+            to_mask=True,
+            to_torch_fmt=False,
+        ).image
+        result = self.m.run(image_arr, mask_arr)
+        if data.strength != 1.0:
+            image_arr = image_arr.astype(np.float32)
+            result = result.astype(np.float32)
+            result = result * data.strength + image_arr * (1.0 - data.strength)
+            result = (np.clip(result, 0.0, 255.0)).astype(np.uint8)
+        content = np_to_bytes(result)
+        t3 = time.time()
+        if save_gpu_ram():
+            self.m.to("cpu")
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "get_model": t2 - t1,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
+            }
+        )
+        return Response(content=content, media_type="image/png")
+
+
 __all__ = [
     "img2img_sd_endpoint",
     "img2img_sr_endpoint",
     "img2img_inpainting_endpoint",
     "img2img_semantic2img_endpoint",
+    "img2img_harmonization_endpoint",
     "Img2ImgSDModel",
     "Img2ImgSRModel",
     "Img2ImgInpaintingModel",
@@ -365,4 +445,6 @@ __all__ = [
     "Img2ImgSR",
     "Img2ImgInpainting",
     "Img2ImgSemantic2Img",
+    "Img2ImgHarmonizationModel",
+    "Img2ImgHarmonization",
 ]
