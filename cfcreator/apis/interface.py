@@ -369,6 +369,7 @@ if focus == "all":
 if focus in ("all", "sync"):
     register_endpoint(img2img_inpainting_endpoint)
 register_endpoint(img2img_harmonization_endpoint)
+register_endpoint(img2img_sod_endpoint)
 
 # cv
 register_endpoint(cv_histogram_match_endpoint)

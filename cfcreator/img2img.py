@@ -12,10 +12,12 @@ from fastapi import Response
 from pydantic import Field
 from scipy.interpolate import NearestNDInterpolator
 from cfcv.misc.toolkit import to_rgb
+from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv.models.common import read_image
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
+from cflearn.api.cv.third_party.isnet import ISNetAPI
 from cflearn.api.cv.third_party.iharm import ImageHarmonizationAPI
 
 from .common import cleanup
@@ -43,6 +45,7 @@ img2img_sr_endpoint = "/img2img/sr"
 img2img_inpainting_endpoint = "/img2img/inpainting"
 img2img_semantic2img_endpoint = "/img2img/semantic2img"
 img2img_harmonization_endpoint = "/img2img/harmonization"
+img2img_sod_endpoint = "/img2img/sod"
 
 
 # img2img (stable diffusion)
@@ -439,12 +442,50 @@ class Img2ImgHarmonization(IAlgorithm):
         return Response(content=content, media_type="image/png")
 
 
+# salient object detection (isnet)
+
+
+@IAlgorithm.auto_register()
+class Img2ImgSOD(IAlgorithm):
+    model_class = ImageModel
+
+    endpoint = img2img_sod_endpoint
+
+    def initialize(self) -> None:
+        print("> init isnet")
+        self.m = ISNetAPI("cpu" if save_gpu_ram() else "cuda:0")
+
+    async def run(self, data: ImageModel, *args: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.download_image_with_retry(data.url)
+        t1 = time.time()
+        if save_gpu_ram():
+            self.m.to("cuda:0")
+        t2 = time.time()
+        alpha = to_uint8(self.m.segment(image))
+        content = np_to_bytes(alpha)
+        t3 = time.time()
+        if save_gpu_ram():
+            self.m.to("cpu")
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "get_model": t2 - t1,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
+            }
+        )
+        return Response(content=content, media_type="image/png")
+
+
 __all__ = [
     "img2img_sd_endpoint",
     "img2img_sr_endpoint",
     "img2img_inpainting_endpoint",
     "img2img_semantic2img_endpoint",
     "img2img_harmonization_endpoint",
+    "img2img_sod_endpoint",
     "Img2ImgSDModel",
     "Img2ImgSRModel",
     "Img2ImgInpaintingModel",
@@ -455,4 +496,5 @@ __all__ = [
     "Img2ImgSemantic2Img",
     "Img2ImgHarmonizationModel",
     "Img2ImgHarmonization",
+    "Img2ImgSOD",
 ]
