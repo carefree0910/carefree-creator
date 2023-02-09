@@ -11,7 +11,6 @@ from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Type
 from fastapi import FastAPI
 from fastapi import Response
 from pydantic import BaseModel
@@ -333,11 +332,12 @@ focus = OPT.get("focus", "all")
 registered_algorithms = set()
 
 
-def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
+def register_endpoint(endpoint: str) -> None:
     name = endpoint[1:].replace("/", "_")
     algorithm_name = endpoint2algorithm(endpoint)
-    algorithm = all_algorithms[algorithm_name]
+    algorithm: IAlgorithm = all_algorithms[algorithm_name]
     registered_algorithms.add(algorithm_name)
+    data_model = algorithm.model_class
 
     @app.post(endpoint, **get_image_response_kwargs(), name=name)
     async def _(data: data_model) -> Response:
@@ -355,22 +355,22 @@ def register_endpoint(endpoint: str, data_model: Type[BaseModel]) -> None:
 
 # txt2img
 if focus != "sd.inpainting":
-    register_endpoint(txt2img_sd_endpoint, Txt2ImgSDModel)
+    register_endpoint(txt2img_sd_endpoint)
 if focus not in ("sd.base", "sd.anime"):
-    register_endpoint(txt2img_sd_inpainting_endpoint, Txt2ImgSDInpaintingModel)
-    register_endpoint(txt2img_sd_outpainting_endpoint, Txt2ImgSDOutpaintingModel)
+    register_endpoint(txt2img_sd_inpainting_endpoint)
+    register_endpoint(txt2img_sd_outpainting_endpoint)
 
 # img2img
 if focus != "sd.inpainting":
-    register_endpoint(img2img_sd_endpoint, Img2ImgSDModel)
+    register_endpoint(img2img_sd_endpoint)
 if focus == "all":
-    register_endpoint(img2img_sr_endpoint, Img2ImgSRModel)
-    register_endpoint(img2img_inpainting_endpoint, Img2ImgInpaintingModel)
-    register_endpoint(img2img_semantic2img_endpoint, Img2ImgSemantic2ImgModel)
-register_endpoint(img2img_harmonization_endpoint, Img2ImgHarmonizationModel)
+    register_endpoint(img2img_sr_endpoint)
+    register_endpoint(img2img_inpainting_endpoint)
+    register_endpoint(img2img_semantic2img_endpoint)
+register_endpoint(img2img_harmonization_endpoint)
 
 # cv
-register_endpoint(cv_histogram_match_endpoint, HistogramMatchModel)
+register_endpoint(cv_histogram_match_endpoint)
 
 
 # events
