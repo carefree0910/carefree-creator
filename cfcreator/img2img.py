@@ -254,7 +254,8 @@ class Img2ImgInpainting(IAlgorithm):
         t3 = time.time()
         if save_gpu_ram():
             self.lama.to("cpu")
-        cleanup(self.m)
+        if self.m is not None:
+            cleanup(self.m)
         self.log_times(
             {
                 "download": t1 - t0,
