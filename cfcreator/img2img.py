@@ -199,6 +199,7 @@ class Img2ImgInpainting(IAlgorithm):
     def initialize(self) -> None:
         focus = OPT.get("focus", "all")
         self.m = None if focus == "sync" else get_inpainting()
+        print("> init lama")
         self.lama = LaMa("cpu" if save_gpu_ram() else "cuda:0")
 
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
@@ -390,6 +391,7 @@ class Img2ImgHarmonization(IAlgorithm):
     endpoint = img2img_harmonization_endpoint
 
     def initialize(self) -> None:
+        print("> init hrnet")
         self.m = ImageHarmonizationAPI("cpu" if save_gpu_ram() else "cuda:0")
 
     async def run(self, data: Img2ImgHarmonizationModel, *args: Any) -> Response:
