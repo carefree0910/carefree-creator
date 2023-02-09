@@ -354,19 +354,20 @@ def register_endpoint(endpoint: str) -> None:
 
 
 # txt2img
-if focus != "sd.inpainting":
+if focus not in ("sd.inpainting", "sync"):
     register_endpoint(txt2img_sd_endpoint)
-if focus not in ("sd.base", "sd.anime"):
+if focus not in ("sd.base", "sd.anime", "sync"):
     register_endpoint(txt2img_sd_inpainting_endpoint)
     register_endpoint(txt2img_sd_outpainting_endpoint)
 
 # img2img
-if focus != "sd.inpainting":
+if focus not in ("sd.inpainting", "sync"):
     register_endpoint(img2img_sd_endpoint)
 if focus == "all":
     register_endpoint(img2img_sr_endpoint)
-    register_endpoint(img2img_inpainting_endpoint)
     register_endpoint(img2img_semantic2img_endpoint)
+if focus in ("all", "sync"):
+    register_endpoint(img2img_inpainting_endpoint)
 register_endpoint(img2img_harmonization_endpoint)
 
 # cv

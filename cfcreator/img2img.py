@@ -33,6 +33,7 @@ from .common import ImageModel
 from .common import Img2ImgModel
 from .common import CallbackModel
 from .common import Img2ImgDiffusionModel
+from .parameters import OPT
 from .parameters import verbose
 from .parameters import save_gpu_ram
 
@@ -196,7 +197,8 @@ class Img2ImgInpainting(IAlgorithm):
     endpoint = img2img_inpainting_endpoint
 
     def initialize(self) -> None:
-        self.m = get_inpainting()
+        focus = OPT.get("focus", "all")
+        self.m = None if focus == "sync" else get_inpainting()
         self.lama = LaMa("cpu" if save_gpu_ram() else "cuda:0")
 
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
@@ -204,6 +206,9 @@ class Img2ImgInpainting(IAlgorithm):
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         model = data.model
+        if self.m is None and model == InpaintingModels.SD:
+            msg = "`sd` inpainting is not available when `focus` is set to 'sync'"
+            raise ValueError(msg)
         mask_url = data.mask_url
         if not mask_url:
             mask = Image.new("L", image.size, color=0)
