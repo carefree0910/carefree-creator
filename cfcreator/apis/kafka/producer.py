@@ -25,6 +25,7 @@ from cftool.misc import random_hash
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 
+from cfclient.utils import get_err_msg
 from cfclient.utils import get_responses
 
 from cfcreator import *
@@ -322,7 +323,10 @@ def fetch_redis(uid: str) -> StatusData:
     data = redis_client.get(uid)
     if data is None:
         return StatusData(status=Status.NOT_FOUND, data=None)
-    return StatusData(**json.loads(data))
+    try:
+        return StatusData(**json.loads(data))
+    except Exception as e:
+        return StatusData(status=Status.EXCEPTION, data=dict(reason=get_err_msg(e)))
 
 
 def _get_status(uid: str) -> StatusResponse:
