@@ -7,6 +7,8 @@ import asyncio
 import datetime
 import logging.config
 
+import numpy as np
+
 from kafka import KafkaConsumer
 from typing import Any
 from typing import Dict
@@ -15,6 +17,7 @@ from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
 
 from cfclient.models import *
+from cftool.misc import shallow_copy_dict
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
 from cfclient.utils import get_err_msg
@@ -121,6 +124,25 @@ async def post_callback(
             )
 
 
+def simplify(params: Dict[str, Any]) -> Dict[str, Any]:
+    params = shallow_copy_dict(params)
+    custom_embeddings = params.get("custom_embeddings")
+    if custom_embeddings is not None:
+        simplified_embeddings = {}
+        for k, v in custom_embeddings:
+            try:
+                v_array = np.atleast_2d(v)
+                if v_array.shape[1] <= 6:
+                    simplified_embeddings[k] = v
+                else:
+                    v_array = np.concatenate([v_array[:, :3], v_array[:, -3:]], axis=1)
+                    simplified_embeddings[k] = v_array.tolist()
+            except Exception as err:
+                simplified_embeddings[k] = get_err_msg(err)
+        params["custom_embeddings"] = simplified_embeddings
+    return params
+
+
 # kafka & redis
 async def consume() -> None:
     OPT["verbose"] = False
@@ -206,7 +228,7 @@ async def consume() -> None:
                     upload=t2 - t1,
                     audit=t3 - t2,
                 )
-                result["request"] = dict(task=task, model=model.dict())
+                result["request"] = dict(task=task, model=simplify(model.dict()))
                 redis_client.set(
                     uid,
                     json.dumps(dict(status=Status.FINISHED, data=result)),
@@ -240,9 +262,9 @@ async def consume() -> None:
                 data["end_time"] = end_time
                 data["duration"] = end_time - create_time
                 if model is None:
-                    data["request"] = dict(task=task, params=params)
+                    data["request"] = dict(task=task, params=simplify(params))
                 else:
-                    data["request"] = dict(task=task, model=model.dict())
+                    data["request"] = dict(task=task, model=simplify(model.dict()))
                 redis_client.set(
                     uid,
                     json.dumps(
