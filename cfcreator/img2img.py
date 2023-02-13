@@ -30,6 +30,7 @@ from .common import get_inpainting
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
+from .common import get_normalized_arr_from_diffusion
 from .common import IAlgorithm
 from .common import ImageModel
 from .common import Img2ImgModel
@@ -176,11 +177,15 @@ class Img2ImgInpaintingModel(Img2ImgDiffusionModel):
         description="The inpainting model that we want to use.",
     )
     use_refine: bool = Field(False, description="Whether should we perform refining.")
+    use_pipeline: bool = Field(
+        False,
+        description="Whether should we perform 'inpainting' + 'refining' in one run.",
+    )
     refine_fidelity: float = Field(
-        0.8,
+        0.2,
         description="""
 Refine fidelity used in inpainting.
-> Only take effects when `use_refine` is set to True.
+> Only take effects when `use_refine` / `use_pipeline` is set to True.
 """,
     )
     mask_url: str = Field(
@@ -240,19 +245,37 @@ class Img2ImgInpainting(IAlgorithm):
                 to_mask=True,
                 to_torch_fmt=False,
             ).image
-            mask_arr[mask_arr > 0] = 1
+            mask_arr[mask_arr > 0.0] = 1.0
             result = self.lama(image_arr, mask_arr, cfg)
             content = np_to_bytes(result)
         else:
             kwargs = handle_diffusion_model(self.m, data)
-            refine_fidelity = data.refine_fidelity if data.use_refine else None
-            img_arr = self.m.inpainting(
-                image,
-                mask,
-                max_wh=data.max_wh,
-                refine_fidelity=refine_fidelity,
-                **kwargs,
-            ).numpy()[0]
+            if not data.use_pipeline:
+                refine_fidelity = data.refine_fidelity if data.use_refine else None
+                img_arr = self.m.inpainting(
+                    image,
+                    mask,
+                    max_wh=data.max_wh,
+                    refine_fidelity=refine_fidelity,
+                    **kwargs,
+                ).numpy()[0]
+            else:
+                img_arr = self.m.inpainting(
+                    image,
+                    mask,
+                    max_wh=data.max_wh,
+                    refine_fidelity=None,
+                    **kwargs,
+                ).numpy()[0]
+                img_arr = get_normalized_arr_from_diffusion(img_arr)
+                image = Image.fromarray(to_uint8(img_arr))
+                img_arr = self.m.inpainting(
+                    image,
+                    mask,
+                    max_wh=data.max_wh,
+                    refine_fidelity=data.refine_fidelity,
+                    **kwargs,
+                ).numpy()[0]
             content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
         if save_gpu_ram():
