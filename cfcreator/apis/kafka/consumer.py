@@ -127,9 +127,9 @@ async def post_callback(
 def simplify(params: Dict[str, Any]) -> Dict[str, Any]:
     params = shallow_copy_dict(params)
     custom_embeddings = params.get("custom_embeddings")
-    if custom_embeddings is not None:
+    if custom_embeddings is not None and isinstance(custom_embeddings, dict):
         simplified_embeddings = {}
-        for k, v in custom_embeddings:
+        for k, v in custom_embeddings.items():
             try:
                 v_array = np.atleast_2d(v)
                 if v_array.shape[1] <= 6:
