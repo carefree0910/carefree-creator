@@ -15,7 +15,7 @@ from .common import get_bytes_from_diffusion
 from .common import IAlgorithm
 from .common import Txt2ImgModel
 from .common import CommonSDInpaintingModel
-from .parameters import save_gpu_ram
+from .parameters import need_change_device
 
 
 txt2img_sd_endpoint = "/txt2img/sd"
@@ -101,7 +101,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
         mask = await self.download_image_with_retry(data.mask_url)
         m = self.ms[data.version if data.use_raw_inpainting else self.sd_inpainting_key]
         t1 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(m, data)
@@ -143,7 +143,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             self.m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)

@@ -548,6 +548,12 @@ pip install -e .
 cfcreator serve
 ```
 
+If you don't have an NVIDIA GPU (e.g. mac), you may try:
+
+```bash
+cfcreator serve --cpu
+```
+
 If your GPU RAM is not large enough, you may try:
 
 ```bash

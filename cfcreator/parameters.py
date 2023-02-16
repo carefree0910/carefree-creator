@@ -10,6 +10,7 @@ from cftool.misc import shallow_copy_dict
 OPT = dict(
     verbose=True,
     save_gpu_ram=False,
+    cpu=False,
     use_cos=True,
     request_domain="localhost",
     redis_kwargs=dict(host="localhost", port=6379, db=0),
@@ -56,8 +57,12 @@ def verbose() -> bool:
     return OPT["verbose"]
 
 
-def save_gpu_ram() -> bool:
-    return OPT["save_gpu_ram"]
+def init_to_cpu() -> bool:
+    return OPT["save_gpu_ram"] or OPT["cpu"]
+
+
+def need_change_device() -> bool:
+    return OPT["save_gpu_ram"] and not OPT["cpu"]
 
 
 def use_cos() -> bool:
@@ -111,7 +116,8 @@ __all__ = [
     "opt_env_context",
     "use_cos",
     "verbose",
-    "save_gpu_ram",
+    "init_to_cpu",
+    "need_change_device",
     "inject_headers",
     "redis_kwargs",
     "audit_redis_kwargs",

@@ -29,6 +29,14 @@ def main() -> None:
     help="This flag will put all the models to RAM instead of GPU RAM, and only put models to GPU when they are being used.",
 )
 @click.option(
+    "--cpu",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    type=bool,
+    help="This flag will force the server to use cpu only.",
+)
+@click.option(
     "--focus",
     default="all",
     show_default=True,
@@ -65,6 +73,7 @@ def serve(
     *,
     port: int,
     save_gpu_ram: bool,
+    cpu: bool,
     focus: str,
     reload: bool,
     cache_dir: str,
@@ -72,6 +81,8 @@ def serve(
     increment = {}
     if save_gpu_ram:
         increment["save_gpu_ram"] = True
+    if cpu:
+        increment["cpu"] = True
     if focus != "all":
         increment["focus"] = focus
     cflearn_increment = {}

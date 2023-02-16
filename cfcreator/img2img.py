@@ -38,7 +38,8 @@ from .common import CallbackModel
 from .common import Img2ImgDiffusionModel
 from .parameters import OPT
 from .parameters import verbose
-from .parameters import save_gpu_ram
+from .parameters import init_to_cpu
+from .parameters import need_change_device
 
 
 img2img_sd_endpoint = "/img2img/sd"
@@ -145,7 +146,7 @@ class Img2ImgSR(IAlgorithm):
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
         m = self.esr_anime if data.is_anime else self.esr
-        if save_gpu_ram():
+        if need_change_device():
             m.to("cuda:0", use_half=True)
         t2 = time.time()
         img_arr = m.sr(image, max_wh=data.max_wh).numpy()[0]
@@ -208,7 +209,7 @@ class Img2ImgInpainting(IAlgorithm):
         focus = OPT.get("focus", "all")
         self.m = None if focus == "sync" else get_inpainting()
         print("> init lama")
-        self.lama = LaMa("cpu" if save_gpu_ram() else "cuda:0")
+        self.lama = LaMa("cpu" if init_to_cpu() else "cuda:0")
 
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -224,7 +225,7 @@ class Img2ImgInpainting(IAlgorithm):
         else:
             mask = await self.download_image_with_retry(mask_url)
         t1 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             if model == InpaintingModels.SD:
                 self.m.to("cuda:0", use_half=True)
             elif model == InpaintingModels.LAMA:
@@ -278,7 +279,7 @@ class Img2ImgInpainting(IAlgorithm):
                 ).numpy()[0]
             content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             self.lama.to("cpu")
         if self.m is not None:
             cleanup(self.m)
@@ -371,7 +372,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
         semantic_arr = semantic_arr.reshape([h, w])
         semantic = Image.fromarray(semantic_arr)
         t3 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             self.m.to("cuda:0", use_half=True)
         t4 = time.time()
         if not data.keep_alpha:
@@ -419,7 +420,7 @@ class Img2ImgHarmonization(IAlgorithm):
 
     def initialize(self) -> None:
         print("> init hrnet")
-        self.m = ImageHarmonizationAPI("cpu" if save_gpu_ram() else "cuda:0")
+        self.m = ImageHarmonizationAPI("cpu" if init_to_cpu() else "cuda:0")
 
     async def run(self, data: Img2ImgHarmonizationModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -427,7 +428,7 @@ class Img2ImgHarmonization(IAlgorithm):
         image = await self.download_image_with_retry(data.url)
         mask = await self.download_image_with_retry(data.mask_url)
         t1 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             self.m.to("cuda:0")
         t2 = time.time()
         image_arr = read_image(
@@ -452,7 +453,7 @@ class Img2ImgHarmonization(IAlgorithm):
             result = (np.clip(result, 0.0, 255.0)).astype(np.uint8)
         content = np_to_bytes(result)
         t3 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             self.m.to("cpu")
         self.log_times(
             {
@@ -476,20 +477,20 @@ class Img2ImgSOD(IAlgorithm):
 
     def initialize(self) -> None:
         print("> init isnet")
-        self.m = ISNetAPI("cpu" if save_gpu_ram() else "cuda:0")
+        self.m = ISNetAPI("cpu" if init_to_cpu() else "cuda:0")
 
     async def run(self, data: ImageModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             self.m.to("cuda:0")
         t2 = time.time()
         alpha = to_uint8(self.m.segment(image))
         content = np_to_bytes(alpha)
         t3 = time.time()
-        if save_gpu_ram():
+        if need_change_device():
             self.m.to("cpu")
         self.log_times(
             {

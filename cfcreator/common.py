@@ -25,7 +25,8 @@ from cflearn.api.cv import TranslatorAPI
 from .cos import download_image_with_retry
 from .parameters import OPT
 from .parameters import verbose
-from .parameters import save_gpu_ram
+from .parameters import init_to_cpu
+from .parameters import need_change_device
 
 
 apis = {}
@@ -46,7 +47,7 @@ def _get(key: str, init_fn: Callable) -> api_type:
     if m is not None:
         return m
     print("> init", key)
-    if save_gpu_ram():
+    if init_to_cpu():
         m = init_fn("cpu")
     else:
         m = init_fn("cuda:0", use_half=True)
@@ -368,13 +369,13 @@ def get_sd_from(ms: Dict[str, DiffusionAPI], data: SDParameters) -> DiffusionAPI
     else:
         version = data.version if data.version.startswith("anime") else "anime"
         m = ms[version]
-    if save_gpu_ram():
+    if need_change_device():
         m.to("cuda:0", use_half=True)
     return m
 
 
 def cleanup(m: DiffusionAPI) -> None:
-    if save_gpu_ram():
+    if need_change_device():
         m.to("cpu")
         torch.cuda.empty_cache()
 
