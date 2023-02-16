@@ -12,6 +12,7 @@ import numpy as np
 from kafka import KafkaConsumer
 from typing import Any
 from typing import Dict
+from typing import Union
 from fastapi import Response
 from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
@@ -194,29 +195,34 @@ async def consume() -> None:
                 algorithm = loaded_algorithms[task]
                 model = algorithm.model_class(**params)  # type: ignore
                 procedure = "start -> run_algorithm"
-                res: Response = await run_algorithm(algorithm, model)
+                res: Union[Response, Any] = await run_algorithm(algorithm, model)
                 latencies = algorithm.last_latencies
                 t1 = time.time()
-                procedure = "run_algorithm -> upload_temp_image"
-                urls = upload_temp_image(cos_client, res.body)
-                t2 = time.time()
-                procedure = "upload_temp_image -> audit_image"
-                if task != "img2img.sr":
-                    try:
-                        audit = audit_image(audit_redis_client, urls.path)
-                    except:
-                        audit = AuditResponse(safe=False, reason="unknown")
+                if algorithm.response_model_class is not None:
+                    t2 = t3 = t1
+                    procedure = "run_algorithm -> redis"
+                    result = dict(uid=uid, response=res.dict())
                 else:
-                    audit = AuditResponse(safe=True, reason="")
-                t3 = time.time()
-                procedure = "audit_image -> redis"
-                result = dict(
-                    uid=uid,
-                    cdn=urls.cdn if audit.safe else "",
-                    cos=urls.cos if audit.safe else "",
-                    safe=audit.safe,
-                    reason=audit.reason,
-                )
+                    procedure = "run_algorithm -> upload_temp_image"
+                    urls = upload_temp_image(cos_client, res.body)
+                    t2 = time.time()
+                    procedure = "upload_temp_image -> audit_image"
+                    if task != "img2img.sr":
+                        try:
+                            audit = audit_image(audit_redis_client, urls.path)
+                        except:
+                            audit = AuditResponse(safe=False, reason="unknown")
+                    else:
+                        audit = AuditResponse(safe=True, reason="")
+                    t3 = time.time()
+                    procedure = "audit_image -> redis"
+                    result = dict(
+                        uid=uid,
+                        cdn=urls.cdn if audit.safe else "",
+                        cos=urls.cos if audit.safe else "",
+                        safe=audit.safe,
+                        reason=audit.reason,
+                    )
                 result.update(data)
                 end_time = time.time()
                 result["end_time"] = end_time
