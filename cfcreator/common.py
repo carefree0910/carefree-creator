@@ -294,6 +294,7 @@ def endpoint2algorithm(endpoint: str) -> str:
 
 class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     model_class: Type[BaseModel]
+    response_model_class: Optional[Type[BaseModel]] = None
     last_latencies: Dict[str, float] = {}
 
     @classmethod

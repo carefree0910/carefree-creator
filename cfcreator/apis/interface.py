@@ -338,9 +338,15 @@ def register_endpoint(endpoint: str) -> None:
     algorithm: IAlgorithm = all_algorithms[algorithm_name]
     registered_algorithms.add(algorithm_name)
     data_model = algorithm.model_class
+    if algorithm.response_model_class is None:
+        response_model = Response
+        post_kwargs = get_image_response_kwargs()
+    else:
+        response_model = algorithm.response_model_class
+        post_kwargs = dict(responses=get_responses(response_model))
 
-    @app.post(endpoint, **get_image_response_kwargs(), name=name)
-    async def _(data: data_model) -> Response:
+    @app.post(endpoint, **post_kwargs, name=name)
+    async def _(data: data_model) -> response_model:
         if (
             isinstance(data, (Txt2ImgSDModel, Img2ImgSDModel))
             and not data.custom_embeddings
