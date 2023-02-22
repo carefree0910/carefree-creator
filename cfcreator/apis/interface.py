@@ -370,9 +370,9 @@ if focus not in ("sd.base", "sd.anime", "sync"):
 if focus not in ("sd.inpainting", "sync"):
     register_endpoint(img2img_sd_endpoint)
 if focus == "all":
-    register_endpoint(img2img_sr_endpoint)
     register_endpoint(img2img_semantic2img_endpoint)
 if focus in ("all", "sync"):
+    register_endpoint(img2img_sr_endpoint)
     register_endpoint(img2img_inpainting_endpoint)
 register_endpoint(img2img_harmonization_endpoint)
 register_endpoint(img2img_sod_endpoint)
