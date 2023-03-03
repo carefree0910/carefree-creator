@@ -14,6 +14,7 @@ from typing import Union
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from cfcv.misc.toolkit import to_rgb
 from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv.models.common import restrict_wh
@@ -23,7 +24,6 @@ from cflearn.api.cv.models.diffusion import ControlledDiffusionAPI
 
 from .utils import to_canvas
 from .utils import resize_image
-from .common import cleanup
 from .common import get_controlnet
 from .common import need_change_device
 from .common import handle_diffusion_model
@@ -186,11 +186,13 @@ async def run_control(
 ) -> Tuple[List[np.ndarray], Dict[str, float]]:
     self.log_endpoint(data)
     t0 = time.time()
-    image = np.array(await self.download_image_with_retry(data.url))
+    downloaded = await self.download_image_with_retry(data.url)
+    image = np.array(to_rgb(downloaded))
     if not data.hint_url:
         hint_image = image
     else:
-        hint_image = np.array(await self.download_image_with_retry(data.hint_url))
+        downloaded_hint = await self.download_image_with_retry(data.hint_url)
+        hint_image = np.array(to_rgb(downloaded_hint))
     t1 = time.time()
     results, latencies = apply_control(data, self.api, image, hint_image, hint_type)
     latencies["download"] = t1 - t0
