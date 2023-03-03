@@ -6,6 +6,7 @@ import numpy as np
 from typing import Any
 from fastapi import Response
 from pydantic import Field
+from pydantic import BaseModel
 from cfclient.models import ImageModel
 from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
@@ -14,7 +15,74 @@ from cfcv.misc.toolkit import ImageProcessor
 from .common import IAlgorithm
 
 
+cv_affine_endpoint = "/cv/affine"
 cv_histogram_match_endpoint = "/cv/hist_match"
+
+
+def affine(
+    array: np.ndarray,
+    a: float,
+    b: float,
+    c: float,
+    d: float,
+    e: float,
+    f: float,
+    w: int,
+    h: int,
+) -> np.ndarray:
+    matrix = np.array([[a, c, e], [b, d, f]], np.float32)
+    return cv2.warpAffine(array, matrix, [w, h])
+
+
+class BaseAffineModel(BaseModel):
+    a: float = Field(..., description="`a` of the affine matrix")
+    b: float = Field(..., description="`b` of the affine matrix")
+    c: float = Field(..., description="`c` of the affine matrix")
+    d: float = Field(..., description="`d` of the affine matrix")
+    e: float = Field(..., description="`e` of the affine matrix")
+    f: float = Field(..., description="`f` of the affine matrix")
+
+
+class AffineModel(BaseAffineModel, ImageModel):
+    w: int = Field(..., description="width of the output image")
+    h: int = Field(..., description="width of the output image")
+
+
+@IAlgorithm.auto_register()
+class Affine(IAlgorithm):
+    model_class = AffineModel
+
+    endpoint = cv_affine_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: AffineModel, *args: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.download_image_with_retry(data.url)
+        t1 = time.time()
+        output = affine(
+            np.array(image),
+            data.a,
+            data.b,
+            data.c,
+            data.d,
+            data.e,
+            data.f,
+            data.w,
+            data.h,
+        )
+        t2 = time.time()
+        content = np_to_bytes(output)
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "preprocess": t2 - t1,
+                "to_bytes": time.time() - t2,
+            }
+        )
+        return Response(content=content, media_type="image/png")
 
 
 class HistogramMatchModel(ImageModel):
@@ -76,7 +144,11 @@ class HistogramMatch(IAlgorithm):
 
 
 __all__ = [
+    "cv_affine_endpoint",
     "cv_histogram_match_endpoint",
+    "BaseAffineModel",
+    "AffineModel",
     "HistogramMatchModel",
+    "Affine",
     "HistogramMatch",
 ]

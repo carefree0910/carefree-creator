@@ -383,6 +383,7 @@ if focus in ("all", "sync"):
 
 # cv
 if focus in ("all", "sync"):
+    register_endpoint(cv_affine_endpoint)
     register_endpoint(cv_histogram_match_endpoint)
 
 
