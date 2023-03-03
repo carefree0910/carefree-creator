@@ -17,6 +17,7 @@ from .common import get_controlnet
 from .common import need_change_device
 from .common import IAlgorithm
 from .common import ControlNetModel
+from .control import get_images
 from .control import apply_control
 from .control import MLSDModel
 from .control import PoseModel
@@ -87,11 +88,7 @@ class ControlMulti(IAlgorithm):
     async def run(self, data: ControlMultiModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = np.array(await self.download_image_with_retry(data.url))
-        if not data.hint_url:
-            hint_image = image
-        else:
-            hint_image = np.array(await self.download_image_with_retry(data.hint_url))
+        image, hint_image = await get_images(self, data)
         t1 = time.time()
         results, latencies = apply_control(
             gather_all_data(data),
