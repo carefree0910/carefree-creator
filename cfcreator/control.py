@@ -39,6 +39,7 @@ control_pose_endpoint = "/control/pose"
 control_mlsd_endpoint = "/control/mlsd"
 
 
+images_type = Tuple[np.ndarray, np.ndarray]
 apply_response = Tuple[List[np.ndarray], Dict[str, float]]
 
 
@@ -48,6 +49,14 @@ class ControlNetAlgorithm(IAlgorithm):
 
 class ControlNetModelPlaceholder(ControlStrengthModel, ControlNetModel):
     pass
+
+
+async def get_images(self: ControlNetAlgorithm, data: ControlNetModel) -> images_type:
+    image = np.array(to_rgb(await self.download_image_with_retry(data.url)))
+    if not data.hint_url:
+        return image, image
+    hint_image = np.array(to_rgb(await self.download_image_with_retry(data.hint_url)))
+    return image, hint_image
 
 
 def apply_control(
@@ -186,13 +195,7 @@ async def run_control(
 ) -> Tuple[List[np.ndarray], Dict[str, float]]:
     self.log_endpoint(data)
     t0 = time.time()
-    downloaded = await self.download_image_with_retry(data.url)
-    image = np.array(to_rgb(downloaded))
-    if not data.hint_url:
-        hint_image = image
-    else:
-        downloaded_hint = await self.download_image_with_retry(data.hint_url)
-        hint_image = np.array(to_rgb(downloaded_hint))
+    image, hint_image = await get_images(self, data)
     t1 = time.time()
     results, latencies = apply_control(data, self.api, image, hint_image, hint_type)
     latencies["download"] = t1 - t0
