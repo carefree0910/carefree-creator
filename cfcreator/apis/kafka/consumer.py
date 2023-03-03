@@ -154,8 +154,9 @@ async def consume() -> None:
     redis_client.expire(pending_queue_key, expire_seconds)
     # initialize
     http_client.start()
-    for k, v in loaded_algorithms.items():
+    for v in loaded_algorithms.values():
         v.initialize()
+    print("> Algorithms are Loaded!")
     kafka_consumer = KafkaConsumer(
         topic,
         group_id=kafka_group_id(),
