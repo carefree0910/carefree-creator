@@ -31,6 +31,7 @@ from .parameters import need_change_device
 
 apis = {}
 init_fns = {}
+init_models = {}
 api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
@@ -53,6 +54,15 @@ def _get(key: str, init_fn: Callable) -> api_type:
         m = init_fn("cuda:0", use_half=True)
     apis[key] = m
     init_fns[key] = init_fn
+    return m
+
+
+def _get_general_model(key: str, init_fn: Callable) -> Any:
+    m = init_models.get(key)
+    if m is not None:
+        return m
+    m = init_fn()
+    init_models[key] = m
     return m
 
 
