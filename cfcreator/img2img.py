@@ -18,10 +18,10 @@ from cflearn.api.cv.models.common import read_image
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
 from cflearn.api.cv.third_party.isnet import ISNetAPI
-from cflearn.api.cv.third_party.iharm import ImageHarmonizationAPI
 
 from .common import cleanup
 from .common import get_esr
+from .common import get_hrnet
 from .common import init_sd_ms
 from .common import get_sd_from
 from .common import get_semantic
@@ -420,7 +420,7 @@ class Img2ImgHarmonization(IAlgorithm):
 
     def initialize(self) -> None:
         print("> init hrnet")
-        self.m = ImageHarmonizationAPI("cpu" if init_to_cpu() else "cuda:0")
+        self.m = get_hrnet()
 
     async def run(self, data: Img2ImgHarmonizationModel, *args: Any) -> Response:
         self.log_endpoint(data)

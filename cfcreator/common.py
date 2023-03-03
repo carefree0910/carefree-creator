@@ -21,6 +21,7 @@ from cfclient.models import AlgorithmBase
 from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
+from cflearn.api.cv import ImageHarmonizationAPI
 
 from .cos import download_image_with_retry
 from .parameters import OPT
@@ -92,6 +93,11 @@ def get_inpainting() -> DiffusionAPI:
 
 def get_semantic() -> DiffusionAPI:
     return _get("semantic", DiffusionAPI.from_semantic)
+
+
+def get_hrnet() -> ImageHarmonizationAPI:
+    _get = lambda: ImageHarmonizationAPI("cpu" if init_to_cpu() else "cuda:0")
+    return _get_general_model("hrnet", _get)
 
 
 def get_bytes_from_translator(img_arr: np.ndarray) -> bytes:
