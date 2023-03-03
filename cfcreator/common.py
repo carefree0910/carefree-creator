@@ -43,6 +43,7 @@ class SDVersions(str, Enum):
     ANIME = "anime"
     # ANIME_ANYTHING = "anime_anything"
     # ANIME_HYBRID = "anime_hybrid"
+    DREAMLIKE = "dreamlike_v1"
 
 
 def _get(key: str, init_fn: Callable) -> api_type:
@@ -423,6 +424,7 @@ def init_sd_ms() -> Dict[str, DiffusionAPI]:
         )
     if focus in ("all", "sd", "sd.anime"):
         ms["anime"] = get_sd_anime()
+        ms[SDVersions.DREAMLIKE] = get_sd_version(SDVersions.DREAMLIKE)
         # ms["anime_anything"] = get_sd_version("anime_anything_v3")
         # ms["anime_hybrid"] = get_sd_version("anime_hybrid_v1")
     return ms
