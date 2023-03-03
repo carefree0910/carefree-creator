@@ -22,6 +22,7 @@ from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
+from cflearn.api.cv import ControlledDiffusionAPI
 
 from .cos import download_image_with_retry
 from .parameters import OPT
@@ -93,6 +94,23 @@ def get_inpainting() -> DiffusionAPI:
 
 def get_semantic() -> DiffusionAPI:
     return _get("semantic", DiffusionAPI.from_semantic)
+
+
+def get_controlnet() -> ControlledDiffusionAPI:
+    def _get() -> ControlledDiffusionAPI:
+        print("> init diffusion (ControlNet)")
+        to_cpu = init_to_cpu()
+        device = "cpu" if to_cpu else "cuda:0"
+        api = ControlledDiffusionAPI.from_sd(device, use_half=not to_cpu)
+        print("> prepare ControlNet weights")
+        api.prepare_defaults()
+        print("> prepare ControlNet Annotators")
+        api.prepare_annotators()
+        print("> warmup ControlNet")
+        api.switch(*api.available)
+        return api
+
+    return _get_general_model("controlnet", _get)
 
 
 def get_hrnet() -> ImageHarmonizationAPI:
@@ -254,6 +272,36 @@ class Img2ImgModel(ImageModel, MaxWHModel):
 
 class Img2ImgDiffusionModel(Img2ImgModel, DiffusionModel):
     pass
+
+
+class ControlStrengthModel(BaseModel):
+    control_strength: float = Field(
+        1.0,
+        ge=0.0,
+        le=2.0,
+        description="The strength of the control.",
+    )
+
+
+class ControlNetModel(DiffusionModel, MaxWHModel, ImageModel):
+    hint_url: str = Field(
+        "",
+        description="""
+The `cdn` / `cos` url of the user's hint image.
+> If empty string is provided, we will use `url` as `hint_url`.
+> `cos` url from `qcloud` is preferred.
+""",
+    )
+    prompt: str = Field(..., description="Prompt.")
+    fidelity: float = Field(
+        0.05,
+        ge=0.0,
+        le=1.0,
+        description="The fidelity of the input image, only take effects when `use_img2img` is True.",
+    )
+    use_img2img: bool = Field(True, description="Whether use img2img method.")
+    num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
+    guess_mode: bool = Field(False, description="Guess mode.")
 
 
 def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:

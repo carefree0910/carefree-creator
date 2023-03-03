@@ -386,6 +386,14 @@ if focus in ("all", "sync"):
     register_endpoint(cv_affine_endpoint)
     register_endpoint(cv_histogram_match_endpoint)
 
+# ControlNet
+if focus in ("all", "control"):
+    register_endpoint(control_depth_endpoint)
+    register_endpoint(control_canny_endpoint)
+    register_endpoint(control_pose_endpoint)
+    register_endpoint(control_mlsd_endpoint)
+    register_endpoint(control_multi_endpoint)
+
 
 # events
 

@@ -40,7 +40,17 @@ def main() -> None:
     "--focus",
     default="all",
     show_default=True,
-    type=click.Choice(["all", "sd", "sd.base", "sd.anime", "sd.inpainting", "sync"]),
+    type=click.Choice(
+        [
+            "all",
+            "sd",
+            "sd.base",
+            "sd.anime",
+            "sd.inpainting",
+            "sync",
+            "control",
+        ]
+    ),
     help="""
 Indicates which endpoints should we focus on, helpful if we only care about certain subset of features.
 \n- all            |  will load all endpoints.
@@ -48,7 +58,8 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
 \n- sd.base        |  will only load basic SD endpoints, which means anime / inpainting / outpainting endpoints will not be loaded.
 \n- sd.anime       |  will only load anime SD endpoints, which means basic / inpainting / outpainting endpoints will not be loaded.
 \n- sd.inpainting  |  will only load inpainting / outpainting SD endpoints, which means basic / anime endpoints will not be loaded.
-\n- sync           |  will only load 'sync' endpoints, which are relatively fast (e.g. sod, lama, harmonization, ...).
+\n- sync           |  will only load 'sync' endpoints, which are relatively fast (e.g. sod, lama, captioning, harmonization, ...).
+\n- control        |  will only load 'ControlNet' endpoints.
 \n-
 """,
 )
