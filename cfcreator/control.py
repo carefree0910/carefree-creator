@@ -144,6 +144,7 @@ def apply_control(
     cond = [common_data.prompt] * common_data.num_samples
     kw = handle_diffusion_model(api, common_data)
     kw["hint"] = all_hint
+    kw["hint_start"] = common_data.hint_starts
     dt = time.time()
     if need_change_device():
         api.to("cuda:0", use_half=True, no_annotator=True)

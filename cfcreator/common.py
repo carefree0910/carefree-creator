@@ -300,6 +300,10 @@ The `cdn` / `cos` url of the user's hint image.
 > `cos` url from `qcloud` is preferred.
 """,
     )
+    hint_starts: Dict[str, float] = Field(
+        default_factory=lambda: {},
+        description="start ratio of each hint",
+    )
     prompt: str = Field(..., description="Prompt.")
     fidelity: float = Field(
         0.05,
