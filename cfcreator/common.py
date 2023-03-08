@@ -14,7 +14,6 @@ from typing import Callable
 from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
-from functools import partial
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
