@@ -19,6 +19,7 @@ from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
 from cfcv.misc.toolkit import np_to_bytes
+from cflearn.api.cv import SDVersions
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
@@ -37,16 +38,7 @@ init_models = {}
 api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
-class SDVersions(str, Enum):
-    v1_5_BC = ""
-    v1_5 = "v1.5"
-    ANIME = "anime"
-    # ANIME_ANYTHING = "anime_anything"
-    # ANIME_HYBRID = "anime_hybrid"
-    DREAMLIKE = "dreamlike_v1"
-
-
-def _get(key: str, init_fn: Callable) -> api_type:
+def _get(key: str, init_fn: Callable, callback: Optional[Callable] = None) -> api_type:
     m = apis.get(key)
     if m is not None:
         return m
@@ -57,6 +49,8 @@ def _get(key: str, init_fn: Callable) -> api_type:
         m = init_fn("cuda:0", use_half=True)
     apis[key] = m
     init_fns[key] = init_fn
+    if callback is not None:
+        callback(m)
     return m
 
 
@@ -69,8 +63,22 @@ def _get_general_model(key: str, init_fn: Callable) -> Any:
     return m
 
 
-def get_sd_version(version: SDVersions) -> DiffusionAPI:
-    return _get(f"sd_{version}", partial(DiffusionAPI.from_sd_version, version))
+def init_sd() -> DiffusionAPI:
+    def _callback(m: DiffusionAPI) -> None:
+        focus = OPT.get("focus", "all")
+        m.current_sd_version = SDVersions.v1_5
+        targets = []
+        if focus in ("all", "sd", "sd.base"):
+            targets.append(SDVersions.v1_5)
+        if focus in ("all", "sd", "sd.anime"):
+            targets.append(SDVersions.ANIME)
+            targets.append(SDVersions.DREAMLIKE)
+            targets.append(SDVersions.ANIME_ANYTHING)
+            targets.append(SDVersions.ANIME_HYBRID)
+        print("> preparing sd weights")
+        m.prepare_sd(targets)
+
+    return _get(f"sd_v1.5", DiffusionAPI.from_sd, _callback)
 
 
 def get_sd_anime() -> DiffusionAPI:
@@ -412,33 +420,15 @@ class SDParameters(BaseModel):
     version: SDVersions
 
 
-def init_sd_ms() -> Dict[str, DiffusionAPI]:
-    focus = OPT.get("focus", "all")
-    ms = {}
-    if focus in ("all", "sd", "sd.base"):
-        ms.update(
-            {
-                "": get_sd_version("v1.5"),
-                "v1.5": get_sd_version("v1.5"),
-            }
-        )
-    if focus in ("all", "sd", "sd.anime"):
-        ms["anime"] = get_sd_anime()
-        ms[SDVersions.DREAMLIKE] = get_sd_version(SDVersions.DREAMLIKE)
-        # ms["anime_anything"] = get_sd_version("anime_anything_v3")
-        # ms["anime_hybrid"] = get_sd_version("anime_hybrid_v1")
-    return ms
-
-
-def get_sd_from(ms: Dict[str, DiffusionAPI], data: SDParameters) -> DiffusionAPI:
+def get_sd_from(sd: DiffusionAPI, data: SDParameters) -> DiffusionAPI:
     if not data.is_anime:
-        m = ms[data.version]
+        version = data.version
     else:
         version = data.version if data.version.startswith("anime") else "anime"
-        m = ms[version]
+    sd.switch_sd(version)
     if need_change_device():
-        m.to("cuda:0", use_half=True)
-    return m
+        sd.to("cuda:0", use_half=True)
+    return sd
 
 
 def cleanup(m: DiffusionAPI) -> None:

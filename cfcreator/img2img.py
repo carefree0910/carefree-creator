@@ -22,7 +22,7 @@ from cflearn.api.cv.third_party.isnet import ISNetAPI
 from .common import cleanup
 from .common import get_esr
 from .common import get_hrnet
-from .common import init_sd_ms
+from .common import init_sd
 from .common import get_sd_from
 from .common import get_semantic
 from .common import get_esr_anime
@@ -81,7 +81,7 @@ class Img2ImgSD(IAlgorithm):
     endpoint = img2img_sd_endpoint
 
     def initialize(self) -> None:
-        self.ms = init_sd_ms()
+        self.sd = init_sd()
 
     async def run(self, data: Img2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -94,7 +94,7 @@ class Img2ImgSD(IAlgorithm):
         if w > 0 and h > 0:
             image = image.resize((w, h), Image.LANCZOS)
         t2 = time.time()
-        m = get_sd_from(self.ms, data)
+        m = get_sd_from(self.sd, data)
         t3 = time.time()
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.img2img(

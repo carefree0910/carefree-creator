@@ -7,7 +7,7 @@ from pydantic import Field
 from cfclient.models import ImageModel
 
 from .common import cleanup
-from .common import init_sd_ms
+from .common import init_sd
 from .common import get_sd_from
 from .common import get_sd_inpainting
 from .common import handle_diffusion_model
@@ -35,12 +35,12 @@ class Txt2ImgSD(IAlgorithm):
     endpoint = txt2img_sd_endpoint
 
     def initialize(self) -> None:
-        self.ms = init_sd_ms()
+        self.sd = init_sd()
 
     async def run(self, data: Txt2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        m = get_sd_from(self.ms, data)
+        m = get_sd_from(self.sd, data)
         t1 = time.time()
         size = data.w, data.h
         kwargs = handle_diffusion_model(m, data)
@@ -86,20 +86,22 @@ class Txt2ImgSDOutpaintingModel(Txt2ImgModel, ImageModel, CommonSDInpaintingMode
 @IAlgorithm.auto_register()
 class Txt2ImgSDInpainting(IAlgorithm):
     model_class = Txt2ImgSDInpaintingModel
-    sd_inpainting_key = "$inpainting$"
 
     endpoint = txt2img_sd_inpainting_endpoint
 
     def initialize(self) -> None:
-        self.ms = init_sd_ms()
-        self.ms[self.sd_inpainting_key] = get_sd_inpainting()
+        self.sd = init_sd()
+        self.sd_inpainting = get_sd_inpainting()
 
     async def run(self, data: Txt2ImgSDInpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         mask = await self.download_image_with_retry(data.mask_url)
-        m = self.ms[data.version if data.use_raw_inpainting else self.sd_inpainting_key]
+        if not data.use_raw_inpainting:
+            m = self.sd_inpainting
+        else:
+            m = get_sd_from(self.sd, data)
         t1 = time.time()
         if need_change_device():
             m.to("cuda:0", use_half=True)
