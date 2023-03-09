@@ -64,21 +64,27 @@ def _get_general_model(key: str, init_fn: Callable) -> Any:
 
 
 def init_sd() -> DiffusionAPI:
-    def _callback(m: DiffusionAPI) -> None:
+    def _callback(m: ControlledDiffusionAPI) -> None:
         focus = OPT.get("focus", "all")
         m.current_sd_version = SDVersions.v1_5
         targets = []
-        if focus in ("all", "sd", "sd.base"):
+        if focus in ("all", "sd", "sd.base", "control"):
             targets.append(SDVersions.v1_5)
-        if focus in ("all", "sd", "sd.anime"):
+        if focus in ("all", "sd", "sd.anime", "control"):
             targets.append(SDVersions.ANIME)
             targets.append(SDVersions.DREAMLIKE)
             targets.append(SDVersions.ANIME_ANYTHING)
             targets.append(SDVersions.ANIME_HYBRID)
-        print("> preparing sd weights")
+        print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
         m.prepare_sd(targets)
+        print("> prepare ControlNet weights")
+        m.prepare_defaults()
+        print("> prepare ControlNet Annotators")
+        m.prepare_annotators()
+        print("> warmup ControlNet")
+        m.switch(*m.available)
 
-    return _get(f"sd_v1.5", DiffusionAPI.from_sd, _callback)
+    return _get("sd_v1.5", ControlledDiffusionAPI.from_sd, _callback)
 
 
 def get_sd_anime() -> DiffusionAPI:
@@ -103,23 +109,6 @@ def get_inpainting() -> DiffusionAPI:
 
 def get_semantic() -> DiffusionAPI:
     return _get("semantic", DiffusionAPI.from_semantic)
-
-
-def get_controlnet() -> ControlledDiffusionAPI:
-    def _get() -> ControlledDiffusionAPI:
-        print("> init diffusion (ControlNet)")
-        to_cpu = init_to_cpu()
-        device = "cpu" if to_cpu else "cuda:0"
-        api = ControlledDiffusionAPI.from_sd(device, use_half=not to_cpu)
-        print("> prepare ControlNet weights")
-        api.prepare_defaults()
-        print("> prepare ControlNet Annotators")
-        api.prepare_annotators()
-        print("> warmup ControlNet")
-        api.switch(*api.available)
-        return api
-
-    return _get_general_model("controlnet", _get)
 
 
 def get_hrnet() -> ImageHarmonizationAPI:
@@ -427,12 +416,13 @@ class SDParameters(BaseModel):
     version: SDVersions
 
 
-def get_sd_from(sd: DiffusionAPI, data: SDParameters) -> DiffusionAPI:
+def get_sd_from(sd: ControlledDiffusionAPI, data: SDParameters) -> DiffusionAPI:
     if not data.is_anime:
         version = data.version
     else:
         version = data.version if data.version.startswith("anime") else "anime"
     sd.switch_sd(version)
+    sd.disable_control()
     if need_change_device():
         sd.to("cuda:0", use_half=True)
     return sd

@@ -360,14 +360,14 @@ def register_endpoint(endpoint: str) -> None:
 
 
 # txt2img
-if focus in ("all", "sd", "sd.base", "sd.anime"):
+if focus in ("all", "sd", "sd.base", "sd.anime", "control"):
     register_endpoint(txt2img_sd_endpoint)
 if focus in ("all", "sd"):
     register_endpoint(txt2img_sd_inpainting_endpoint)
     register_endpoint(txt2img_sd_outpainting_endpoint)
 
 # img2img
-if focus in ("all", "sd", "sd.base", "sd.anime"):
+if focus in ("all", "sd", "sd.base", "sd.anime", "control"):
     register_endpoint(img2img_sd_endpoint)
 if focus == "all":
     register_endpoint(img2img_semantic2img_endpoint)

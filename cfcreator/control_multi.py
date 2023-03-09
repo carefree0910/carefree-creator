@@ -1,7 +1,5 @@
 import time
 
-import numpy as np
-
 from typing import Any
 from typing import Dict
 from typing import List
@@ -12,9 +10,7 @@ from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv.models.diffusion import ControlNetHints
 
 from .utils import to_canvas
-from .common import cleanup
-from .common import get_controlnet
-from .common import need_change_device
+from .common import init_sd
 from .common import IAlgorithm
 from .common import ControlNetModel
 from .control import get_images
@@ -83,7 +79,7 @@ class ControlMulti(IAlgorithm):
     endpoint = control_multi_endpoint
 
     def initialize(self) -> None:
-        self.api = get_controlnet()
+        self.api = init_sd()
 
     async def run(self, data: ControlMultiModel, *args: Any) -> Response:
         self.log_endpoint(data)

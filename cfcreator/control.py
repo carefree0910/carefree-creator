@@ -24,7 +24,7 @@ from cflearn.api.cv.models.diffusion import ControlledDiffusionAPI
 
 from .utils import to_canvas
 from .utils import resize_image
-from .common import get_controlnet
+from .common import init_sd
 from .common import need_change_device
 from .common import handle_diffusion_model
 from .common import IAlgorithm
@@ -66,6 +66,7 @@ def apply_control(
     hint_image: np.ndarray,
     hint_types: Union[ControlNetHints, List[ControlNetHints]],
 ) -> apply_response:
+    api.enable_control()
     if not isinstance(data, dict):
         common_data = data
         detect_resolution = getattr(data, "detect_resolution", None)
@@ -214,7 +215,7 @@ def register_control(
         endpoint = algorithm_endpoint
 
         def initialize(self) -> None:
-            self.api = get_controlnet()
+            self.api = init_sd()
 
         async def run(
             self,
