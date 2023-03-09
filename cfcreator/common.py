@@ -24,6 +24,7 @@ from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv import ControlledDiffusionAPI
 
+from .cos import download_with_retry
 from .cos import download_image_with_retry
 from .parameters import OPT
 from .parameters import verbose
@@ -383,6 +384,9 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     def log_times(self, latencies: Dict[str, float]) -> None:
         super().log_times(latencies)
         self.last_latencies = latencies
+
+    async def download_with_retry(self, url: str) -> bytes:
+        return await download_with_retry(self.http_client.session, url)
 
     async def download_image_with_retry(self, url: str) -> Image.Image:
         return await download_image_with_retry(self.http_client.session, url)

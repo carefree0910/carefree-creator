@@ -17,7 +17,8 @@ from typing import Optional
 from aiohttp import ClientSession
 from pydantic import Field
 from pydantic import BaseModel
-from cfclient.utils import download_image_with_retry as download
+from cfclient.utils import download_with_retry as download
+from cfclient.utils import download_image_with_retry as download_image
 
 from .parameters import use_cos
 from .parameters import bypass_audit
@@ -249,6 +250,18 @@ def audit_image(audit_client: Redis, path: str, timeout: int = 3) -> AuditRespon
     return AuditResponse(safe=False, reason="timeout")
 
 
+async def download_with_retry(
+    session: ClientSession,
+    url: str,
+    *,
+    retry: int = RETRY,
+    interval: int = 1,
+) -> bytes:
+    if use_cos() and url.startswith(CDN_HOST):
+        url = url.replace(CDN_HOST, COS_HOST)
+    return await download(session, url, retry=retry, interval=interval)
+
+
 async def download_image_with_retry(
     session: ClientSession,
     url: str,
@@ -258,7 +271,7 @@ async def download_image_with_retry(
 ) -> Image.Image:
     if use_cos() and url.startswith(CDN_HOST):
         url = url.replace(CDN_HOST, COS_HOST)
-    return await download(session, url, retry=retry, interval=interval)
+    return await download_image(session, url, retry=retry, interval=interval)
 
 
 __all__ = [
