@@ -16,7 +16,7 @@ setup(
     install_requires=[
         "click>=8.1.3",
         "fastapi==0.88.0",
-        "carefree-client>=0.1.7",
+        "carefree-client>=0.1.8",
         "carefree-learn[cv_full]>=0.3.4.21",
     ],
     extras_require={
