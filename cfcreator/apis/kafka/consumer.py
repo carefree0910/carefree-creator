@@ -89,7 +89,7 @@ pending_queue_key = get_pending_queue_key()
 
 # algorithms
 loaded_algorithms: Dict[str, IAlgorithm] = {
-    k: v(clients) for k, v in algorithms.items() if not k.startswith("control")
+    k: v(clients) for k, v in algorithms.items()
 }
 
 
