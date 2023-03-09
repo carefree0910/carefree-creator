@@ -75,6 +75,8 @@ def init_sd() -> DiffusionAPI:
             targets.append(SDVersions.DREAMLIKE)
             targets.append(SDVersions.ANIME_ANYTHING)
             targets.append(SDVersions.ANIME_HYBRID)
+            targets.append(SDVersions.ANIME_GUOFENG)
+            targets.append(SDVersions.ANIME_ORANGE)
         print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
         m.prepare_sd(targets)
         print("> prepare ControlNet weights")
