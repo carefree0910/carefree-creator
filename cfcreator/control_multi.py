@@ -94,11 +94,13 @@ class ControlMulti(IAlgorithm):
             data.types,
         )
         t2 = time.time()
-        content = np_to_bytes(to_canvas(results))
+        content = None if data.return_arrays else np_to_bytes(to_canvas(results))
         t3 = time.time()
         latencies["download"] = t1 - t0
         latencies["to_canvas"] = t3 - t2
         self.log_times(latencies)
+        if data.return_arrays:
+            return results
         return Response(content=content, media_type="image/png")
 
 
