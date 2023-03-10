@@ -1,8 +1,9 @@
 import time
 
 from typing import Any
+from typing import List
 from pydantic import Field
-from cftool.misc import safe_execute
+from pydantic import BaseModel
 from cflearn.api.cv.third_party.prompt import PromptEnhanceAPI
 from cflearn.api.cv.third_party.prompt import PromptEnhanceConfig
 
@@ -39,10 +40,14 @@ class PromptEnhanceModel(TextModel):
     comma_mode: bool = Field(False, description="whether include more comma.")
 
 
+class PromptEnhanceResponse(BaseModel):
+    prompts: List[str] = Field(..., description="enhanced prompts.")
+
+
 @IAlgorithm.auto_register()
 class Txt2TxtPromptEnhance(IAlgorithm):
     model_class = TextModel
-    response_model_class = TextModel
+    response_model_class = PromptEnhanceResponse
 
     endpoint = txt2txt_prompt_enhance_endpoint
 
@@ -50,7 +55,7 @@ class Txt2TxtPromptEnhance(IAlgorithm):
         print("> init prompt enhance API")
         self.m = PromptEnhanceAPI("cpu" if init_to_cpu() else "cuda:0")
 
-    async def run(self, data: PromptEnhanceModel, *args: Any) -> TextModel:
+    async def run(self, data: PromptEnhanceModel, *args: Any) -> PromptEnhanceResponse:
         self.log_endpoint(data)
         t0 = time.time()
         if need_change_device():
@@ -58,7 +63,7 @@ class Txt2TxtPromptEnhance(IAlgorithm):
         t1 = time.time()
         kw = data.dict()
         text = kw.pop("text")
-        prompt = self.m.enhance(text, **kw)
+        prompts = self.m.enhance(text, config=PromptEnhanceConfig(**kw))
         t2 = time.time()
         if need_change_device():
             self.m.to("cpu")
@@ -69,7 +74,7 @@ class Txt2TxtPromptEnhance(IAlgorithm):
                 "cleanup": time.time() - t2,
             }
         )
-        return TextModel(text=prompt)
+        return PromptEnhanceResponse(prompts=prompts)
 
 
 __all__ = [
