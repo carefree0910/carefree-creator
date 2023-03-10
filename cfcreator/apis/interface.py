@@ -381,6 +381,10 @@ if focus in ("all", "sync"):
 if focus in ("all", "sync"):
     register_endpoint(img2txt_caption_endpoint)
 
+# txt2txt
+if focus in ("all", "sync"):
+    register_endpoint(txt2txt_prompt_enhance_endpoint)
+
 # cv
 if focus in ("all", "sync"):
     register_endpoint(cv_affine_endpoint)

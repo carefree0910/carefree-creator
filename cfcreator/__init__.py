@@ -4,6 +4,7 @@ from .common import *
 from .txt2img import *
 from .img2img import *
 from .img2txt import *
+from .txt2txt import *
 from .control import *
 from .control_multi import *
 from .pipeline import *
