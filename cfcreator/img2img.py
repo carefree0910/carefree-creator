@@ -14,6 +14,7 @@ from scipy.interpolate import NearestNDInterpolator
 from cfcv.misc.toolkit import to_rgb
 from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
+from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv.models.common import read_image
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
@@ -404,6 +405,33 @@ class Img2ImgSemantic2Img(IAlgorithm):
 # image harmonization (hrnet)
 
 
+def apply_harmonization(
+    m: ImageHarmonizationAPI,
+    strength: float,
+    raw_image: np.ndarray,
+    normalized_mask: np.ndarray,
+) -> Tuple[np.ndarray, Dict[str, Any]]:
+    t0 = time.time()
+    if need_change_device():
+        m.to("cuda:0")
+    t1 = time.time()
+    result = m.run(raw_image, normalized_mask)
+    if strength != 1.0:
+        raw_image = raw_image.astype(np.float32)
+        result = result.astype(np.float32)
+        result = result * strength + raw_image * (1.0 - strength)
+        result = (np.clip(result, 0.0, 255.0)).astype(np.uint8)
+    t2 = time.time()
+    if need_change_device():
+        m.to("cpu")
+    latencies = {
+        "get_model": t1 - t0,
+        "inference": t2 - t1,
+        "cleanup": time.time() - t2,
+    }
+    return result, latencies
+
+
 class Img2ImgHarmonizationModel(ImageModel):
     mask_url: str = Field(
         ...,
@@ -428,42 +456,27 @@ class Img2ImgHarmonization(IAlgorithm):
         image = await self.download_image_with_retry(data.url)
         mask = await self.download_image_with_retry(data.mask_url)
         t1 = time.time()
-        if need_change_device():
-            self.m.to("cuda:0")
-        t2 = time.time()
-        image_arr = read_image(
-            image,
-            None,
-            anchor=None,
-            normalize=False,
-            to_torch_fmt=False,
-        ).image
-        mask_arr = read_image(
-            mask,
-            None,
-            anchor=None,
-            to_mask=True,
-            to_torch_fmt=False,
-        ).image
-        result = self.m.run(image_arr, mask_arr)
-        if data.strength != 1.0:
-            image_arr = image_arr.astype(np.float32)
-            result = result.astype(np.float32)
-            result = result * data.strength + image_arr * (1.0 - data.strength)
-            result = (np.clip(result, 0.0, 255.0)).astype(np.uint8)
-        content = np_to_bytes(result)
-        t3 = time.time()
-        if need_change_device():
-            self.m.to("cpu")
-        self.log_times(
-            {
-                "download": t1 - t0,
-                "get_model": t2 - t1,
-                "inference": t3 - t2,
-                "cleanup": time.time() - t3,
-            }
+        result, latencies = apply_harmonization(
+            self.m,
+            data.strength,
+            read_image(
+                image,
+                None,
+                anchor=None,
+                normalize=False,
+                to_torch_fmt=False,
+            ).image,
+            read_image(
+                mask,
+                None,
+                anchor=None,
+                to_mask=True,
+                to_torch_fmt=False,
+            ).image,
         )
-        return Response(content=content, media_type="image/png")
+        latencies["download"] = t1 - t0
+        self.log_times(latencies)
+        return Response(content=np_to_bytes(result), media_type="image/png")
 
 
 # salient object detection (isnet)
