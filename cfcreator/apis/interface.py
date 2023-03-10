@@ -399,7 +399,7 @@ if focus in ("all", "control"):
     register_endpoint(control_multi_endpoint)
 
 # pipeline
-if focus in ("all", "pipeline"):
+if focus in ("all", "sync", "pipeline"):
     register_endpoint(paste_pipeline_endpoint)
 
 
