@@ -56,8 +56,9 @@ class Txt2TxtPromptEnhance(IAlgorithm):
         if need_change_device():
             self.m.to("cuda:0")
         t1 = time.time()
-        prompt = data.text
-        prompt = self.m.enhance(prompt, safe_execute(PromptEnhanceConfig, data.dict()))
+        kw = data.dict()
+        text = kw.pop("text")
+        prompt = self.m.enhance(text, **kw)
         t2 = time.time()
         if need_change_device():
             self.m.to("cpu")
