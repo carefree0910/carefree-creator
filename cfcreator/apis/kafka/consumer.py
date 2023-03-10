@@ -201,7 +201,7 @@ async def consume() -> None:
                 res: Union[Response, Any] = await run_algorithm(algorithm, model)
                 latencies = algorithm.last_latencies
                 t1 = time.time()
-                if task.startswith("control"):
+                if task.startswith("control") or task.startswith("pipeline"):
                     procedure = "run_algorithm -> upload_temp_image"
                     urls = [upload_temp_image(cos_client, arr).cdn for arr in res]
                     t2 = t3 = time.time()
@@ -216,6 +216,8 @@ async def consume() -> None:
                                 result_urls=urls[num_cond:],
                             ),
                         )
+                    elif task == "pipeline.paste":
+                        result = dict(uid=uid, response=dict(url=urls[0]))
                     else:
                         raise ValueError(f"unrecognized task '{task}' occurred")
                 elif algorithm.response_model_class is not None:

@@ -49,6 +49,7 @@ def main() -> None:
             "sd.inpainting",
             "sync",
             "control",
+            "pipeline",
         ]
     ),
     help="""
@@ -60,6 +61,7 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
 \n- sd.inpainting  |  will only load inpainting / outpainting SD endpoints, which means basic / anime endpoints will not be loaded.
 \n- sync           |  will only load 'sync' endpoints, which are relatively fast (e.g. sod, lama, captioning, harmonization, ...).
 \n- control        |  will only load 'ControlNet' endpoints.
+\n- pipeline       |  will only load 'Pipeline' endpoints.
 \n-
 """,
 )

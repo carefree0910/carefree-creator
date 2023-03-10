@@ -68,9 +68,9 @@ def init_sd() -> DiffusionAPI:
         focus = OPT.get("focus", "all")
         m.current_sd_version = SDVersions.v1_5
         targets = []
-        if focus in ("all", "sd", "sd.base", "control"):
+        if focus in ("all", "sd", "sd.base", "control", "pipeline"):
             targets.append(SDVersions.v1_5)
-        if focus in ("all", "sd", "sd.anime", "control"):
+        if focus in ("all", "sd", "sd.anime", "control", "pipeline"):
             targets.append(SDVersions.ANIME)
             targets.append(SDVersions.DREAMLIKE)
             targets.append(SDVersions.ANIME_ANYTHING)

@@ -394,6 +394,10 @@ if focus in ("all", "control"):
     register_endpoint(control_mlsd_endpoint)
     register_endpoint(control_multi_endpoint)
 
+# pipeline
+if focus in ("all", "pipeline"):
+    register_endpoint(paste_pipeline_endpoint)
+
 
 # events
 
