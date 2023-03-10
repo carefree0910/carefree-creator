@@ -284,7 +284,7 @@ async def consume() -> None:
                     redis_client.set(pending_queue_key, json.dumps(queue))
             except Exception as err:
                 end_time = time.time()
-                reason = f"{task} -> {json.dumps(params, ensure_ascii=False)} -> {procedure} : {get_err_msg(err)}"
+                reason = f"{task} -> {procedure} : {get_err_msg(err)}"
                 data["uid"] = uid
                 data["reason"] = reason
                 data["end_time"] = end_time
