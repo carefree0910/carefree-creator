@@ -196,10 +196,29 @@ async def consume() -> None:
                 algorithm = loaded_algorithms[task]
                 model = algorithm.model_class(**params)  # type: ignore
                 procedure = "start -> run_algorithm"
+                if isinstance(model, ControlNetModel):
+                    model.return_arrays = True
                 res: Union[Response, Any] = await run_algorithm(algorithm, model)
                 latencies = algorithm.last_latencies
                 t1 = time.time()
-                if algorithm.response_model_class is not None:
+                if task.startswith("control"):
+                    procedure = "run_algorithm -> upload_temp_image"
+                    urls = [upload_temp_image(cos_client, arr).cdn for arr in res]
+                    t2 = t3 = time.time()
+                    procedure = "upload_temp_image -> redis"
+                    if task.startswith("control"):
+                        types = params.get("types")
+                        num_cond = 1 if types is None else len(types)
+                        result = dict(
+                            uid=uid,
+                            response=dict(
+                                hint_urls=urls[:num_cond],
+                                result_urls=urls[num_cond:],
+                            ),
+                        )
+                    else:
+                        raise ValueError(f"unrecognized task '{task}' occurred")
+                elif algorithm.response_model_class is not None:
                     t2 = t3 = t1
                     procedure = "run_algorithm -> redis"
                     result = dict(uid=uid, response=res.dict())

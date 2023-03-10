@@ -306,6 +306,10 @@ The `cdn` / `cos` url of the user's hint image.
     use_img2img: bool = Field(True, description="Whether use img2img method.")
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     guess_mode: bool = Field(False, description="Guess mode.")
+    return_arrays: bool = Field(
+        False,
+        description="Whether return List[np.ndarray] directly, only for internal usages.",
+    )
 
 
 def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:
@@ -454,6 +458,7 @@ __all__ = [
     "Txt2ImgModel",
     "Img2ImgModel",
     "Img2ImgDiffusionModel",
+    "ControlNetModel",
     "GetPromptModel",
     "GetPromptResponse",
     "Status",

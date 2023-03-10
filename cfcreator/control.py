@@ -224,10 +224,12 @@ def register_control(
         ) -> Response:
             results, latencies = await run_control(self, data, hint_type)
             t0 = time.time()
-            content = np_to_bytes(to_canvas(results))
+            content = None if data.return_arrays else np_to_bytes(to_canvas(results))
             t1 = time.time()
             latencies["to_canvas"] = t1 - t0
             self.log_times(latencies)
+            if data.return_arrays:
+                return results
             return Response(content=content, media_type="image/png")
 
     IAlgorithm.auto_register()(_)
