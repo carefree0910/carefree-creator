@@ -196,7 +196,7 @@ async def consume() -> None:
                 algorithm = loaded_algorithms[task]
                 model = algorithm.model_class(**params)  # type: ignore
                 procedure = "start -> run_algorithm"
-                if isinstance(model, ControlNetModel):
+                if isinstance(model, ReturnArraysModel):
                     model.return_arrays = True
                 res: Union[Response, Any] = await run_algorithm(algorithm, model)
                 latencies = algorithm.last_latencies
