@@ -146,11 +146,13 @@ def apply_control(
     kw = handle_diffusion_model(api, common_data)
     kw["hint"] = all_hint
     kw["hint_start"] = common_data.hint_starts
+    kw["max_wh"] = common_data.max_wh
     dt = time.time()
     if need_change_device():
         api.to("cuda:0", use_half=True, no_annotator=True)
     change_diffusion_device_time = time.time() - dt
     if not common_data.use_img2img:
+        kw["size"] = w, h
         outs = api.txt2img(cond, **kw)
     else:
         init_image = cv2.resize(
