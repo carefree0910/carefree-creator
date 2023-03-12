@@ -17,7 +17,7 @@ setup(
         "click>=8.1.3",
         "fastapi==0.88.0",
         "carefree-client>=0.1.9",
-        "carefree-learn[cv_full]>=0.3.4.25",
+        "carefree-learn[cv_full]>=0.3.4.26",
     ],
     extras_require={
         "kafka": [
