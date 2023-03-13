@@ -212,7 +212,12 @@ async def consume() -> None:
                     else:
                         reasons = []
                         for i, rs in enumerate(url_results):
-                            audit = audit_image(audit_redis_client, rs.path)
+                            try:
+                                audit = audit_image(
+                                    cos_client, image_mod_client, rs.path
+                                )
+                            except:
+                                audit = AuditResponse(safe=False, reason="unknown")
                             if audit.safe:
                                 reasons.append("")
                             else:
