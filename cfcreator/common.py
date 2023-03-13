@@ -313,6 +313,7 @@ The `cdn` / `cos` url of the user's hint image.
     use_img2img: bool = Field(True, description="Whether use img2img method.")
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     guess_mode: bool = Field(False, description="Guess mode.")
+    use_audit: bool = Field(False, description="Whether audit the outputs.")
 
 
 def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:

@@ -203,9 +203,23 @@ async def consume() -> None:
                 t1 = time.time()
                 if task.startswith("control") or task.startswith("pipeline"):
                     procedure = "run_algorithm -> upload_temp_image"
-                    urls = [upload_temp_image(cos_client, arr).cdn for arr in res]
-                    t2 = t3 = time.time()
-                    procedure = "upload_temp_image -> redis"
+                    url_results = [upload_temp_image(cos_client, arr) for arr in res]
+                    urls = [rs.cdn for rs in url_results]
+                    t2 = time.time()
+                    procedure = "upload_temp_image -> audit_image"
+                    if not isinstance(model, ControlNetModel) or not model.use_audit:
+                        reasons = [""] * len(urls)
+                    else:
+                        reasons = []
+                        for i, rs in enumerate(url_results):
+                            audit = audit_image(audit_redis_client, rs.path)
+                            if audit.safe:
+                                reasons.append("")
+                            else:
+                                urls[i] = None
+                                reasons.append(audit.reason)
+                    t3 = time.time()
+                    procedure = "audit_image -> redis"
                     if task.startswith("control"):
                         types = params.get("types")
                         num_cond = 1 if types is None else len(types)
@@ -213,7 +227,9 @@ async def consume() -> None:
                             uid=uid,
                             response=dict(
                                 hint_urls=urls[:num_cond],
+                                hint_reasons=reasons[:num_cond],
                                 result_urls=urls[num_cond:],
+                                result_reasons=reasons[num_cond:],
                             ),
                         )
                     elif task == "pipeline.paste":
