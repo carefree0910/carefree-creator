@@ -116,7 +116,10 @@ def apply_control(
             use_half = True
             api.annotators[hint_type].to(device, use_half=True)
         all_annotator_change_device_times.append(time.time() - ht)
-        o_hint_array = api.get_hint_of(hint_type, hint_image, **h_data.dict())
+        if data.bypass_annotator:
+            o_hint_array = np.array(hint_image)
+        else:
+            o_hint_array = api.get_hint_of(hint_type, hint_image, **h_data.dict())
         ht = time.time()
         if need_change_device():
             api.annotators[hint_type].to("cpu", use_half=False)
