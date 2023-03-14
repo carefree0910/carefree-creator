@@ -266,12 +266,14 @@ def register_hint(
         async def run(self, data: _Model, *args: Any) -> Response:
             t0 = time.time()
             image = await self.download_image_with_retry(data.url)
+            w, h = image.size
             t1 = time.time()
             hint_image = np.array(image)
             detect_resolution = getattr(data, "detect_resolution", None)
             if detect_resolution is not None:
                 hint_image = resize_image(hint_image, detect_resolution)
             hint = self.api.get_hint_of(hint_type, hint_image, **data.dict())
+            hint = cv2.resize(hint, (w, h), interpolation=cv2.INTER_LINEAR)
             self.log_times(dict(download=t1 - t0, inference=time.time() - t1))
             if data.return_arrays:
                 return [hint]
