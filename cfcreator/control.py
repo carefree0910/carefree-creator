@@ -108,14 +108,16 @@ def apply_control(
             h_data = data.get(hint_type)
             if h_data is None:
                 raise ValueError(f"cannot find data for '{hint_type}'")
-        ht = time.time()
         device = api.device
         use_half = api.use_half
+        ht = time.time()
         if need_change_device():
             device = "cuda:0"
             use_half = True
             api.annotators[hint_type].to(device, use_half=True)
+        all_annotator_change_device_times.append(time.time() - ht)
         o_hint_array = api.get_hint_of(hint_type, hint_image, **h_data.dict())
+        ht = time.time()
         if need_change_device():
             api.annotators[hint_type].to("cpu", use_half=False)
             torch.cuda.empty_cache()
