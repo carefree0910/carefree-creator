@@ -224,11 +224,7 @@ def register_control(
         def initialize(self) -> None:
             self.api = init_sd()
 
-        async def run(
-            self,
-            data: algorithm_model_class,
-            *args: Any,
-        ) -> Response:
+        async def run(self, data: algorithm_model_class, *args: Any) -> Response:
             results, latencies = await run_control(self, data, hint_type)
             t0 = time.time()
             content = None if data.return_arrays else np_to_bytes(to_canvas(results))
