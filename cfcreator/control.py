@@ -106,7 +106,7 @@ def apply_control(
             h_res = detect_resolution
         else:
             h_res = detect_resolution.get(hint_type)
-        if h_res is not None:
+        if h_res is not None and not common_data.bypass_annotator:
             hint_image = resize_image(hint_image, h_res)
         if not isinstance(data, dict):
             h_data = data
@@ -123,20 +123,23 @@ def apply_control(
             api.annotators[hint_type].to(device, use_half=True)
         all_annotator_change_device_times.append(time.time() - ht)
         if common_data.bypass_annotator:
-            o_hint_array = np.array(hint_image)
+            o_hint_arr = np.array(hint_image)
         else:
-            o_hint_array = api.get_hint_of(hint_type, hint_image, **h_data.dict())
+            o_hint_arr = api.get_hint_of(hint_type, hint_image, **h_data.dict())
         ht = time.time()
         if need_change_device():
             api.annotators[hint_type].to("cpu", use_half=False)
             torch.cuda.empty_cache()
         all_annotator_change_device_times.append(time.time() - ht)
-        hint_array = cv2.resize(o_hint_array, (w, h), interpolation=cv2.INTER_LINEAR)
+        if common_data.bypass_annotator:
+            hint_array = o_hint_arr
+        else:
+            hint_array = cv2.resize(o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
         hint = torch.from_numpy(hint_array)[None].permute(0, 3, 1, 2)
         if use_half:
             hint = hint.half()
         hint = hint.contiguous().to(device) / 255.0
-        all_o_hint_arrays.append(o_hint_array)
+        all_o_hint_arrays.append(o_hint_arr)
         all_hint[hint_type] = hint
     change_annotator_device_time = sum(all_annotator_change_device_times)
     t2 = time.time()
