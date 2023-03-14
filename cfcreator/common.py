@@ -63,7 +63,7 @@ def _get_general_model(key: str, init_fn: Callable) -> Any:
     return m
 
 
-def init_sd() -> DiffusionAPI:
+def init_sd() -> ControlledDiffusionAPI:
     def _callback(m: ControlledDiffusionAPI) -> None:
         focus = OPT.get("focus", "all")
         m.current_sd_version = SDVersions.v1_5
