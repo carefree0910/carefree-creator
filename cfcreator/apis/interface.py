@@ -397,6 +397,10 @@ if focus in ("all", "control"):
     register_endpoint(control_pose_endpoint)
     register_endpoint(control_mlsd_endpoint)
     register_endpoint(control_multi_endpoint)
+    register_endpoint(control_depth_hint_endpoint)
+    register_endpoint(control_canny_hint_endpoint)
+    register_endpoint(control_pose_hint_endpoint)
+    register_endpoint(control_mlsd_hint_endpoint)
 
 # pipeline
 if focus in ("all", "sync", "pipeline"):

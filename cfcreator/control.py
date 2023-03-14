@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from cfcv.misc.toolkit import to_rgb
 from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
+from cfclient.models.core import ImageModel
 from cflearn.api.cv.models.common import restrict_wh
 from cflearn.api.cv.models.common import get_suitable_size
 from cflearn.api.cv.models.diffusion import ControlNetHints
@@ -29,6 +30,7 @@ from .common import need_change_device
 from .common import handle_diffusion_model
 from .common import IAlgorithm
 from .common import ControlNetModel
+from .common import ReturnArraysModel
 from .common import ControlStrengthModel
 
 
@@ -37,6 +39,10 @@ control_depth_endpoint = "/control/depth"
 control_canny_endpoint = "/control/canny"
 control_pose_endpoint = "/control/pose"
 control_mlsd_endpoint = "/control/mlsd"
+control_depth_hint_endpoint = "/control/depth_hint"
+control_canny_hint_endpoint = "/control/canny_hint"
+control_pose_hint_endpoint = "/control/pose_hint"
+control_mlsd_hint_endpoint = "/control/mlsd_hint"
 
 
 images_type = Tuple[np.ndarray, np.ndarray]
@@ -238,6 +244,35 @@ def register_control(
     IAlgorithm.auto_register()(_)
 
 
+def register_hint(
+    hint_model_class: Type,
+    hint_endpoint: str,
+    hint_type: ControlNetHints,
+) -> None:
+    class _Model(hint_model_class, ReturnArraysModel, ImageModel):
+        pass
+
+    class _(IAlgorithm):
+        model_class = _Model
+
+        endpoint = hint_endpoint
+
+        def initialize(self) -> None:
+            self.api = init_sd()
+
+        async def run(self, data: _Model, *args: Any) -> Response:
+            t0 = time.time()
+            image = await self.download_image_with_retry(data.url)
+            t1 = time.time()
+            hint = self.api.get_hint_of(hint_type, np.array(image), **data.dict())
+            self.log_times(dict(download=t1 - t0, inference=time.time() - t1))
+            if data.return_arrays:
+                return [hint]
+            return Response(content=np_to_bytes(hint), media_type="image/png")
+
+    IAlgorithm.auto_register()(_)
+
+
 class DetectResolutionModel(BaseModel):
     detect_resolution: int = Field(
         384,
@@ -259,7 +294,11 @@ class LargeDetectResolutionModel(BaseModel):
 # ControlNet (depth2image)
 
 
-class DepthModel(DetectResolutionModel, ControlStrengthModel):
+class _DepthModel(DetectResolutionModel):
+    pass
+
+
+class DepthModel(_DepthModel, ControlStrengthModel):
     pass
 
 
@@ -270,7 +309,7 @@ class ControlDepthModel(DepthModel, ControlNetModel):
 # ControlNet (canny2image)
 
 
-class CannyModel(ControlStrengthModel):
+class _CannyModel(ControlStrengthModel):
     low_threshold: int = Field(
         100,
         ge=1,
@@ -285,6 +324,10 @@ class CannyModel(ControlStrengthModel):
     )
 
 
+class CannyModel(_CannyModel, ControlStrengthModel):
+    pass
+
+
 class ControlCannyModel(CannyModel, ControlNetModel):
     pass
 
@@ -292,7 +335,11 @@ class ControlCannyModel(CannyModel, ControlNetModel):
 # ControlNet (pose2image)
 
 
-class PoseModel(LargeDetectResolutionModel, ControlStrengthModel):
+class _PoseModel(LargeDetectResolutionModel):
+    pass
+
+
+class PoseModel(_PoseModel, ControlStrengthModel):
     pass
 
 
@@ -303,7 +350,7 @@ class ControlPoseModel(PoseModel, ControlNetModel):
 # ControlNet (canny2image)
 
 
-class MLSDModel(LargeDetectResolutionModel, ControlStrengthModel):
+class _MLSDModel(LargeDetectResolutionModel):
     value_threshold: float = Field(
         0.1,
         ge=0.01,
@@ -318,6 +365,10 @@ class MLSDModel(LargeDetectResolutionModel, ControlStrengthModel):
     )
 
 
+class MLSDModel(_MLSDModel, ControlStrengthModel):
+    pass
+
+
 class ControlMLSDModel(MLSDModel, ControlNetModel):
     pass
 
@@ -328,6 +379,10 @@ register_control(ControlDepthModel, control_depth_endpoint, ControlNetHints.DEPT
 register_control(ControlCannyModel, control_canny_endpoint, ControlNetHints.CANNY)
 register_control(ControlPoseModel, control_pose_endpoint, ControlNetHints.POSE)
 register_control(ControlMLSDModel, control_mlsd_endpoint, ControlNetHints.MLSD)
+register_hint(_DepthModel, control_depth_hint_endpoint, ControlNetHints.DEPTH)
+register_hint(_CannyModel, control_canny_hint_endpoint, ControlNetHints.CANNY)
+register_hint(_PoseModel, control_pose_hint_endpoint, ControlNetHints.POSE)
+register_hint(_MLSDModel, control_mlsd_hint_endpoint, ControlNetHints.MLSD)
 
 
 __all__ = [
@@ -335,6 +390,10 @@ __all__ = [
     "control_canny_endpoint",
     "control_pose_endpoint",
     "control_mlsd_endpoint",
+    "control_depth_hint_endpoint",
+    "control_canny_hint_endpoint",
+    "control_pose_hint_endpoint",
+    "control_mlsd_hint_endpoint",
     "ControlDepthModel",
     "ControlCannyModel",
     "ControlPoseModel",
