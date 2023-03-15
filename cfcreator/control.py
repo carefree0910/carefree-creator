@@ -106,14 +106,15 @@ def apply_control(
             h_res = detect_resolution
         else:
             h_res = detect_resolution.get(hint_type)
-        if h_res is not None and not common_data.bypass_annotator:
-            hint_image = resize_image(hint_image, h_res)
         if not isinstance(data, dict):
             h_data = data
         else:
             h_data = data.get(hint_type)
             if h_data is None:
                 raise ValueError(f"cannot find data for '{hint_type}'")
+        bypass_annotator = h_data.bypass_annotator
+        if h_res is not None and not bypass_annotator:
+            hint_image = resize_image(hint_image, h_res)
         device = api.device
         use_half = api.use_half
         ht = time.time()
@@ -122,7 +123,7 @@ def apply_control(
             use_half = True
             api.annotators[hint_type].to(device, use_half=True)
         all_annotator_change_device_times.append(time.time() - ht)
-        if common_data.bypass_annotator:
+        if bypass_annotator:
             o_hint_arr = np.array(hint_image)
         else:
             o_hint_arr = api.get_hint_of(hint_type, hint_image, **h_data.dict())
@@ -131,7 +132,7 @@ def apply_control(
             api.annotators[hint_type].to("cpu", use_half=False)
             torch.cuda.empty_cache()
         all_annotator_change_device_times.append(time.time() - ht)
-        if common_data.bypass_annotator:
+        if bypass_annotator:
             hint_array = o_hint_arr
         else:
             hint_array = cv2.resize(o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
