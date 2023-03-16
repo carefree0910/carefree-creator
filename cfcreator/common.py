@@ -315,6 +315,7 @@ The `cdn` / `cos` url of the user's hint image.
     use_img2img: bool = Field(True, description="Whether use img2img method.")
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     bypass_annotator: bool = Field(False, description="Bypass the annotator.")
+    base_model: SDVersions = Field(SDVersions.v1_5, description="The base model.")
     guess_mode: bool = Field(False, description="Guess mode.")
     use_audit: bool = Field(False, description="Whether audit the outputs.")
 

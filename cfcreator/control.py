@@ -96,6 +96,7 @@ def apply_control(
     if len(hint_types) > api.num_pool:
         msg = f"maximum number of control is {api.num_pool}, but got {len(hint_types)}"
         raise ValueError(msg)
+    api.switch_sd(common_data.base_model)
     api.switch(*hint_types)
     t1 = time.time()
     all_hint = {}
