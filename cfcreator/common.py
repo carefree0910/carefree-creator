@@ -95,8 +95,16 @@ def get_sd_anime() -> DiffusionAPI:
     return _get("sd_anime", DiffusionAPI.from_sd_anime)
 
 
-def get_sd_inpainting() -> DiffusionAPI:
-    return _get("sd_inpainting", DiffusionAPI.from_sd_inpainting)
+def get_sd_inpainting() -> ControlledDiffusionAPI:
+    def _callback(m: ControlledDiffusionAPI) -> None:
+        sd = init_sd()
+        m.weights = sd.weights
+        m.annotators = sd.annotators
+        m.current_sd_version = SDVersions.v1_5
+        m.switch(*m.available)
+
+    init_fn = ControlledDiffusionAPI.from_sd_inpainting
+    return _get("sd_inpainting", init_fn, _callback)
 
 
 def get_esr() -> TranslatorAPI:
