@@ -14,6 +14,7 @@ from typing import Callable
 from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
+from functools import partial
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
@@ -86,7 +87,8 @@ def init_sd() -> ControlledDiffusionAPI:
         print("> warmup ControlNet")
         m.switch(*m.available)
 
-    return _get("sd_v1.5", ControlledDiffusionAPI.from_sd, _callback)
+    init_fn = partial(ControlledDiffusionAPI.from_sd_version, "v1.5")
+    return _get("sd_v1.5", init_fn, _callback)
 
 
 def get_sd_anime() -> DiffusionAPI:
