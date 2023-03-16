@@ -5,12 +5,14 @@ import torch
 
 import numpy as np
 
+from PIL import Image
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
 from typing import Tuple
 from typing import Union
+from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
@@ -71,6 +73,7 @@ def apply_control(
     input_image: np.ndarray,
     hint_image: np.ndarray,
     hint_types: Union[ControlNetHints, List[ControlNetHints]],
+    normalized_inpainting_mask: Optional[np.ndarray] = None,
 ) -> apply_response:
     api.enable_control()
     if not isinstance(data, dict):
@@ -167,7 +170,14 @@ def apply_control(
     if need_change_device():
         api.to("cuda:0", use_half=True, no_annotator=True)
     change_diffusion_device_time = time.time() - dt
-    if not common_data.use_img2img:
+    # inpainting workaround
+    if api.m.unet_kw["in_channels"] == 9:
+        if normalized_inpainting_mask is None:
+            raise ValueError("`normalized_input_mask` should be provided to inpainting")
+        image = Image.fromarray(input_image)
+        inpainting_mask = Image.fromarray(to_uint8(normalized_inpainting_mask))
+        outs = api.txt2img_inpainting(cond, image, inpainting_mask, **kw)
+    elif not common_data.use_img2img:
         kw["size"] = w, h
         outs = api.txt2img(cond, **kw)
     else:
