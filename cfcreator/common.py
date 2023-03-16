@@ -67,6 +67,7 @@ def init_sd() -> ControlledDiffusionAPI:
     def _callback(m: ControlledDiffusionAPI) -> None:
         focus = OPT.get("focus", "all")
         m.current_sd_version = SDVersions.v1_5
+        m.current_base_sd_version = SDVersions.v1_5
         targets = []
         if focus in ("all", "sd", "sd.base", "control", "pipeline"):
             targets.append(SDVersions.v1_5)
