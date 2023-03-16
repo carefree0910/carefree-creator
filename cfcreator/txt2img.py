@@ -98,10 +98,11 @@ class Txt2ImgSDInpainting(IAlgorithm):
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         mask = await self.download_image_with_retry(data.mask_url)
-        if not data.use_raw_inpainting:
-            m = self.sd_inpainting
-        else:
+        if data.use_raw_inpainting:
             m = get_sd_from(self.sd, data)
+        else:
+            m = self.sd_inpainting
+            m.disable_control()
         t1 = time.time()
         if need_change_device():
             m.to("cuda:0", use_half=True)
