@@ -285,12 +285,7 @@ class Img2ImgDiffusionModel(Img2ImgModel, DiffusionModel):
 
 
 class ControlStrengthModel(BaseModel):
-    control_strength: float = Field(
-        1.0,
-        ge=0.0,
-        le=2.0,
-        description="The strength of the control.",
-    )
+    control_strength: float = Field(1.0, description="The strength of the control.")
 
 
 class ReturnArraysModel(BaseModel):
