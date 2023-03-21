@@ -203,7 +203,10 @@ Seed of the variation generation.
         le=1.0,
         description="Strength of the variation generation.",
     )
-    variations: List[VariationModel] = Field([], description="Variation ingredients")
+    variations: List[VariationModel] = Field(
+        default_factory=lambda: [],
+        description="Variation ingredients",
+    )
     num_steps: int = Field(20, description="Number of sampling steps", ge=5, le=100)
     guidance_scale: float = Field(
         7.5,
