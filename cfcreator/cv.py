@@ -7,10 +7,10 @@ from typing import Any
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from cftool.cv import to_uint8
+from cftool.cv import np_to_bytes
+from cftool.cv import ImageProcessor
 from cfclient.models import ImageModel
-from cfcv.misc.toolkit import to_uint8
-from cfcv.misc.toolkit import np_to_bytes
-from cfcv.misc.toolkit import ImageProcessor
 
 from .common import IAlgorithm
 

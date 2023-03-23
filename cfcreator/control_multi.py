@@ -5,9 +5,9 @@ from typing import Dict
 from typing import List
 from fastapi import Response
 from pydantic import Field
+from cftool.cv import np_to_bytes
 from cftool.misc import shallow_copy_dict
-from cfcv.misc.toolkit import np_to_bytes
-from cflearn.api.cv.models.diffusion import ControlNetHints
+from cflearn.api.cv.diffusion import ControlNetHints
 
 from .utils import to_canvas
 from .common import init_sd

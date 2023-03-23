@@ -9,9 +9,9 @@ from typing import List
 from typing import Tuple
 from fastapi import Response
 from pydantic import Field
-from cfcv.misc.toolkit import to_rgb
-from cfcv.misc.toolkit import to_uint8
-from cfcv.misc.toolkit import np_to_bytes
+from cftool.cv import to_rgb
+from cftool.cv import to_uint8
+from cftool.cv import np_to_bytes
 from cfclient.models.core import ImageModel
 
 from .cv import affine

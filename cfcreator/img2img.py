@@ -12,11 +12,11 @@ from typing import Tuple
 from fastapi import Response
 from pydantic import Field
 from scipy.interpolate import NearestNDInterpolator
-from cfcv.misc.toolkit import to_rgb
-from cfcv.misc.toolkit import to_uint8
-from cfcv.misc.toolkit import np_to_bytes
+from cftool.cv import to_rgb
+from cftool.cv import to_uint8
+from cftool.cv import read_image
+from cftool.cv import np_to_bytes
 from cflearn.api.cv import ImageHarmonizationAPI
-from cflearn.api.cv.models.common import read_image
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
 from cflearn.api.cv.third_party.isnet import ISNetAPI

@@ -15,10 +15,10 @@ from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
 from functools import partial
+from cftool.cv import np_to_bytes
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
-from cfcv.misc.toolkit import np_to_bytes
 from cflearn.api.cv import SDVersions
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI

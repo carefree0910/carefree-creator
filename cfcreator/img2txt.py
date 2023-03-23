@@ -3,8 +3,8 @@ import torch
 
 from PIL import Image
 from typing import Any
-from cfcv.misc.toolkit import to_rgb
-from cflearn.api.cv.models.common import restrict_wh
+from cftool.cv import to_rgb
+from cftool.cv import restrict_wh
 from cflearn.api.cv.third_party.blip import BLIPAPI
 
 from .common import IAlgorithm

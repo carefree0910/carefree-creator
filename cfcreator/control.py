@@ -16,14 +16,14 @@ from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
-from cfcv.misc.toolkit import to_rgb
-from cfcv.misc.toolkit import to_uint8
-from cfcv.misc.toolkit import np_to_bytes
+from cftool.cv import to_rgb
+from cftool.cv import to_uint8
+from cftool.cv import np_to_bytes
+from cftool.cv import restrict_wh
+from cftool.cv import get_suitable_size
 from cfclient.models.core import ImageModel
-from cflearn.api.cv.models.common import restrict_wh
-from cflearn.api.cv.models.common import get_suitable_size
-from cflearn.api.cv.models.diffusion import ControlNetHints
-from cflearn.api.cv.models.diffusion import ControlledDiffusionAPI
+from cflearn.api.cv.diffusion import ControlNetHints
+from cflearn.api.cv.diffusion import ControlledDiffusionAPI
 
 from .utils import to_canvas
 from .utils import resize_image
