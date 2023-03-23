@@ -11,6 +11,7 @@ from cflearn.api.cv.third_party.prompt import PromptEnhanceConfig
 from .common import IAlgorithm
 from .common import TextModel
 from .parameters import init_to_cpu
+from .parameters import auto_lazy_load
 from .parameters import need_change_device
 
 
@@ -53,20 +54,21 @@ class Txt2TxtPromptEnhance(IAlgorithm):
     endpoint = txt2txt_prompt_enhance_endpoint
 
     def initialize(self) -> None:
-        print("> init prompt enhance API")
-        self.m = PromptEnhanceAPI("cpu" if init_to_cpu() else "cuda:0")
+        self.lazy = auto_lazy_load()
+        print(f"> init prompt enhance API{' (lazy)' if self.lazy else ''}")
+        self.m = PromptEnhanceAPI("cpu" if init_to_cpu() or self.lazy else "cuda:0")
 
     async def run(self, data: PromptEnhanceModel, *args: Any) -> PromptEnhanceResponse:
         self.log_endpoint(data)
         t0 = time.time()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             self.m.to("cuda:0")
         t1 = time.time()
         kw = data.dict()
         text = kw.pop("text")
         prompts = self.m.enhance(text, config=PromptEnhanceConfig(**kw))
         t2 = time.time()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             self.m.to("cpu")
             torch.cuda.empty_cache()
         self.log_times(

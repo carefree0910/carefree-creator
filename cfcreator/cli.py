@@ -72,6 +72,14 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
     type=str,
     help="Directory of the cache files.",
 )
+@click.option(
+    "--disable_lazy",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    type=bool,
+    help="This flag will disable the `auto lazy loading` mode.",
+)
 def serve(
     *,
     port: int,
@@ -80,8 +88,9 @@ def serve(
     focus: str,
     reload: bool,
     cache_dir: str,
+    disable_lazy: bool,
 ) -> None:
-    increment = {}
+    increment = dict(auto_lazy_load=not disable_lazy)
     if save_gpu_ram:
         increment["save_gpu_ram"] = True
     if cpu:

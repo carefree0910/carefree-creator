@@ -31,8 +31,9 @@ class Img2TxtCaption(IAlgorithm):
     endpoint = img2txt_caption_endpoint
 
     def initialize(self) -> None:
-        print("> init blip")
-        self.m = BLIPAPI("cpu" if init_to_cpu() else "cuda:0")
+        self.lazy = auto_lazy_load()
+        print(f"> init blip{' (lazy)' if self.lazy else ''}")
+        self.m = BLIPAPI("cpu" if init_to_cpu() or self.lazy else "cuda:0")
 
     async def run(self, data: Img2TxtModel, *args: Any) -> TextModel:
         self.log_endpoint(data)
@@ -43,12 +44,12 @@ class Img2TxtCaption(IAlgorithm):
         w, h = restrict_wh(w, h, data.max_wh)
         image = image.resize((w, h), resample=Image.LANCZOS)
         t2 = time.time()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             self.m.to("cuda:0")
         t3 = time.time()
         caption = self.m.caption(to_rgb(image))
         t4 = time.time()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             self.m.to("cpu")
             torch.cuda.empty_cache()
         self.log_times(

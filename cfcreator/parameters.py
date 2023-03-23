@@ -81,6 +81,10 @@ def need_change_device() -> bool:
     return OPT["save_gpu_ram"] and not OPT["cpu"]
 
 
+def auto_lazy_load() -> bool:
+    return OPT.get("auto_lazy_load", True)
+
+
 def use_cos() -> bool:
     return OPT["use_cos"]
 
