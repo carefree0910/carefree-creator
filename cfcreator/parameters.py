@@ -82,7 +82,7 @@ def need_change_device() -> bool:
 
 
 def auto_lazy_load() -> bool:
-    return OPT.get("auto_lazy_load", True)
+    return OPT.get("auto_lazy_load", True) and get_focus() != Focus.SYNC
 
 
 def use_cos() -> bool:
