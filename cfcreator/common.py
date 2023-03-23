@@ -27,8 +27,8 @@ from cflearn.api.cv import ControlledDiffusionAPI
 
 from .cos import download_with_retry
 from .cos import download_image_with_retry
-from .parameters import OPT
 from .parameters import verbose
+from .parameters import get_focus
 from .parameters import init_to_cpu
 from .parameters import need_change_device
 
@@ -66,7 +66,7 @@ def _get_general_model(key: str, init_fn: Callable) -> Any:
 
 def init_sd() -> ControlledDiffusionAPI:
     def _callback(m: ControlledDiffusionAPI) -> None:
-        focus = OPT.get("focus", "all")
+        focus = get_focus()
         m.current_sd_version = SDVersions.v1_5
         targets = []
         if focus in ("all", "sd", "sd.base", "control", "pipeline"):

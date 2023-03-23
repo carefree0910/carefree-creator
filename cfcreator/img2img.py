@@ -37,8 +37,8 @@ from .common import ImageModel
 from .common import Img2ImgModel
 from .common import CallbackModel
 from .common import Img2ImgDiffusionModel
-from .parameters import OPT
 from .parameters import verbose
+from .parameters import get_focus
 from .parameters import init_to_cpu
 from .parameters import need_change_device
 
@@ -207,7 +207,7 @@ class Img2ImgInpainting(IAlgorithm):
     endpoint = img2img_inpainting_endpoint
 
     def initialize(self) -> None:
-        focus = OPT.get("focus", "all")
+        focus = get_focus()
         self.m = None if focus == "sync" else get_inpainting()
         print("> init lama")
         self.lama = LaMa("cpu" if init_to_cpu() else "cuda:0")

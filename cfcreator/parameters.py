@@ -57,6 +57,10 @@ def verbose() -> bool:
     return OPT["verbose"]
 
 
+def get_focus() -> str:
+    return OPT.get("focus", "all")
+
+
 def init_to_cpu() -> bool:
     return OPT["save_gpu_ram"] or OPT["cpu"]
 
@@ -116,6 +120,7 @@ __all__ = [
     "opt_env_context",
     "use_cos",
     "verbose",
+    "get_focus",
     "init_to_cpu",
     "need_change_device",
     "inject_headers",

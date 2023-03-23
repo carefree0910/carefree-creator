@@ -328,7 +328,7 @@ def inject_custom_tokens(data: InjectCustomTokenModel) -> InjectCustomTokenRespo
 env_opt_json = os.environ.get(OPT_ENV_KEY)
 if env_opt_json is not None:
     OPT.update(json.loads(env_opt_json))
-focus = OPT.get("focus", "all")
+focus = get_focus()
 registered_algorithms = set()
 
 
