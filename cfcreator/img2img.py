@@ -41,6 +41,7 @@ from .parameters import verbose
 from .parameters import get_focus
 from .parameters import init_to_cpu
 from .parameters import need_change_device
+from .parameters import Focus
 
 
 img2img_sd_endpoint = "/img2img/sd"
@@ -208,7 +209,7 @@ class Img2ImgInpainting(IAlgorithm):
 
     def initialize(self) -> None:
         focus = get_focus()
-        self.m = None if focus == "sync" else get_inpainting()
+        self.m = None if focus == Focus.SYNC else get_inpainting()
         print("> init lama")
         self.lama = LaMa("cpu" if init_to_cpu() else "cuda:0")
 

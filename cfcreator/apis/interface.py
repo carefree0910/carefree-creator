@@ -360,51 +360,51 @@ def register_endpoint(endpoint: str) -> None:
 
 
 # txt2img
-if focus in ("all", "sd", "sd.base", "sd.anime", "control"):
+if focus in (Focus.ALL, Focus.SD, Focus.SD_BASE, Focus.SD_ANIME, Focus.CONTROL):
     register_endpoint(txt2img_sd_endpoint)
-if focus in ("all", "sd"):
+if focus in (Focus.ALL, Focus.SD):
     register_endpoint(txt2img_sd_inpainting_endpoint)
     register_endpoint(txt2img_sd_outpainting_endpoint)
 
 # img2img
-if focus in ("all", "sd", "sd.base", "sd.anime", "control"):
+if focus in (Focus.ALL, Focus.SD, Focus.SD_BASE, Focus.SD_ANIME, Focus.CONTROL):
     register_endpoint(img2img_sd_endpoint)
-if focus == "all":
+if focus == Focus.ALL:
     register_endpoint(img2img_semantic2img_endpoint)
-if focus in ("all", "sync"):
+if focus in (Focus.ALL, Focus.SYNC):
     register_endpoint(img2img_sr_endpoint)
     register_endpoint(img2img_inpainting_endpoint)
     register_endpoint(img2img_harmonization_endpoint)
     register_endpoint(img2img_sod_endpoint)
 
 # img2txt
-if focus in ("all", "sync"):
+if focus in (Focus.ALL, Focus.SYNC):
     register_endpoint(img2txt_caption_endpoint)
 
 # txt2txt
-if focus in ("all", "sync"):
+if focus in (Focus.ALL, Focus.SYNC):
     register_endpoint(txt2txt_prompt_enhance_endpoint)
 
 # cv
-if focus in ("all", "sync"):
+if focus in (Focus.ALL, Focus.SYNC):
     register_endpoint(cv_affine_endpoint)
     register_endpoint(cv_histogram_match_endpoint)
 
 # ControlNet
-if focus in ("all", "control"):
+if focus in (Focus.ALL, Focus.CONTROL):
     register_endpoint(control_depth_endpoint)
     register_endpoint(control_canny_endpoint)
     register_endpoint(control_pose_endpoint)
     register_endpoint(control_mlsd_endpoint)
     register_endpoint(control_multi_endpoint)
-if focus in ("all", "sync", "control"):
+if focus in (Focus.ALL, Focus.SYNC, Focus.CONTROL):
     register_endpoint(control_depth_hint_endpoint)
     register_endpoint(control_canny_hint_endpoint)
     register_endpoint(control_pose_hint_endpoint)
     register_endpoint(control_mlsd_hint_endpoint)
 
 # pipeline
-if focus in ("all", "sync", "pipeline"):
+if focus in (Focus.ALL, Focus.SYNC, Focus.PIPELINE):
     register_endpoint(paste_pipeline_endpoint)
 
 

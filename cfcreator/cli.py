@@ -3,6 +3,7 @@ import click
 import uvicorn
 
 from cfcreator import opt_env_context
+from cfcreator import Focus
 from cflearn.parameters import OPT
 
 
@@ -40,18 +41,7 @@ def main() -> None:
     "--focus",
     default="all",
     show_default=True,
-    type=click.Choice(
-        [
-            "all",
-            "sd",
-            "sd.base",
-            "sd.anime",
-            "sd.inpainting",
-            "sync",
-            "control",
-            "pipeline",
-        ]
-    ),
+    type=click.Choice([e.value for e in Focus]),
     help="""
 Indicates which endpoints should we focus on, helpful if we only care about certain subset of features.
 \n- all            |  will load all endpoints.

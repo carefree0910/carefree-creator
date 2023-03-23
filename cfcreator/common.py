@@ -31,6 +31,7 @@ from .parameters import verbose
 from .parameters import get_focus
 from .parameters import init_to_cpu
 from .parameters import need_change_device
+from .parameters import Focus
 
 
 apis = {}
@@ -69,9 +70,10 @@ def init_sd() -> ControlledDiffusionAPI:
         focus = get_focus()
         m.current_sd_version = SDVersions.v1_5
         targets = []
-        if focus in ("all", "sd", "sd.base", "control", "pipeline"):
+        common = Focus.ALL, Focus.SD, Focus.CONTROL, Focus.PIPELINE
+        if focus in common + (Focus.SD_BASE,):
             targets.append(SDVersions.v1_5)
-        if focus in ("all", "sd", "sd.anime", "control", "pipeline"):
+        if focus in common + (Focus.SD_ANIME,):
             targets.append(SDVersions.ANIME)
             targets.append(SDVersions.DREAMLIKE)
             targets.append(SDVersions.ANIME_ANYTHING)

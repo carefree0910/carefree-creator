@@ -1,6 +1,7 @@
 import os
 import json
 
+from enum import Enum
 from typing import Any
 from typing import Dict
 from fastapi import Response
@@ -53,11 +54,22 @@ class opt_env_context:
             os.environ[OPT_ENV_KEY] = self._backup
 
 
+class Focus(str, Enum):
+    ALL = "all"
+    SD = "sd"
+    SD_BASE = "sd.base"
+    SD_ANIME = "sd.anime"
+    SD_INPAINTING = "sd.inpainting"
+    SYNC = "sync"
+    CONTROL = "control"
+    PIPELINE = "pipeline"
+
+
 def verbose() -> bool:
     return OPT["verbose"]
 
 
-def get_focus() -> str:
+def get_focus() -> Focus:
     return OPT.get("focus", "all")
 
 
@@ -118,6 +130,7 @@ __all__ = [
     "OPT_ENV_KEY",
     "opt_context",
     "opt_env_context",
+    "Focus",
     "use_cos",
     "verbose",
     "get_focus",
