@@ -213,7 +213,7 @@ class Img2ImgInpainting(IAlgorithm):
         focus = get_focus()
         self.lazy = auto_lazy_load()
         self.m = None if focus == Focus.SYNC else get_inpainting(self.lazy)
-        print("> init lama")
+        print(f"> init lama{' (lazy)' if self.lazy else ''}")
         self.lama = LaMa("cpu" if init_to_cpu() or self.lazy else "cuda:0")
 
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:

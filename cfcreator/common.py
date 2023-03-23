@@ -49,7 +49,7 @@ def _get(
     m = apis.get(key)
     if m is not None:
         return m
-    print("> init", key)
+    print("> init", key, "(lazy)" if lazy else "")
     if init_to_cpu() or lazy:
         m = init_fn("cpu")
     else:
