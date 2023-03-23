@@ -1,4 +1,5 @@
 import time
+import torch
 
 import numpy as np
 
@@ -283,6 +284,7 @@ class Img2ImgInpainting(IAlgorithm):
         t3 = time.time()
         if need_change_device():
             self.lama.to("cpu")
+            torch.cuda.empty_cache()
         if self.m is not None:
             cleanup(self.m)
         self.log_times(
@@ -425,6 +427,7 @@ def apply_harmonization(
     t2 = time.time()
     if need_change_device():
         m.to("cpu")
+        torch.cuda.empty_cache()
     latencies = {
         "get_model": t1 - t0,
         "inference": t2 - t1,
@@ -506,6 +509,7 @@ class Img2ImgSOD(IAlgorithm):
         t3 = time.time()
         if need_change_device():
             self.m.to("cpu")
+            torch.cuda.empty_cache()
         self.log_times(
             {
                 "download": t1 - t0,

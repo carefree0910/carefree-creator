@@ -1,4 +1,5 @@
 import time
+import torch
 
 from PIL import Image
 from typing import Any
@@ -11,6 +12,7 @@ from .common import TextModel
 from .common import ImageModel
 from .common import MaxWHModel
 from .parameters import init_to_cpu
+from .parameters import auto_lazy_load
 from .parameters import need_change_device
 
 
@@ -48,6 +50,7 @@ class Img2TxtCaption(IAlgorithm):
         t4 = time.time()
         if need_change_device():
             self.m.to("cpu")
+            torch.cuda.empty_cache()
         self.log_times(
             {
                 "download": t1 - t0,

@@ -1,4 +1,5 @@
 import time
+import torch
 
 from typing import Any
 from typing import List
@@ -67,6 +68,7 @@ class Txt2TxtPromptEnhance(IAlgorithm):
         t2 = time.time()
         if need_change_device():
             self.m.to("cpu")
+            torch.cuda.empty_cache()
         self.log_times(
             {
                 "get_model": t1 - t0,
