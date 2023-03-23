@@ -40,12 +40,17 @@ init_models = {}
 api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
-def _get(key: str, init_fn: Callable, callback: Optional[Callable] = None) -> api_type:
+def _get(
+    key: str,
+    init_fn: Callable,
+    callback: Optional[Callable] = None,
+    lazy: bool = False,
+) -> api_type:
     m = apis.get(key)
     if m is not None:
         return m
     print("> init", key)
-    if init_to_cpu():
+    if init_to_cpu() or lazy:
         m = init_fn("cpu")
     else:
         m = init_fn("cuda:0", use_half=True)
@@ -117,12 +122,12 @@ def get_esr_anime() -> TranslatorAPI:
     return _get("esr_anime", TranslatorAPI.from_esr_anime)
 
 
-def get_inpainting() -> DiffusionAPI:
-    return _get("inpainting", DiffusionAPI.from_inpainting)
+def get_inpainting(lazy: bool) -> DiffusionAPI:
+    return _get("inpainting", DiffusionAPI.from_inpainting, lazy=lazy)
 
 
-def get_semantic() -> DiffusionAPI:
-    return _get("semantic", DiffusionAPI.from_semantic)
+def get_semantic(lazy: bool) -> DiffusionAPI:
+    return _get("semantic", DiffusionAPI.from_semantic, lazy=lazy)
 
 
 def get_hrnet() -> ImageHarmonizationAPI:
@@ -450,8 +455,8 @@ def get_sd_from(sd: ControlledDiffusionAPI, data: SDParameters) -> DiffusionAPI:
     return sd
 
 
-def cleanup(m: DiffusionAPI) -> None:
-    if need_change_device():
+def cleanup(m: DiffusionAPI, lazy: bool = False) -> None:
+    if need_change_device() or lazy:
         m.to("cpu")
         torch.cuda.empty_cache()
 

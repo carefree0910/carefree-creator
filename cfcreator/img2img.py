@@ -41,6 +41,7 @@ from .common import Img2ImgDiffusionModel
 from .parameters import verbose
 from .parameters import get_focus
 from .parameters import init_to_cpu
+from .parameters import auto_lazy_load
 from .parameters import need_change_device
 from .parameters import Focus
 
@@ -210,9 +211,10 @@ class Img2ImgInpainting(IAlgorithm):
 
     def initialize(self) -> None:
         focus = get_focus()
-        self.m = None if focus == Focus.SYNC else get_inpainting()
+        self.lazy = auto_lazy_load()
+        self.m = None if focus == Focus.SYNC else get_inpainting(self.lazy)
         print("> init lama")
-        self.lama = LaMa("cpu" if init_to_cpu() else "cuda:0")
+        self.lama = LaMa("cpu" if init_to_cpu() or self.lazy else "cuda:0")
 
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -228,7 +230,7 @@ class Img2ImgInpainting(IAlgorithm):
         else:
             mask = await self.download_image_with_retry(mask_url)
         t1 = time.time()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             if model == InpaintingModels.SD:
                 self.m.to("cuda:0", use_half=True)
             elif model == InpaintingModels.LAMA:
@@ -282,11 +284,11 @@ class Img2ImgInpainting(IAlgorithm):
                 ).numpy()[0]
             content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             self.lama.to("cpu")
             torch.cuda.empty_cache()
         if self.m is not None:
-            cleanup(self.m)
+            cleanup(self.m, self.lazy)
         self.log_times(
             {
                 "download": t1 - t0,
@@ -328,7 +330,8 @@ class Img2ImgSemantic2Img(IAlgorithm):
     endpoint = img2img_semantic2img_endpoint
 
     def initialize(self) -> None:
-        self.m = get_semantic()
+        self.lazy = auto_lazy_load()
+        self.m = get_semantic(self.lazy)
 
     async def run(self, data: Img2ImgSemantic2ImgModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -376,7 +379,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
         semantic_arr = semantic_arr.reshape([h, w])
         semantic = Image.fromarray(semantic_arr)
         t3 = time.time()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             self.m.to("cuda:0", use_half=True)
         t4 = time.time()
         if not data.keep_alpha:
@@ -391,7 +394,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t5 = time.time()
-        cleanup(self.m)
+        cleanup(self.m, self.lazy)
         self.log_times(
             {
                 "download": t1 - t0,
