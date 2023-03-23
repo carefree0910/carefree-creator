@@ -118,7 +118,7 @@ class Img2ImgSD(IAlgorithm):
                 "preprocess": t2 - t1,
                 "get_model": t3 - t2,
                 "inference": t4 - t3,
-                "cleanup": time.time() - t3,
+                "cleanup": time.time() - t4,
             }
         )
         return Response(content=content, media_type="image/png")
