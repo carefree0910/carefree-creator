@@ -136,10 +136,7 @@ def apply_control(
             api.annotators[hint_type].to("cpu", use_half=False)
             torch.cuda.empty_cache()
         all_annotator_change_device_times.append(time.time() - ht)
-        if bypass_annotator:
-            hint_array = o_hint_arr
-        else:
-            hint_array = cv2.resize(o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
+        hint_array = cv2.resize(o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
         hint = torch.from_numpy(hint_array)[None].permute(0, 3, 1, 2)
         if use_half:
             hint = hint.half()
