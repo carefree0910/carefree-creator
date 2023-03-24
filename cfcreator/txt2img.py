@@ -146,9 +146,9 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
+        self.m.disable_control()
         if need_change_device():
             self.m.to("cuda:0", use_half=True)
-        self.m.disable_control()
         t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
         kwargs.update(await self.handle_diffusion_inpainting_model(data))
