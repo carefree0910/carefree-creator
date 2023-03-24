@@ -148,6 +148,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         t1 = time.time()
         if need_change_device():
             self.m.to("cuda:0", use_half=True)
+        self.m.disable_control()
         t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
         kwargs.update(await self.handle_diffusion_inpainting_model(data))
