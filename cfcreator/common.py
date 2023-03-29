@@ -119,6 +119,7 @@ def init_sd() -> ControlledDiffusionAPI:
         print("> converting external weights")
         external_folder = os.path.join(os.path.expanduser("~"), ".cache", "external")
         for version in ExternalVersions:
+            print(f">> converting {version}")
             model_path = os.path.join(external_folder, f"{version}.ckpt")
             d = cflearn.scripts.sd.convert(model_path, m, load=False)
             m.sd_weights[f"ldm_sd_{version}"] = d
