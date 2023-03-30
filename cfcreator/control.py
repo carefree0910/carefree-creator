@@ -327,7 +327,7 @@ class ControlDepthModel(DepthModel, ControlNetModel):
 # ControlNet (canny2image)
 
 
-class _CannyModel(ControlStrengthModel):
+class _CannyModel(LargeDetectResolutionModel):
     low_threshold: int = Field(
         100,
         ge=1,
