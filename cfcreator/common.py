@@ -120,7 +120,7 @@ def init_sd() -> ControlledDiffusionAPI:
         # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
         if focus == Focus.SYNC:
             print("> prepare ControlNet Annotators")
-            for hint in m.defaults:
+            for hint in m.control_defaults:
                 m.prepare_annotator(hint)
         else:
             print("> converting external weights")
@@ -131,11 +131,11 @@ def init_sd() -> ControlledDiffusionAPI:
                 d = cflearn.scripts.sd.convert(model_path, m, load=False)
                 m.sd_weights[f"ldm_sd_{version}"] = d
             print("> prepare ControlNet weights")
-            m.prepare_defaults()
+            m.prepare_control_defaults()
             print("> prepare ControlNet Annotators")
             m.prepare_annotators()
             print("> warmup ControlNet")
-            m.switch(*m.available)
+            m.switch_control(*m.available_control_hints)
 
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, "v1.5")
     return _get("sd_v1.5", init_fn, _callback)
@@ -151,7 +151,7 @@ def get_sd_inpainting() -> ControlledDiffusionAPI:
         m.weights = sd.weights
         m.annotators = sd.annotators
         m.current_sd_version = MergedVersions.v1_5
-        m.switch(*m.available)
+        m.switch_control(*m.available_control_hints)
 
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
     return _get("sd_inpainting", init_fn, _callback)
