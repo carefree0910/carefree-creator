@@ -116,19 +116,26 @@ def init_sd() -> ControlledDiffusionAPI:
             targets.append(MergedVersions.ANIME_ORANGE)
         print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
         m.prepare_sd(targets)
-        print("> converting external weights")
-        external_folder = os.path.join(os.path.expanduser("~"), ".cache", "external")
-        for version in ExternalVersions:
-            print(f">> converting {version}")
-            model_path = os.path.join(external_folder, f"{version}.ckpt")
-            d = cflearn.scripts.sd.convert(model_path, m, load=False)
-            m.sd_weights[f"ldm_sd_{version}"] = d
-        print("> prepare ControlNet weights")
-        m.prepare_defaults()
-        print("> prepare ControlNet Annotators")
-        m.prepare_annotators()
-        print("> warmup ControlNet")
-        m.switch(*m.available)
+        # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
+        # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
+        if focus == Focus.SYNC:
+            print("> prepare ControlNet Annotators")
+            for hint in m.defaults:
+                m.prepare_annotator(hint)
+        else:
+            print("> converting external weights")
+            external_dir = os.path.join(os.path.expanduser("~"), ".cache", "external")
+            for version in ExternalVersions:
+                print(f">> converting {version}")
+                model_path = os.path.join(external_dir, f"{version}.ckpt")
+                d = cflearn.scripts.sd.convert(model_path, m, load=False)
+                m.sd_weights[f"ldm_sd_{version}"] = d
+            print("> prepare ControlNet weights")
+            m.prepare_defaults()
+            print("> prepare ControlNet Annotators")
+            m.prepare_annotators()
+            print("> warmup ControlNet")
+            m.switch(*m.available)
 
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, "v1.5")
     return _get("sd_v1.5", init_fn, _callback)
