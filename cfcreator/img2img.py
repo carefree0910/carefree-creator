@@ -147,6 +147,7 @@ def apply_sr(
 ) -> Tuple[np.ndarray, Dict[str, float]]:
     t0 = time.time
     img_arr = m.sr(image, max_wh=max_wh).numpy()[0]
+    img_arr = img_arr.transpose([1, 2, 0])
     t1 = time.time()
     if target_w and target_h:
         img_arr = cv2.resize(
@@ -197,7 +198,7 @@ class Img2ImgSR(IAlgorithm):
             data.target_h,
         )
         t3 = time.time()
-        content = get_bytes_from_translator(img_arr)
+        content = get_bytes_from_translator(img_arr, transpose=False)
         t4 = time.time()
         cleanup(m)
         t5 = time.time()

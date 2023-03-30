@@ -178,8 +178,9 @@ def get_hrnet() -> ImageHarmonizationAPI:
     return _get_general_model("hrnet", _get)
 
 
-def get_bytes_from_translator(img_arr: np.ndarray) -> bytes:
-    img_arr = img_arr.transpose([1, 2, 0])
+def get_bytes_from_translator(img_arr: np.ndarray, *, transpose: bool = True) -> bytes:
+    if transpose:
+        img_arr = img_arr.transpose([1, 2, 0])
     return np_to_bytes(img_arr)
 
 
