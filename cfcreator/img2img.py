@@ -442,7 +442,7 @@ def apply_harmonization(
     strength: float,
     raw_image: np.ndarray,
     normalized_mask: np.ndarray,
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+) -> Tuple[np.ndarray, Dict[str, float]]:
     t0 = time.time()
     if need_change_device():
         m.to("cuda:0")
