@@ -145,7 +145,7 @@ def apply_sr(
     target_w: int,
     target_h: int,
 ) -> Tuple[np.ndarray, Dict[str, float]]:
-    t0 = time.time
+    t0 = time.time()
     img_arr = m.sr(image, max_wh=max_wh).numpy()[0]
     img_arr = img_arr.transpose([1, 2, 0])
     t1 = time.time()
