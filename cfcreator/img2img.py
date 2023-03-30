@@ -16,6 +16,7 @@ from scipy.interpolate import NearestNDInterpolator
 from cfcv.misc.toolkit import to_rgb
 from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
+from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv.models.common import read_image
 from cflearn.api.cv.third_party.lama import LaMa
@@ -137,6 +138,38 @@ class Img2ImgSRModel(Img2ImgModel, CallbackModel):
     target_h: int = Field(0, description="The target height. 0 means as-is.")
 
 
+def apply_sr(
+    m: TranslatorAPI,
+    image: Image.Image,
+    max_wh: int,
+    target_w: int,
+    target_h: int,
+) -> Tuple[np.ndarray, Dict[str, float]]:
+    t0 = time.time
+    img_arr = m.sr(image, max_wh=max_wh).numpy()[0]
+    t1 = time.time()
+    if target_w and target_h:
+        img_arr = cv2.resize(
+            img_arr,
+            (target_w, target_h),
+            interpolation=cv2.INTER_LANCZOS4,
+        )
+    elif target_w or target_h:
+        h, w = img_arr.shape[:2]
+        if target_w:
+            k = target_w / w
+            target_h = round(h * k)
+        else:
+            k = target_h / h
+            target_w = round(w * k)
+        img_arr = cv2.resize(
+            img_arr,
+            (target_w, target_h),
+            interpolation=cv2.INTER_LANCZOS4 if k > 1 else cv2.INTER_AREA,
+        )
+    return img_arr, dict(inference=t1 - t0, resize=time.time() - t1)
+
+
 @IAlgorithm.auto_register()
 class Img2ImgSR(IAlgorithm):
     model_class = Img2ImgSRModel
@@ -156,41 +189,27 @@ class Img2ImgSR(IAlgorithm):
         if need_change_device():
             m.to("cuda:0", use_half=True)
         t2 = time.time()
-        img_arr = m.sr(image, max_wh=data.max_wh).numpy()[0]
+        img_arr, latencies = apply_sr(
+            m,
+            image,
+            data.max_wh,
+            data.target_w,
+            data.target_h,
+        )
         t3 = time.time()
-        if data.target_w and data.target_h:
-            img_arr = cv2.resize(
-                img_arr,
-                (data.target_w, data.target_h),
-                interpolation=cv2.INTER_LANCZOS4,
-            )
-        elif data.target_w or data.target_h:
-            h, w = img_arr.shape[:2]
-            if data.target_w:
-                k = data.target_w / w
-                target_w = data.target_w
-                target_h = round(h * k)
-            else:
-                k = data.target_h / h
-                target_h = data.target_h
-                target_w = round(w * k)
-            img_arr = cv2.resize(
-                img_arr,
-                (target_w, target_h),
-                interpolation=cv2.INTER_LANCZOS4 if k > 1 else cv2.INTER_AREA,
-            )
         content = get_bytes_from_translator(img_arr)
         t4 = time.time()
         cleanup(m)
-        self.log_times(
+        t5 = time.time()
+        latencies.update(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
-                "inference": t3 - t2,
-                "postprocess": t4 - t3,
-                "cleanup": time.time() - t4,
+                "get_bytes": t4 - t3,
+                "cleanup": t5 - t4,
             }
         )
+        self.log_times(latencies)
         return Response(content=content, media_type="image/png")
 
 
