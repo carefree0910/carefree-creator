@@ -1,3 +1,4 @@
+import cv2
 import time
 import torch
 
@@ -132,6 +133,8 @@ class Img2ImgSRModel(Img2ImgModel, CallbackModel):
         False,
         description="Whether the input image is an anime image or not.",
     )
+    target_w: int = Field(0, description="The target width. 0 means as-is.")
+    target_h: int = Field(0, description="The target height. 0 means as-is.")
 
 
 @IAlgorithm.auto_register()
@@ -154,15 +157,38 @@ class Img2ImgSR(IAlgorithm):
             m.to("cuda:0", use_half=True)
         t2 = time.time()
         img_arr = m.sr(image, max_wh=data.max_wh).numpy()[0]
-        content = get_bytes_from_translator(img_arr)
         t3 = time.time()
+        if data.target_w and data.target_h:
+            img_arr = cv2.resize(
+                img_arr,
+                (data.target_w, data.target_h),
+                interpolation=cv2.INTER_LANCZOS4,
+            )
+        elif data.target_w or data.target_h:
+            h, w = img_arr.shape[:2]
+            if data.target_w:
+                k = data.target_w / w
+                target_w = data.target_w
+                target_h = round(h * k)
+            else:
+                k = data.target_h / h
+                target_h = data.target_h
+                target_w = round(w * k)
+            img_arr = cv2.resize(
+                img_arr,
+                (target_w, target_h),
+                interpolation=cv2.INTER_LANCZOS4 if k > 1 else cv2.INTER_AREA,
+            )
+        content = get_bytes_from_translator(img_arr)
+        t4 = time.time()
         cleanup(m)
         self.log_times(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
                 "inference": t3 - t2,
-                "cleanup": time.time() - t3,
+                "postprocess": t4 - t3,
+                "cleanup": time.time() - t4,
             }
         )
         return Response(content=content, media_type="image/png")
