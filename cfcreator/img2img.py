@@ -149,14 +149,15 @@ def apply_sr(
     img_arr = m.sr(image, max_wh=max_wh).numpy()[0]
     img_arr = img_arr.transpose([1, 2, 0])
     t1 = time.time()
+    h, w = img_arr.shape[:2]
     if target_w and target_h:
+        larger = w * h < target_w * target_h
         img_arr = cv2.resize(
             img_arr,
             (target_w, target_h),
-            interpolation=cv2.INTER_LANCZOS4,
+            interpolation=cv2.INTER_LANCZOS4 if larger else cv2.INTER_AREA,
         )
     elif target_w or target_h:
-        h, w = img_arr.shape[:2]
         if target_w:
             k = target_w / w
             target_h = round(h * k)
