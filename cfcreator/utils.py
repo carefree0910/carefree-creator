@@ -25,6 +25,8 @@ def resize_image(input_image: np.ndarray, resolution: int) -> np.ndarray:
 
 def to_canvas(results: List[np.ndarray], *, padding: int = 0) -> np.ndarray:
     num_results = len(results)
+    if num_results == 1:
+        return results[0]
     num_col = math.ceil(math.sqrt(num_results))
     num_row = round(num_results / num_col)
     if num_row * num_col < num_results:
