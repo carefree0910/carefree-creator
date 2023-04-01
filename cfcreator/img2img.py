@@ -489,7 +489,7 @@ def apply_harmonization(
         scaled_h = round(h * scale)
         scaled_image = cv2.resize(raw_image, (scaled_w, scaled_h))
         scaled_mask = cv2.resize(normalized_mask, (scaled_w, scaled_h))
-    result = m.run(scaled_image, scaled_mask)
+    result = m.predict(scaled_image, scaled_mask)
     if scale < 1.0:
         result = cv2.resize(result, (w, h))
     if strength != 1.0:
