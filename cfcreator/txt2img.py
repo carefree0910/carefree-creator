@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any
 from fastapi import Response
 from pydantic import Field
+from pydantic import BaseModel
 from cfclient.models import ImageModel
 
 from .common import cleanup
@@ -23,9 +24,13 @@ txt2img_sd_inpainting_endpoint = "/txt2img/sd.inpainting"
 txt2img_sd_outpainting_endpoint = "/txt2img/sd.outpainting"
 
 
-class Txt2ImgSDModel(Txt2ImgModel):
+class _Txt2ImgSDModel(BaseModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
+
+
+class Txt2ImgSDModel(Txt2ImgModel, _Txt2ImgSDModel):
+    pass
 
 
 @IAlgorithm.auto_register()
@@ -68,7 +73,7 @@ class PaddingModes(str, Enum):
     CV2_TELEA = "cv2_telea"
 
 
-class Txt2ImgSDInpaintingModel(Txt2ImgModel, ImageModel, CommonSDInpaintingModel):
+class Txt2ImgSDInpaintingModel(CommonSDInpaintingModel, Txt2ImgModel, ImageModel):
     mask_url: str = Field(
         ...,
         description="""
@@ -79,7 +84,7 @@ The `cdn` / `cos` url of the user's mask.
     )
 
 
-class Txt2ImgSDOutpaintingModel(Txt2ImgModel, ImageModel, CommonSDInpaintingModel):
+class Txt2ImgSDOutpaintingModel(CommonSDInpaintingModel, Txt2ImgModel, ImageModel):
     pass
 
 

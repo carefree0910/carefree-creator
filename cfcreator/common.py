@@ -326,15 +326,15 @@ The `cdn` / `cos` url of the reference image.
     )
 
 
-class Txt2ImgModel(TextModel, MaxWHModel, DiffusionModel):
+class Txt2ImgModel(DiffusionModel, MaxWHModel, TextModel):
     pass
 
 
-class Img2ImgModel(ImageModel, MaxWHModel):
+class Img2ImgModel(MaxWHModel, ImageModel):
     pass
 
 
-class Img2ImgDiffusionModel(Img2ImgModel, DiffusionModel):
+class Img2ImgDiffusionModel(DiffusionModel, Img2ImgModel):
     pass
 
 
@@ -349,7 +349,7 @@ class ReturnArraysModel(BaseModel):
     )
 
 
-class ControlNetModel(DiffusionModel, MaxWHModel, ImageModel, ReturnArraysModel):
+class _ControlNetModel(BaseModel):
     hint_url: str = Field(
         "",
         description="""
@@ -378,6 +378,16 @@ The `cdn` / `cos` url of the user's hint image.
     )
     guess_mode: bool = Field(False, description="Guess mode.")
     use_audit: bool = Field(False, description="Whether audit the outputs.")
+
+
+class ControlNetModel(
+    ReturnArraysModel,
+    DiffusionModel,
+    MaxWHModel,
+    _ControlNetModel,
+    ImageModel,
+):
+    pass
 
 
 def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:
