@@ -481,12 +481,15 @@ def apply_harmonization(
     t1 = time.time()
     h, w = raw_image.shape[:2]
     scale = max_wh**2 / (w * h)
-    if scale < 1.0:
+    if scale >= 1.0:
+        scaled_image = raw_image
+        scaled_mask = normalized_mask
+    else:
         scaled_w = round(w * scale)
         scaled_h = round(h * scale)
-        raw_image = cv2.resize(raw_image, (scaled_w, scaled_h))
-        normalized_mask = cv2.resize(normalized_mask, (scaled_w, scaled_h))
-    result = m.run(raw_image, normalized_mask)
+        scaled_image = cv2.resize(raw_image, (scaled_w, scaled_h))
+        scaled_mask = cv2.resize(normalized_mask, (scaled_w, scaled_h))
+    result = m.run(scaled_image, scaled_mask)
     if scale < 1.0:
         result = cv2.resize(result, (w, h))
     if strength != 1.0:
