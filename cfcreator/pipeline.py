@@ -9,6 +9,7 @@ from typing import List
 from typing import Tuple
 from fastapi import Response
 from pydantic import Field
+from pydantic import BaseModel
 from cfcv.misc.toolkit import to_rgb
 from cfcv.misc.toolkit import to_uint8
 from cfcv.misc.toolkit import np_to_bytes
@@ -68,7 +69,7 @@ def paste(
     return results, latencies
 
 
-class PastePipelineModel(ImageModel, BaseAffineModel, ReturnArraysModel):
+class _PastePipelineModel(BaseModel):
     bg_url: str = Field(
         ...,
         description="""
@@ -76,6 +77,15 @@ The `cdn` / `cos` url of the background's image.
 > `cos` url from `qcloud` is preferred.
 """,
     )
+
+
+class PastePipelineModel(
+    ReturnArraysModel,
+    BaseAffineModel,
+    _PastePipelineModel,
+    ImageModel,
+):
+    pass
 
 
 @IAlgorithm.auto_register()

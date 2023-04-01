@@ -12,6 +12,7 @@ from typing import List
 from typing import Tuple
 from fastapi import Response
 from pydantic import Field
+from pydantic import BaseModel
 from scipy.interpolate import NearestNDInterpolator
 from cfcv.misc.toolkit import to_rgb
 from cfcv.misc.toolkit import to_uint8
@@ -59,7 +60,7 @@ img2img_sod_endpoint = "/img2img/sod"
 # img2img (stable diffusion)
 
 
-class Img2ImgSDModel(Img2ImgDiffusionModel):
+class _Img2ImgSDModel(BaseModel):
     text: str = Field(..., description="The text that we want to handle.")
     fidelity: float = Field(
         0.2,
@@ -78,6 +79,10 @@ Whether the returned image should keep the alpha-channel of the input image or n
         (0, 0),
         description="The output size, `0` means as-is",
     )
+
+
+class Img2ImgSDModel(Img2ImgDiffusionModel, _Img2ImgSDModel):
+    pass
 
 
 @IAlgorithm.auto_register()
@@ -129,13 +134,17 @@ class Img2ImgSD(IAlgorithm):
 # super resolution (Real-ESRGAN)
 
 
-class Img2ImgSRModel(Img2ImgModel, CallbackModel):
+class _Img2ImgSRModel(BaseModel):
     is_anime: bool = Field(
         False,
         description="Whether the input image is an anime image or not.",
     )
     target_w: int = Field(0, description="The target width. 0 means as-is.")
     target_h: int = Field(0, description="The target height. 0 means as-is.")
+
+
+class Img2ImgSRModel(CallbackModel, _Img2ImgSRModel, Img2ImgModel):
+    pass
 
 
 def apply_sr(
