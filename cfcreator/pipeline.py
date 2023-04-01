@@ -36,12 +36,12 @@ def get_response(data: ReturnArraysModel, results: List[np.ndarray]) -> Any:
 def paste(
     original_fg: Image.Image,
     original_bg: Image.Image,
-    a: int,
-    b: int,
-    c: int,
-    d: int,
-    e: int,
-    f: int,
+    a: float,
+    b: float,
+    c: float,
+    d: float,
+    e: float,
+    f: float,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
     t0 = time.time()
     if original_fg.mode != "RGBA":

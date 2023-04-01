@@ -1,4 +1,6 @@
+import os
 import torch
+import cflearn
 
 import numpy as np
 
@@ -40,6 +42,33 @@ init_models = {}
 api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
+class ExternalVersions(str, Enum):
+    """
+    Specify external SD weights that need to be loaded.
+    * these weights should be placed under ~/.cache/external/ folder.
+    * file name should be {version}.ckpt
+
+    Example
+    -------
+    class ExternalVersions(str, Enum):
+        MY_FANCY_MODEL = "my_fancy_model"
+
+    then you can place your model at ~/.cache/external/my_fancy_model.ckpt,
+    after which you can specify `my_fancy_model` as the `version` parameter!
+    """
+
+
+def merge_enums(*enums: Enum) -> Enum:
+    members: Dict[str, str] = {}
+    for e in enums:
+        for name, member in e.__members__.items():
+            members[name] = member.value
+    return Enum("MergedVersions", members, type=str)
+
+
+MergedVersions = merge_enums(SDVersions, ExternalVersions)
+
+
 def _get(
     key: str,
     init_fn: Callable,
@@ -73,26 +102,40 @@ def _get_general_model(key: str, init_fn: Callable) -> Any:
 def init_sd() -> ControlledDiffusionAPI:
     def _callback(m: ControlledDiffusionAPI) -> None:
         focus = get_focus()
-        m.current_sd_version = SDVersions.v1_5
+        m.current_sd_version = MergedVersions.v1_5
         targets = []
         common = Focus.ALL, Focus.SD, Focus.CONTROL, Focus.PIPELINE
         if focus in common + (Focus.SD_BASE,):
-            targets.append(SDVersions.v1_5)
+            targets.append(MergedVersions.v1_5)
         if focus in common + (Focus.SD_ANIME,):
-            targets.append(SDVersions.ANIME)
-            targets.append(SDVersions.DREAMLIKE)
-            targets.append(SDVersions.ANIME_ANYTHING)
-            targets.append(SDVersions.ANIME_HYBRID)
-            targets.append(SDVersions.ANIME_GUOFENG)
-            targets.append(SDVersions.ANIME_ORANGE)
+            targets.append(MergedVersions.ANIME)
+            targets.append(MergedVersions.DREAMLIKE)
+            targets.append(MergedVersions.ANIME_ANYTHING)
+            targets.append(MergedVersions.ANIME_HYBRID)
+            targets.append(MergedVersions.ANIME_GUOFENG)
+            targets.append(MergedVersions.ANIME_ORANGE)
         print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
         m.prepare_sd(targets)
-        print("> prepare ControlNet weights")
-        m.prepare_defaults()
-        print("> prepare ControlNet Annotators")
-        m.prepare_annotators()
-        print("> warmup ControlNet")
-        m.switch(*m.available)
+        # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
+        # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
+        if focus == Focus.SYNC:
+            print("> prepare ControlNet Annotators")
+            for hint in m.control_defaults:
+                m.prepare_annotator(hint)
+        else:
+            print("> converting external weights")
+            external_dir = os.path.join(os.path.expanduser("~"), ".cache", "external")
+            for version in ExternalVersions:
+                print(f">> converting {version}")
+                model_path = os.path.join(external_dir, f"{version}.ckpt")
+                d = cflearn.scripts.sd.convert(model_path, m, load=False)
+                m.sd_weights[f"ldm_sd_{version}"] = d
+            print("> prepare ControlNet weights")
+            m.prepare_control_defaults()
+            print("> prepare ControlNet Annotators")
+            m.prepare_annotators()
+            print("> warmup ControlNet")
+            m.switch_control(*m.available_control_hints)
 
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, "v1.5")
     return _get("sd_v1.5", init_fn, _callback)
@@ -107,8 +150,8 @@ def get_sd_inpainting() -> ControlledDiffusionAPI:
         sd = init_sd()
         m.weights = sd.weights
         m.annotators = sd.annotators
-        m.current_sd_version = SDVersions.v1_5
-        m.switch(*m.available)
+        m.current_sd_version = MergedVersions.v1_5
+        m.switch_control(*m.available_control_hints)
 
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
     return _get("sd_inpainting", init_fn, _callback)
@@ -135,8 +178,9 @@ def get_hrnet() -> ImageHarmonizationAPI:
     return _get_general_model("hrnet", _get)
 
 
-def get_bytes_from_translator(img_arr: np.ndarray) -> bytes:
-    img_arr = img_arr.transpose([1, 2, 0])
+def get_bytes_from_translator(img_arr: np.ndarray, *, transpose: bool = True) -> bytes:
+    if transpose:
+        img_arr = img_arr.transpose([1, 2, 0])
     return np_to_bytes(img_arr)
 
 
@@ -227,8 +271,8 @@ Seed of the variation generation.
         False,
         description="Whether should we generate anime images or not.",
     )
-    version: SDVersions = Field(
-        SDVersions.v1_5,
+    version: MergedVersions = Field(
+        MergedVersions.v1_5,
         description="Version of the diffusion model",
     )
     sampler: SDSamplers = Field(
@@ -328,7 +372,10 @@ The `cdn` / `cos` url of the user's hint image.
     use_img2img: bool = Field(True, description="Whether use img2img method.")
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     bypass_annotator: bool = Field(False, description="Bypass the annotator.")
-    base_model: SDVersions = Field(SDVersions.v1_5, description="The base model.")
+    base_model: MergedVersions = Field(
+        MergedVersions.v1_5,
+        description="The base model.",
+    )
     guess_mode: bool = Field(False, description="Guess mode.")
     use_audit: bool = Field(False, description="Whether audit the outputs.")
 
@@ -440,7 +487,7 @@ class Status(str, Enum):
 
 class SDParameters(BaseModel):
     is_anime: bool
-    version: SDVersions
+    version: MergedVersions
 
 
 def get_sd_from(sd: ControlledDiffusionAPI, data: SDParameters) -> DiffusionAPI:

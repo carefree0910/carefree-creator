@@ -1,3 +1,4 @@
+import cv2
 import time
 import torch
 
@@ -16,6 +17,7 @@ from cftool.cv import to_rgb
 from cftool.cv import to_uint8
 from cftool.cv import read_image
 from cftool.cv import np_to_bytes
+from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
@@ -132,6 +134,42 @@ class Img2ImgSRModel(Img2ImgModel, CallbackModel):
         False,
         description="Whether the input image is an anime image or not.",
     )
+    target_w: int = Field(0, description="The target width. 0 means as-is.")
+    target_h: int = Field(0, description="The target height. 0 means as-is.")
+
+
+def apply_sr(
+    m: TranslatorAPI,
+    image: Image.Image,
+    max_wh: int,
+    target_w: int,
+    target_h: int,
+) -> Tuple[np.ndarray, Dict[str, float]]:
+    t0 = time.time()
+    img_arr = m.sr(image, max_wh=max_wh).numpy()[0]
+    img_arr = img_arr.transpose([1, 2, 0])
+    t1 = time.time()
+    h, w = img_arr.shape[:2]
+    if target_w and target_h:
+        larger = w * h < target_w * target_h
+        img_arr = cv2.resize(
+            img_arr,
+            (target_w, target_h),
+            interpolation=cv2.INTER_LANCZOS4 if larger else cv2.INTER_AREA,
+        )
+    elif target_w or target_h:
+        if target_w:
+            k = target_w / w
+            target_h = round(h * k)
+        else:
+            k = target_h / h
+            target_w = round(w * k)
+        img_arr = cv2.resize(
+            img_arr,
+            (target_w, target_h),
+            interpolation=cv2.INTER_LANCZOS4 if k > 1 else cv2.INTER_AREA,
+        )
+    return img_arr, dict(inference=t1 - t0, resize=time.time() - t1)
 
 
 @IAlgorithm.auto_register()
@@ -153,18 +191,27 @@ class Img2ImgSR(IAlgorithm):
         if need_change_device():
             m.to("cuda:0", use_half=True)
         t2 = time.time()
-        img_arr = m.sr(image, max_wh=data.max_wh).numpy()[0]
-        content = get_bytes_from_translator(img_arr)
+        img_arr, latencies = apply_sr(
+            m,
+            image,
+            data.max_wh,
+            data.target_w,
+            data.target_h,
+        )
         t3 = time.time()
+        content = get_bytes_from_translator(img_arr, transpose=False)
+        t4 = time.time()
         cleanup(m)
-        self.log_times(
+        t5 = time.time()
+        latencies.update(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
-                "inference": t3 - t2,
-                "cleanup": time.time() - t3,
+                "get_bytes": t4 - t3,
+                "cleanup": t5 - t4,
             }
         )
+        self.log_times(latencies)
         return Response(content=content, media_type="image/png")
 
 
@@ -416,7 +463,7 @@ def apply_harmonization(
     strength: float,
     raw_image: np.ndarray,
     normalized_mask: np.ndarray,
-) -> Tuple[np.ndarray, Dict[str, Any]]:
+) -> Tuple[np.ndarray, Dict[str, float]]:
     t0 = time.time()
     if need_change_device():
         m.to("cuda:0")
