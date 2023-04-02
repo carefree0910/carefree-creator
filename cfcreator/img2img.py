@@ -447,6 +447,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
             alpha=alpha,
             max_wh=data.max_wh,
             verbose=verbose(),
+            seed=data.seed,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t5 = time.time()
