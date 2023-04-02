@@ -3,6 +3,7 @@ import json
 import time
 import yaml
 import redis
+import torch
 import asyncio
 import datetime
 import logging.config
@@ -305,6 +306,7 @@ async def consume() -> None:
                     redis_client.set(pending_queue_key, json.dumps(queue))
             except Exception as err:
                 end_time = time.time()
+                torch.cuda.empty_cache()
                 reason = f"{task} -> {procedure} : {get_err_msg(err)}"
                 data["uid"] = uid
                 data["reason"] = reason
