@@ -16,6 +16,7 @@ from .common import get_bytes_from_diffusion
 from .common import IAlgorithm
 from .common import Txt2ImgModel
 from .common import CommonSDInpaintingModel
+from .parameters import auto_lazy_load
 from .parameters import need_change_device
 
 
@@ -96,9 +97,11 @@ class Txt2ImgSDInpainting(IAlgorithm):
 
     def initialize(self) -> None:
         self.sd = init_sd()
-        self.sd_inpainting = get_sd_inpainting()
+        self.lazy = auto_lazy_load()
+        self.sd_inpainting = get_sd_inpainting(self.lazy)
 
     async def run(self, data: Txt2ImgSDInpaintingModel, *args: Any) -> Response:
+        lazy = self.lazy and not data.use_raw_inpainting
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
@@ -109,7 +112,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
             m = self.sd_inpainting
             m.disable_control()
         t1 = time.time()
-        if need_change_device():
+        if need_change_device() or lazy:
             m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(m, data)
@@ -125,7 +128,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
-        cleanup(m)
+        cleanup(m, lazy)
         self.log_times(
             {
                 "download": t1 - t0,

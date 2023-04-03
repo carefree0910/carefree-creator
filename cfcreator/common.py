@@ -171,7 +171,7 @@ def get_sd_anime() -> DiffusionAPI:
     return _get("sd_anime", DiffusionAPI.from_sd_anime)
 
 
-def get_sd_inpainting() -> ControlledDiffusionAPI:
+def get_sd_inpainting(lazy: bool) -> ControlledDiffusionAPI:
     def _callback(m: ControlledDiffusionAPI) -> None:
         sd = init_sd()
         m.weights = sd.weights
@@ -180,7 +180,7 @@ def get_sd_inpainting() -> ControlledDiffusionAPI:
         m.switch_control(*m.available_control_hints)
 
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
-    return _get("sd_inpainting", init_fn, _callback)
+    return _get("sd_inpainting", init_fn, _callback, lazy)
 
 
 def get_esr() -> TranslatorAPI:
