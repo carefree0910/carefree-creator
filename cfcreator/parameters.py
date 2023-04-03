@@ -85,6 +85,10 @@ def auto_lazy_load() -> bool:
     return OPT.get("auto_lazy_load", True) and get_focus() != Focus.SYNC
 
 
+def weights_pool_limit() -> int:
+    return OPT.get("weights_pool_limit", -1)
+
+
 def use_cos() -> bool:
     return OPT["use_cos"]
 

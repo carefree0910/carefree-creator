@@ -80,6 +80,13 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
     type=bool,
     help="This flag will disable the `auto lazy loading` mode.",
 )
+@click.option(
+    "--limit",
+    default=-1,
+    show_default=True,
+    type=int,
+    help="Limitation of the weights pool.",
+)
 def serve(
     *,
     port: int,
@@ -89,8 +96,9 @@ def serve(
     reload: bool,
     cache_dir: str,
     disable_lazy: bool,
+    limit: int,
 ) -> None:
-    increment = dict(auto_lazy_load=not disable_lazy)
+    increment = dict(auto_lazy_load=not disable_lazy, weights_pool_limit=limit)
     if save_gpu_ram:
         increment["save_gpu_ram"] = True
     if cpu:
