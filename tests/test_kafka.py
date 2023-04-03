@@ -128,29 +128,28 @@ async def main(host: str):
     results = {}
     exceptions = {}
     image_folder = "images"
-    with OPT.opt_context(dict(host=host)):
-        for endpoint, params in tqdm(list(test_parameters.items())):
-            uid = await push(endpoint, params)
-            res = await poll(uid)
-            task = endpoint2algorithm(endpoint)
-            status = res["status"]
-            (results if status == Status.FINISHED else exceptions)[task] = res
-            if task.startswith("control"):
-                task_folder = os.path.join(image_folder, task)
-                os.makedirs(task_folder, exist_ok=True)
-                response = res["data"]["response"]
-                for i, hint_url in enumerate(response["hint_urls"]):
-                    i_path = os.path.join(task_folder, f"hint_{i}.png")
-                    download_image(hint_url).save(i_path)
-                for i, result_url in enumerate(response["result_urls"]):
-                    i_path = os.path.join(task_folder, f"result_{i}.png")
-                    download_image(result_url).save(i_path)
-                continue
-            cdn = res.get("data", {}).get("cdn")
-            if cdn is not None:
-                os.makedirs(image_folder, exist_ok=True)
-                image_path = os.path.join(image_folder, f"{task}.png")
-                download_image(cdn).save(image_path)
+    for endpoint, params in tqdm(list(test_parameters.items())):
+        uid = await push(host, endpoint, params)
+        res = await poll(host, uid)
+        task = endpoint2algorithm(endpoint)
+        status = res["status"]
+        (results if status == Status.FINISHED else exceptions)[task] = res
+        if task.startswith("control"):
+            task_folder = os.path.join(image_folder, task)
+            os.makedirs(task_folder, exist_ok=True)
+            response = res["data"]["response"]
+            for i, hint_url in enumerate(response["hint_urls"]):
+                i_path = os.path.join(task_folder, f"hint_{i}.png")
+                download_image(hint_url).save(i_path)
+            for i, result_url in enumerate(response["result_urls"]):
+                i_path = os.path.join(task_folder, f"result_{i}.png")
+                download_image(result_url).save(i_path)
+            continue
+        cdn = res.get("data", {}).get("cdn")
+        if cdn is not None:
+            os.makedirs(image_folder, exist_ok=True)
+            image_path = os.path.join(image_folder, f"{task}.png")
+            download_image(cdn).save(image_path)
     with open("results.json", "w") as f:
         json.dump(results, f, indent=2)
     with open("exceptions.json", "w") as f:
