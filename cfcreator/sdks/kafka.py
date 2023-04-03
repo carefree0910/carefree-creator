@@ -2,6 +2,7 @@
 
 import json
 import time
+import requests
 
 from typing import Any
 from typing import Dict
@@ -26,6 +27,12 @@ async def push(host: str, endpoint: str, params: Dict[str, Any]) -> str:
         return res["uid"]
 
 
+def push_sync(host: str, endpoint: str, params: Dict[str, Any]) -> str:
+    url = f"{host}/push"
+    data = dict(task=endpoint2algorithm(endpoint), params=params)
+    return requests.post(url, json=data).json()["uid"]
+
+
 async def poll(
     host: str,
     uid: str,
@@ -46,7 +53,27 @@ async def poll(
                 return res
 
 
+def poll_sync(
+    host: str,
+    uid: str,
+    *,
+    callback: Optional[TCallback] = None,
+) -> Dict[str, Any]:
+    while True:
+        res = requests.get(f"{host}/status/{uid}").json()
+        if callback is not None:
+            callback(res)
+        if res["status"] == Status.PENDING:
+            time.sleep(res["pending"])
+        elif res["status"] == Status.WORKING:
+            time.sleep(1)
+        else:
+            return res
+
+
 __all__ = [
     "push",
     "poll",
+    "push_sync",
+    "poll_sync",
 ]
