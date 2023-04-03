@@ -147,7 +147,8 @@ class Txt2ImgSDOutpainting(IAlgorithm):
     endpoint = txt2img_sd_outpainting_endpoint
 
     def initialize(self) -> None:
-        self.m = get_sd_inpainting()
+        self.lazy = auto_lazy_load()
+        self.m = get_sd_inpainting(self.lazy)
 
     async def run(self, data: Txt2ImgSDOutpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -155,7 +156,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
         self.m.disable_control()
-        if need_change_device():
+        if need_change_device() or self.lazy:
             self.m.to("cuda:0", use_half=True)
         t2 = time.time()
         kwargs = handle_diffusion_model(self.m, data)
@@ -170,7 +171,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
-        cleanup(self.m)
+        cleanup(self.m, self.lazy)
         self.log_times(
             {
                 "download": t1 - t0,
