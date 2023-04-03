@@ -129,7 +129,7 @@ def init_sd() -> ControlledDiffusionAPI:
                 print(f">> converting {version}")
                 model_path = os.path.join(external_dir, f"{version}.ckpt")
                 d = cflearn.scripts.sd.convert(model_path, m, load=False)
-                m.sd_weights[f"ldm_sd_{version}"] = d
+                m.sd_weights[version] = d
             print("> prepare ControlNet weights")
             m.prepare_control_defaults()
             print("> prepare ControlNet Annotators")
