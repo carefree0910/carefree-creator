@@ -19,23 +19,23 @@ from cftool.cv import to_uint8
 from cftool.cv import read_image
 from cftool.cv import np_to_bytes
 from cflearn.api.cv import TranslatorAPI
-from cflearn.api.cv import ImageHarmonizationAPI
-from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.lama import Config
-from cflearn.api.cv.third_party.isnet import ISNetAPI
 
-from .common import cleanup
-from .common import get_esr
-from .common import get_hrnet
-from .common import init_sd
+from .utils import api_pool
+from .common import register_sd
+from .common import register_esr
+from .common import register_lama
+from .common import register_hrnet
+from .common import register_isnet
+from .common import register_semantic
+from .common import register_esr_anime
+from .common import register_inpainting
 from .common import get_sd_from
-from .common import get_semantic
-from .common import get_esr_anime
-from .common import get_inpainting
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
 from .common import get_normalized_arr_from_diffusion
+from .common import APIs
 from .common import IAlgorithm
 from .common import ImageModel
 from .common import Img2ImgModel
@@ -43,9 +43,6 @@ from .common import CallbackModel
 from .common import Img2ImgDiffusionModel
 from .parameters import verbose
 from .parameters import get_focus
-from .parameters import init_to_cpu
-from .parameters import auto_lazy_load
-from .parameters import need_change_device
 from .parameters import Focus
 
 
@@ -92,7 +89,7 @@ class Img2ImgSD(IAlgorithm):
     endpoint = img2img_sd_endpoint
 
     def initialize(self) -> None:
-        self.sd = init_sd()
+        register_sd()
 
     async def run(self, data: Img2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -105,7 +102,7 @@ class Img2ImgSD(IAlgorithm):
         if w > 0 and h > 0:
             image = image.resize((w, h), Image.LANCZOS)
         t2 = time.time()
-        m = get_sd_from(self.sd, data)
+        m = get_sd_from(data)
         t3 = time.time()
         kwargs = handle_diffusion_model(m, data)
         img_arr = m.img2img(
@@ -118,7 +115,7 @@ class Img2ImgSD(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t4 = time.time()
-        cleanup(m)
+        api_pool.cleanup(APIs.SD)
         self.log_times(
             {
                 "download": t1 - t0,
@@ -188,17 +185,16 @@ class Img2ImgSR(IAlgorithm):
     endpoint = img2img_sr_endpoint
 
     def initialize(self) -> None:
-        self.esr = get_esr()
-        self.esr_anime = get_esr_anime()
+        register_esr()
+        register_esr_anime()
 
     async def run(self, data: Img2ImgSRModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
-        m = self.esr_anime if data.is_anime else self.esr
-        if need_change_device():
-            m.to("cuda:0", use_half=True)
+        api_key = APIs.ESR_ANIME if data.is_anime else APIs.ESR
+        m = api_pool.get(api_key)
         t2 = time.time()
         img_arr, latencies = apply_sr(
             m,
@@ -210,7 +206,7 @@ class Img2ImgSR(IAlgorithm):
         t3 = time.time()
         content = get_bytes_from_translator(img_arr, transpose=False)
         t4 = time.time()
-        cleanup(m)
+        api_pool.cleanup(api_key)
         t5 = time.time()
         latencies.update(
             {
@@ -267,30 +263,24 @@ class Img2ImgInpainting(IAlgorithm):
 
     def initialize(self) -> None:
         focus = get_focus()
-        self.lazy = auto_lazy_load()
-        self.m = None if focus == Focus.SYNC else get_inpainting(self.lazy)
-        print(f"> init lama{' (lazy)' if self.lazy else ''}")
-        self.lama = LaMa("cpu" if init_to_cpu() or self.lazy else "cuda:0")
+        self.is_sync = focus == Focus.SYNC
+        if not self.is_sync:
+            register_inpainting()
+        register_lama()
 
     async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
-        model = data.model
-        if self.m is None and model == InpaintingModels.SD:
-            msg = "`sd` inpainting is not available when `focus` is set to 'sync'"
-            raise ValueError(msg)
         mask_url = data.mask_url
         if not mask_url:
             mask = Image.new("L", image.size, color=0)
         else:
             mask = await self.download_image_with_retry(mask_url)
         t1 = time.time()
-        if need_change_device() or self.lazy:
-            if model == InpaintingModels.SD:
-                self.m.to("cuda:0", use_half=True)
-            elif model == InpaintingModels.LAMA:
-                self.lama.to("cuda:0")
+        model = data.model
+        api_key = APIs.LAMA if model == InpaintingModels.LAMA else APIs.INPAINTING
+        m = api_pool.get(api_key)
         t2 = time.time()
         if model == InpaintingModels.LAMA:
             cfg = Config()
@@ -308,13 +298,13 @@ class Img2ImgInpainting(IAlgorithm):
                 to_torch_fmt=False,
             ).image
             mask_arr[mask_arr > 0.0] = 1.0
-            result = self.lama(image_arr, mask_arr, cfg)
+            result = m(image_arr, mask_arr, cfg)
             content = np_to_bytes(result)
         else:
-            kwargs = handle_diffusion_model(self.m, data)
+            kwargs = handle_diffusion_model(m, data)
             if not data.use_pipeline:
                 refine_fidelity = data.refine_fidelity if data.use_refine else None
-                img_arr = self.m.inpainting(
+                img_arr = m.inpainting(
                     image,
                     mask,
                     max_wh=data.max_wh,
@@ -322,7 +312,7 @@ class Img2ImgInpainting(IAlgorithm):
                     **kwargs,
                 ).numpy()[0]
             else:
-                img_arr = self.m.inpainting(
+                img_arr = m.inpainting(
                     image,
                     mask,
                     max_wh=data.max_wh,
@@ -331,7 +321,7 @@ class Img2ImgInpainting(IAlgorithm):
                 ).numpy()[0]
                 img_arr = get_normalized_arr_from_diffusion(img_arr)
                 image = Image.fromarray(to_uint8(img_arr))
-                img_arr = self.m.inpainting(
+                img_arr = m.inpainting(
                     image,
                     mask,
                     max_wh=data.max_wh,
@@ -340,11 +330,7 @@ class Img2ImgInpainting(IAlgorithm):
                 ).numpy()[0]
             content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
-        if need_change_device() or self.lazy:
-            self.lama.to("cpu")
-            torch.cuda.empty_cache()
-        if self.m is not None:
-            cleanup(self.m, self.lazy)
+        api_pool.cleanup(api_key)
         self.log_times(
             {
                 "download": t1 - t0,
@@ -386,8 +372,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
     endpoint = img2img_semantic2img_endpoint
 
     def initialize(self) -> None:
-        self.lazy = auto_lazy_load()
-        self.m = get_semantic(self.lazy)
+        register_semantic()
 
     async def run(self, data: Img2ImgSemantic2ImgModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -435,14 +420,13 @@ class Img2ImgSemantic2Img(IAlgorithm):
         semantic_arr = semantic_arr.reshape([h, w])
         semantic = Image.fromarray(semantic_arr)
         t3 = time.time()
-        if need_change_device() or self.lazy:
-            self.m.to("cuda:0", use_half=True)
+        m = api_pool.get(APIs.SEMANTIC)
         t4 = time.time()
         if not data.keep_alpha:
             alpha = None
         elif alpha is not None:
             alpha = alpha[None, None].astype(np.float32) / 255.0
-        img_arr = self.m.semantic2img(
+        img_arr = m.semantic2img(
             semantic,
             alpha=alpha,
             max_wh=data.max_wh,
@@ -451,7 +435,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t5 = time.time()
-        cleanup(self.m, self.lazy)
+        api_pool.cleanup(APIs.SEMANTIC)
         self.log_times(
             {
                 "download": t1 - t0,
@@ -469,15 +453,13 @@ class Img2ImgSemantic2Img(IAlgorithm):
 
 
 def apply_harmonization(
-    m: ImageHarmonizationAPI,
     max_wh: int,
     strength: float,
     raw_image: np.ndarray,
     normalized_mask: np.ndarray,
 ) -> Tuple[np.ndarray, Dict[str, float]]:
     t0 = time.time()
-    if need_change_device():
-        m.to("cuda:0")
+    m = api_pool.get(APIs.HRNET)
     t1 = time.time()
     h, w = raw_image.shape[:2]
     scale = max_wh**2 / (w * h)
@@ -498,9 +480,7 @@ def apply_harmonization(
         result = result * strength + raw_image * (1.0 - strength)
         result = (np.clip(result, 0.0, 255.0)).astype(np.uint8)
     t2 = time.time()
-    if need_change_device():
-        m.to("cpu")
-        torch.cuda.empty_cache()
+    api_pool.cleanup(APIs.HRNET)
     latencies = {
         "get_model": t1 - t0,
         "inference": t2 - t1,
@@ -528,8 +508,7 @@ class Img2ImgHarmonization(IAlgorithm):
     endpoint = img2img_harmonization_endpoint
 
     def initialize(self) -> None:
-        print("> init hrnet")
-        self.m = get_hrnet()
+        register_hrnet()
 
     async def run(self, data: Img2ImgHarmonizationModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -538,7 +517,6 @@ class Img2ImgHarmonization(IAlgorithm):
         mask = await self.download_image_with_retry(data.mask_url)
         t1 = time.time()
         result, latencies = apply_harmonization(
-            self.m,
             data.harmonization_max_wh,
             data.strength,
             read_image(
@@ -571,23 +549,19 @@ class Img2ImgSOD(IAlgorithm):
     endpoint = img2img_sod_endpoint
 
     def initialize(self) -> None:
-        print("> init isnet")
-        self.m = ISNetAPI("cpu" if init_to_cpu() else "cuda:0")
+        register_isnet()
 
     async def run(self, data: ImageModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
-        if need_change_device():
-            self.m.to("cuda:0")
+        m = api_pool.get(APIs.ISNET)
         t2 = time.time()
-        alpha = to_uint8(self.m.segment(image))
+        alpha = to_uint8(m.segment(image))
         content = np_to_bytes(alpha)
         t3 = time.time()
-        if need_change_device():
-            self.m.to("cpu")
-            torch.cuda.empty_cache()
+        api_pool.cleanup(APIs.ISNET)
         self.log_times(
             {
                 "download": t1 - t0,

@@ -7,17 +7,16 @@ from pydantic import Field
 from pydantic import BaseModel
 from cfclient.models import ImageModel
 
-from .common import cleanup
-from .common import init_sd
+from .utils import api_pool
+from .common import register_sd
+from .common import register_sd_inpainting
 from .common import get_sd_from
-from .common import get_sd_inpainting
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
+from .common import APIs
 from .common import IAlgorithm
 from .common import Txt2ImgModel
 from .common import CommonSDInpaintingModel
-from .parameters import auto_lazy_load
-from .parameters import need_change_device
 
 
 txt2img_sd_endpoint = "/txt2img/sd"
@@ -41,12 +40,12 @@ class Txt2ImgSD(IAlgorithm):
     endpoint = txt2img_sd_endpoint
 
     def initialize(self) -> None:
-        self.sd = init_sd()
+        register_sd()
 
     async def run(self, data: Txt2ImgSDModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        m = get_sd_from(self.sd, data)
+        m = get_sd_from(data)
         t1 = time.time()
         size = data.w, data.h
         kwargs = handle_diffusion_model(m, data)
@@ -58,7 +57,7 @@ class Txt2ImgSD(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t2 = time.time()
-        cleanup(m)
+        api_pool.cleanup(APIs.SD)
         self.log_times(
             {
                 "get_model": t1 - t0,
@@ -96,24 +95,22 @@ class Txt2ImgSDInpainting(IAlgorithm):
     endpoint = txt2img_sd_inpainting_endpoint
 
     def initialize(self) -> None:
-        self.sd = init_sd()
-        self.lazy = auto_lazy_load()
-        self.sd_inpainting = get_sd_inpainting(self.lazy)
+        register_sd()
+        register_sd_inpainting()
 
     async def run(self, data: Txt2ImgSDInpaintingModel, *args: Any) -> Response:
-        lazy = self.lazy and not data.use_raw_inpainting
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         mask = await self.download_image_with_retry(data.mask_url)
-        if data.use_raw_inpainting:
-            m = get_sd_from(self.sd, data)
-        else:
-            m = self.sd_inpainting
-            m.disable_control()
         t1 = time.time()
-        if need_change_device() or lazy:
-            m.to("cuda:0", use_half=True)
+        if data.use_raw_inpainting:
+            api_key = APIs.SD
+            m = get_sd_from(data)
+        else:
+            api_key = APIs.SD_INPAINTING
+            m = api_pool.get(api_key)
+            m.disable_control()
         t2 = time.time()
         kwargs = handle_diffusion_model(m, data)
         kwargs.update(await self.handle_diffusion_inpainting_model(data))
@@ -128,7 +125,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
-        cleanup(m, lazy)
+        api_pool.cleanup(api_key)
         self.log_times(
             {
                 "download": t1 - t0,
@@ -147,21 +144,19 @@ class Txt2ImgSDOutpainting(IAlgorithm):
     endpoint = txt2img_sd_outpainting_endpoint
 
     def initialize(self) -> None:
-        self.lazy = auto_lazy_load()
-        self.m = get_sd_inpainting(self.lazy)
+        register_sd_inpainting()
 
     async def run(self, data: Txt2ImgSDOutpaintingModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
-        self.m.disable_control()
-        if need_change_device() or self.lazy:
-            self.m.to("cuda:0", use_half=True)
+        m = api_pool.get(APIs.SD_INPAINTING)
+        m.disable_control()
         t2 = time.time()
-        kwargs = handle_diffusion_model(self.m, data)
+        kwargs = handle_diffusion_model(m, data)
         kwargs.update(await self.handle_diffusion_inpainting_model(data))
-        img_arr = self.m.outpainting(
+        img_arr = m.outpainting(
             data.text,
             image,
             anchor=64,
@@ -171,7 +166,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
-        cleanup(self.m, self.lazy)
+        api_pool.cleanup(APIs.SD_INPAINTING)
         self.log_times(
             {
                 "download": t1 - t0,

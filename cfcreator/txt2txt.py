@@ -1,18 +1,16 @@
 import time
-import torch
 
 from typing import Any
 from typing import List
 from pydantic import Field
 from pydantic import BaseModel
-from cflearn.api.cv.third_party.prompt import PromptEnhanceAPI
 from cflearn.api.cv.third_party.prompt import PromptEnhanceConfig
 
+from .utils import api_pool
+from .common import register_prompt_enhance
+from .common import APIs
 from .common import IAlgorithm
 from .common import TextModel
-from .parameters import init_to_cpu
-from .parameters import auto_lazy_load
-from .parameters import need_change_device
 
 
 txt2txt_prompt_enhance_endpoint = "/txt2txt/prompt_enhance"
@@ -54,23 +52,18 @@ class Txt2TxtPromptEnhance(IAlgorithm):
     endpoint = txt2txt_prompt_enhance_endpoint
 
     def initialize(self) -> None:
-        self.lazy = auto_lazy_load()
-        print(f"> init prompt enhance API{' (lazy)' if self.lazy else ''}")
-        self.m = PromptEnhanceAPI("cpu" if init_to_cpu() or self.lazy else "cuda:0")
+        register_prompt_enhance()
 
     async def run(self, data: PromptEnhanceModel, *args: Any) -> PromptEnhanceResponse:
         self.log_endpoint(data)
         t0 = time.time()
-        if need_change_device() or self.lazy:
-            self.m.to("cuda:0")
+        m = api_pool.get(APIs.PROMPT_ENHANCE)
         t1 = time.time()
         kw = data.dict()
         text = kw.pop("text")
-        prompts = self.m.enhance(text, config=PromptEnhanceConfig(**kw))
+        prompts = m.enhance(text, config=PromptEnhanceConfig(**kw))
         t2 = time.time()
-        if need_change_device() or self.lazy:
-            self.m.to("cpu")
-            torch.cuda.empty_cache()
+        api_pool.cleanup(APIs.PROMPT_ENHANCE)
         self.log_times(
             {
                 "get_model": t1 - t0,

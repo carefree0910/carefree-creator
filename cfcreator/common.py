@@ -12,12 +12,10 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
-from typing import Union
 from typing import Callable
 from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
-from functools import partial
 from cftool.cv import np_to_bytes
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
@@ -28,21 +26,18 @@ from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv import ControlledDiffusionAPI
 from cflearn.misc.toolkit import _get_file_size
+from cflearn.api.cv.third_party.blip import BLIPAPI
+from cflearn.api.cv.third_party.lama import LaMa
+from cflearn.api.cv.third_party.isnet import ISNetAPI
+from cflearn.api.cv.third_party.prompt import PromptEnhanceAPI
 
 from .cos import download_with_retry
 from .cos import download_image_with_retry
+from .utils import api_pool
 from .parameters import verbose
 from .parameters import get_focus
-from .parameters import init_to_cpu
-from .parameters import need_change_device
 from .parameters import weights_pool_limit
 from .parameters import Focus
-
-
-apis = {}
-init_fns = {}
-init_models = {}
-api_type = Union[DiffusionAPI, TranslatorAPI]
 
 
 class ExternalVersions(str, Enum):
@@ -72,136 +67,170 @@ def merge_enums(*enums: Enum) -> Enum:
 MergedVersions = merge_enums(SDVersions, ExternalVersions)
 
 
-def _get(
-    key: str,
-    init_fn: Callable,
-    callback: Optional[Callable] = None,
-    lazy: bool = False,
-) -> api_type:
-    m = apis.get(key)
-    if m is not None:
-        return m
-    print("> init", key, "(lazy)" if lazy else "")
-    if init_to_cpu() or lazy:
-        m = init_fn("cpu")
+class APIs(str, Enum):
+    SD = "sd"
+    SD_INPAINTING = "sd_inpainting"
+    ESR = "esr"
+    ESR_ANIME = "esr_anime"
+    INPAINTING = "inpainting"
+    LAMA = "lama"
+    SEMANTIC = "semantic"
+    HRNET = "hrnet"
+    ISNET = "isnet"
+    BLIP = "blip"
+    PROMPT_ENHANCE = "prompt_enhance"
+
+
+def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
+    if init_to_cpu:
+        return init_fn()
+    return init_fn("cuda:0", use_half=True)
+
+
+def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
+    m: ControlledDiffusionAPI = _get(ControlledDiffusionAPI.from_sd, init_to_cpu)
+    focus = get_focus()
+    m.sd_weights.limit = weights_pool_limit()
+    m.current_sd_version = MergedVersions.v1_5
+    targets = []
+    common = Focus.ALL, Focus.SD, Focus.CONTROL, Focus.PIPELINE
+    if focus in common + (Focus.SD_BASE,):
+        targets.append(MergedVersions.v1_5)
+    if focus in common + (Focus.SD_ANIME,):
+        targets.append(MergedVersions.ANIME)
+        targets.append(MergedVersions.DREAMLIKE)
+        targets.append(MergedVersions.ANIME_ANYTHING)
+        targets.append(MergedVersions.ANIME_HYBRID)
+        targets.append(MergedVersions.ANIME_GUOFENG)
+        targets.append(MergedVersions.ANIME_ORANGE)
+    print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
+    m.prepare_sd(targets)
+    # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
+    # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
+    if focus == Focus.SYNC:
+        print("> prepare ControlNet Annotators")
+        for hint in m.control_defaults:
+            m.prepare_annotator(hint)
     else:
-        m = init_fn("cuda:0", use_half=True)
-    apis[key] = m
-    init_fns[key] = init_fn
-    if callback is not None:
-        callback(m)
-    return m
-
-
-def _get_general_model(key: str, init_fn: Callable) -> Any:
-    m = init_models.get(key)
-    if m is not None:
-        return m
-    m = init_fn()
-    init_models[key] = m
-    return m
-
-
-def init_sd() -> ControlledDiffusionAPI:
-    def _callback(m: ControlledDiffusionAPI) -> None:
-        focus = get_focus()
-        m.sd_weights.limit = weights_pool_limit()
-        m.current_sd_version = MergedVersions.v1_5
-        targets = []
-        common = Focus.ALL, Focus.SD, Focus.CONTROL, Focus.PIPELINE
-        if focus in common + (Focus.SD_BASE,):
-            targets.append(MergedVersions.v1_5)
-        if focus in common + (Focus.SD_ANIME,):
-            targets.append(MergedVersions.ANIME)
-            targets.append(MergedVersions.DREAMLIKE)
-            targets.append(MergedVersions.ANIME_ANYTHING)
-            targets.append(MergedVersions.ANIME_HYBRID)
-            targets.append(MergedVersions.ANIME_GUOFENG)
-            targets.append(MergedVersions.ANIME_ORANGE)
-        print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
-        m.prepare_sd(targets)
-        # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
-        # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
-        if focus == Focus.SYNC:
-            print("> prepare ControlNet Annotators")
-            for hint in m.control_defaults:
-                m.prepare_annotator(hint)
+        print("> handling external weights")
+        external_dir = os.path.join(os.path.expanduser("~"), ".cache", "external")
+        converted_sizes_path = os.path.join(external_dir, "sizes.json")
+        sizes: Dict[str, int]
+        if not os.path.isfile(converted_sizes_path):
+            sizes = {}
         else:
-            print("> handling external weights")
-            external_dir = os.path.join(os.path.expanduser("~"), ".cache", "external")
-            converted_sizes_path = os.path.join(external_dir, "sizes.json")
-            sizes: Dict[str, int]
-            if not os.path.isfile(converted_sizes_path):
-                sizes = {}
-            else:
-                with open(converted_sizes_path, "r") as f:
-                    sizes = json.load(f)
-            for version in ExternalVersions:
-                print(f">> handling {version}")
-                converted_path = os.path.join(external_dir, f"{version}_converted.pt")
-                v_size = sizes.get(version)
-                f_size = (
-                    None
-                    if not os.path.isfile(converted_path)
-                    else _get_file_size(converted_path)
-                )
-                if f_size is None or v_size != f_size:
-                    if f_size is not None:
-                        print(f">> {version} has been converted but size mismatch")
-                    print(f">> converting {version}")
-                    model_path = os.path.join(external_dir, f"{version}.ckpt")
-                    d = cflearn.scripts.sd.convert(model_path, m, load=False)
-                    torch.save(d, converted_path)
-                    sizes[version] = _get_file_size(converted_path)
-                m.sd_weights.register(version, converted_path)
-            with open(converted_sizes_path, "w") as f:
-                json.dump(sizes, f)
-            print("> prepare ControlNet weights")
-            m.prepare_control_defaults()
-            print("> prepare ControlNet Annotators")
-            m.prepare_annotators()
-            print("> warmup ControlNet")
-            m.switch_control(*m.available_control_hints)
-
-    init_fn = partial(ControlledDiffusionAPI.from_sd_version, "v1.5")
-    return _get("sd_v1.5", init_fn, _callback)
-
-
-def get_sd_anime() -> DiffusionAPI:
-    return _get("sd_anime", DiffusionAPI.from_sd_anime)
-
-
-def get_sd_inpainting(lazy: bool) -> ControlledDiffusionAPI:
-    def _callback(m: ControlledDiffusionAPI) -> None:
-        sd = init_sd()
-        m.weights = sd.weights
-        m.annotators = sd.annotators
-        m.current_sd_version = MergedVersions.v1_5
+            with open(converted_sizes_path, "r") as f:
+                sizes = json.load(f)
+        for version in ExternalVersions:
+            print(f">> handling {version}")
+            converted_path = os.path.join(external_dir, f"{version}_converted.pt")
+            v_size = sizes.get(version)
+            f_size = (
+                None
+                if not os.path.isfile(converted_path)
+                else _get_file_size(converted_path)
+            )
+            if f_size is None or v_size != f_size:
+                if f_size is not None:
+                    print(f">> {version} has been converted but size mismatch")
+                print(f">> converting {version}")
+                model_path = os.path.join(external_dir, f"{version}.ckpt")
+                d = cflearn.scripts.sd.convert(model_path, m, load=False)
+                torch.save(d, converted_path)
+                sizes[version] = _get_file_size(converted_path)
+            m.sd_weights.register(version, converted_path)
+        with open(converted_sizes_path, "w") as f:
+            json.dump(sizes, f)
+        print("> prepare ControlNet weights")
+        m.prepare_control_defaults()
+        print("> prepare ControlNet Annotators")
+        m.prepare_annotators()
+        print("> warmup ControlNet")
         m.switch_control(*m.available_control_hints)
+    # return
+    return m
 
+
+def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
-    return _get("sd_inpainting", init_fn, _callback, lazy)
+    m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
+    sd = init_sd(init_to_cpu)
+    m.weights = sd.weights
+    m.annotators = sd.annotators
+    m.current_sd_version = MergedVersions.v1_5
+    m.switch_control(*m.available_control_hints)
+    return m
 
 
-def get_esr() -> TranslatorAPI:
-    return _get("esr", TranslatorAPI.from_esr)
+def register_sd() -> None:
+    api_pool.register(APIs.SD, init_sd)
 
 
-def get_esr_anime() -> TranslatorAPI:
-    return _get("esr_anime", TranslatorAPI.from_esr_anime)
+def register_sd_inpainting() -> None:
+    api_pool.register(APIs.SD_INPAINTING, init_sd_inpainting)
 
 
-def get_inpainting(lazy: bool) -> DiffusionAPI:
-    return _get("inpainting", DiffusionAPI.from_inpainting, lazy=lazy)
+def register_esr() -> None:
+    api_pool.register(
+        APIs.ESR,
+        lambda init_to_cpu: _get(TranslatorAPI.from_esr, init_to_cpu),
+    )
 
 
-def get_semantic(lazy: bool) -> DiffusionAPI:
-    return _get("semantic", DiffusionAPI.from_semantic, lazy=lazy)
+def register_esr_anime() -> None:
+    api_pool.register(
+        APIs.ESR_ANIME,
+        lambda init_to_cpu: _get(TranslatorAPI.from_esr_anime, init_to_cpu),
+    )
 
 
-def get_hrnet() -> ImageHarmonizationAPI:
-    _get = lambda: ImageHarmonizationAPI("cpu" if init_to_cpu() else "cuda:0")
-    return _get_general_model("hrnet", _get)
+def register_inpainting() -> None:
+    api_pool.register(
+        APIs.INPAINTING,
+        lambda init_to_cpu: _get(DiffusionAPI.from_inpainting, init_to_cpu),
+    )
+
+
+def register_lama() -> None:
+    api_pool.register(
+        APIs.LAMA,
+        lambda init_to_cpu: _get(LaMa, init_to_cpu),
+    )
+
+
+def register_semantic() -> None:
+    api_pool.register(
+        APIs.SEMANTIC,
+        lambda init_to_cpu: _get(DiffusionAPI.from_semantic, init_to_cpu),
+    )
+
+
+def register_hrnet() -> None:
+    api_pool.register(
+        APIs.HRNET,
+        lambda init_to_cpu: _get(ImageHarmonizationAPI, init_to_cpu),
+    )
+
+
+def register_isnet() -> None:
+    api_pool.register(
+        APIs.ISNET,
+        lambda init_to_cpu: _get(ISNetAPI, init_to_cpu),
+    )
+
+
+def register_blip() -> None:
+    api_pool.register(
+        APIs.BLIP,
+        lambda init_to_cpu: _get(BLIPAPI, init_to_cpu),
+    )
+
+
+def register_prompt_enhance() -> None:
+    api_pool.register(
+        APIs.PROMPT_ENHANCE,
+        lambda init_to_cpu: _get(PromptEnhanceAPI, init_to_cpu),
+    )
 
 
 def get_bytes_from_translator(img_arr: np.ndarray, *, transpose: bool = True) -> bytes:
@@ -526,34 +555,15 @@ class SDParameters(BaseModel):
     version: MergedVersions
 
 
-def get_sd_from(sd: ControlledDiffusionAPI, data: SDParameters) -> DiffusionAPI:
+def get_sd_from(data: SDParameters) -> ControlledDiffusionAPI:
     if not data.is_anime:
         version = data.version
     else:
         version = data.version if data.version.startswith("anime") else "anime"
+    sd: ControlledDiffusionAPI = api_pool.get(APIs.SD)
     sd.switch_sd(version)
     sd.disable_control()
-    if need_change_device():
-        sd.to("cuda:0", use_half=True)
     return sd
-
-
-def cleanup(m: DiffusionAPI, lazy: bool = False) -> None:
-    if need_change_device() or lazy:
-        m.to("cpu")
-        torch.cuda.empty_cache()
-
-
-def get_api(key: str) -> Optional[api_type]:
-    return apis.get(key)
-
-
-def get_init_fn(key: str) -> Optional[Callable]:
-    return init_fns.get(key)
-
-
-def available_apis() -> List[str]:
-    return sorted(apis)
 
 
 __all__ = [
@@ -568,7 +578,4 @@ __all__ = [
     "GetPromptResponse",
     "Status",
     "IAlgorithm",
-    "get_api",
-    "get_init_fn",
-    "available_apis",
 ]

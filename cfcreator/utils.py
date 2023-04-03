@@ -1,9 +1,20 @@
 import cv2
 import math
+import torch
 
 import numpy as np
 
+from typing import Any
 from typing import List
+from typing import Optional
+from typing import Protocol
+from cflearn.api.utils import ILoadableItem
+from cflearn.api.utils import ILoadablePool
+
+from .parameters import init_to_cpu
+from .parameters import auto_lazy_load
+from .parameters import need_change_device
+from .parameters import weights_pool_limit
 
 
 def resize_image(input_image: np.ndarray, resolution: int) -> np.ndarray:
@@ -47,3 +58,75 @@ def to_canvas(results: List[np.ndarray], *, padding: int = 0) -> np.ndarray:
         iy = iy * h + iy * padding
         canvas[iy : iy + h, ix : ix + w] = out
     return canvas
+
+
+class IAPI:
+    def to(self, device: str, *, use_half: bool) -> None:
+        pass
+
+
+class APIInit(Protocol):
+    def __call__(self, init_to_cpu: bool) -> IAPI:
+        pass
+
+
+class LoadableAPI(ILoadableItem[IAPI]):
+    force_not_lazy: bool = False
+
+    def __init__(self, init_fn: APIInit, *, init: bool = False):
+        super().__init__(lambda: init_fn(init_to_cpu() or self.lazy), init=init)
+
+    @property
+    def lazy(self) -> bool:
+        return auto_lazy_load() and not self.force_not_lazy
+
+    @property
+    def need_change_device(self) -> bool:
+        return need_change_device() or self.lazy
+
+    def load(self, **kwargs: Any) -> IAPI:
+        super().load()
+        if not kwargs.get("no_change", False) and self.need_change_device:
+            self._item.to("cuda:0", use_half=True, **kwargs)
+        return self._item
+
+    def cleanup(self, **kwargs: Any) -> None:
+        if self.need_change_device:
+            self._item.to("cpu", use_half=False, **kwargs)
+            torch.cuda.empty_cache()
+
+    def unload(self) -> None:
+        self.cleanup()
+        return super().unload()
+
+
+class APIPool(ILoadablePool[IAPI]):
+    def __init__(self) -> None:
+        super().__init__(weights_pool_limit())
+
+    def register(self, key: str, init_fn: APIInit) -> None:
+        def _init(init: bool) -> LoadableAPI:
+            api = LoadableAPI(init_fn, init=False)
+            print("> init", key, "(lazy)" if api.lazy else "")
+            if init:
+                api.load()
+            return api
+
+        if key in self:
+            return
+        return super().register(key, _init)
+
+    def cleanup(self, key: str, **kwargs: Any) -> None:
+        loadable_api: Optional[LoadableAPI] = self.pool.get(key)
+        if loadable_api is None:
+            raise ValueError(f"key '{key}' does not exist")
+        loadable_api.cleanup(**kwargs)
+
+    def need_change_device(self, key: str) -> bool:
+        loadable_api: Optional[LoadableAPI] = self.pool.get(key)
+        if loadable_api is None:
+            raise ValueError(f"key '{key}' does not exist")
+        return loadable_api.need_change_device
+
+
+api_pool = APIPool()

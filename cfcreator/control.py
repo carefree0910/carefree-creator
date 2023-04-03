@@ -25,11 +25,12 @@ from cfclient.models.core import ImageModel
 from cflearn.api.cv.diffusion import ControlNetHints
 from cflearn.api.cv.diffusion import ControlledDiffusionAPI
 
+from .utils import api_pool
 from .utils import to_canvas
 from .utils import resize_image
-from .common import init_sd
-from .common import need_change_device
+from .common import register_sd
 from .common import handle_diffusion_model
+from .common import APIs
 from .common import IAlgorithm
 from .common import ControlNetModel
 from .common import ReturnArraysModel
@@ -51,15 +52,11 @@ images_type = Tuple[np.ndarray, np.ndarray]
 apply_response = Tuple[List[np.ndarray], Dict[str, float]]
 
 
-class ControlNetAlgorithm(IAlgorithm):
-    api: ControlledDiffusionAPI
-
-
 class ControlNetModelPlaceholder(ControlStrengthModel, ControlNetModel):
     pass
 
 
-async def get_images(self: ControlNetAlgorithm, data: ControlNetModel) -> images_type:
+async def get_images(self: IAlgorithm, data: ControlNetModel) -> images_type:
     image = np.array(to_rgb(await self.download_image_with_retry(data.url)))
     if not data.hint_url:
         return image, image
@@ -69,12 +66,14 @@ async def get_images(self: ControlNetAlgorithm, data: ControlNetModel) -> images
 
 def apply_control(
     data: Union[ControlNetModelPlaceholder, Dict[str, ControlNetModelPlaceholder]],
-    api: ControlledDiffusionAPI,
+    api_key: APIs,
     input_image: np.ndarray,
     hint_image: np.ndarray,
     hint_types: Union[ControlNetHints, List[ControlNetHints]],
     normalized_inpainting_mask: Optional[np.ndarray] = None,
 ) -> apply_response:
+    api: ControlledDiffusionAPI = api_pool.get(api_key, no_change=True)
+    need_change_device = api_pool.need_change_device(api_key)
     api.enable_control()
     if not isinstance(data, dict):
         common_data = data
@@ -194,10 +193,8 @@ def apply_control(
         init_tensor = init_tensor.to(api.device)
         outs = api.img2img(init_tensor, **kw)
     dt = time.time()
-    if need_change_device():
-        api.to("cpu", no_annotator=True)
-        torch.cuda.empty_cache()
-    change_diffusion_device_time = time.time() - dt
+    api_pool.cleanup(api_key, no_annotator=True)
+    change_diffusion_device_time += time.time() - dt
     outs = 0.5 * (outs + 1.0)
     outs = to_uint8(outs).permute(0, 2, 3, 1).cpu().numpy()
     t3 = time.time()
@@ -216,7 +213,7 @@ def apply_control(
 
 
 async def run_control(
-    self: ControlNetAlgorithm,
+    self: IAlgorithm,
     data: ControlNetModel,
     hint_type: ControlNetHints,
 ) -> Tuple[List[np.ndarray], Dict[str, float]]:
@@ -224,7 +221,7 @@ async def run_control(
     t0 = time.time()
     image, hint_image = await get_images(self, data)
     t1 = time.time()
-    results, latencies = apply_control(data, self.api, image, hint_image, hint_type)
+    results, latencies = apply_control(data, APIs.SD, image, hint_image, hint_type)
     latencies["download"] = t1 - t0
     return results, latencies
 
@@ -240,7 +237,7 @@ def register_control(
         endpoint = algorithm_endpoint
 
         def initialize(self) -> None:
-            self.api = init_sd()
+            register_sd()
 
         async def run(self, data: algorithm_model_class, *args: Any) -> Response:
             results, latencies = await run_control(self, data, hint_type)
@@ -270,20 +267,31 @@ def register_hint(
         endpoint = hint_endpoint
 
         def initialize(self) -> None:
-            self.api = init_sd()
+            register_sd()
 
         async def run(self, data: _Model, *args: Any) -> Response:
             t0 = time.time()
             image = await self.download_image_with_retry(data.url)
             w, h = image.size
             t1 = time.time()
+            m = api_pool.get(APIs.SD)
+            t2 = time.time()
             hint_image = np.array(image)
             detect_resolution = getattr(data, "detect_resolution", None)
             if detect_resolution is not None:
                 hint_image = resize_image(hint_image, detect_resolution)
-            hint = self.api.get_hint_of(hint_type, hint_image, **data.dict())
+            hint = m.get_hint_of(hint_type, hint_image, **data.dict())
             hint = cv2.resize(hint, (w, h), interpolation=cv2.INTER_LINEAR)
-            self.log_times(dict(download=t1 - t0, inference=time.time() - t1))
+            t3 = time.time()
+            api_pool.cleanup(APIs.SD)
+            self.log_times(
+                dict(
+                    download=t1 - t0,
+                    get_model=t2 - t1,
+                    inference=t3 - t2,
+                    cleanup=time.time() - t3,
+                )
+            )
             if data.return_arrays:
                 return [hint]
             return Response(content=np_to_bytes(hint), media_type="image/png")

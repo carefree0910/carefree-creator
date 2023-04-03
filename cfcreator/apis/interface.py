@@ -219,54 +219,9 @@ def get_model_root() -> ModelRootResponse:
     return ModelRootResponse(root=constants["model_root"])
 
 
-@app.post("/available_versions", responses=get_responses(GetPromptResponse))
-def get_available_api_versions() -> AvailableVersions:
-    return AvailableVersions(versions=available_apis())
-
-
 @app.post("/available_models", responses=get_responses(GetPromptResponse))
 def get_available_local_models() -> AvailableModels:
     return AvailableModels(models=_get_available_local_models(constants["model_root"]))
-
-
-@app.post("/switch", responses=get_responses(SwitchCheckpointResponse))
-def switch_checkpoint(data: SwitchCheckpointModel) -> SwitchCheckpointResponse:
-    api = get_api(data.key)
-    if api is None:
-        return SwitchCheckpointResponse(
-            success=False,
-            reason=f"'{data.key}' is not a valid key, available keys are: {', '.join(available_apis())}",
-        )
-    model_path = os.path.join(constants["model_root"], data.model)
-    if not os.path.isfile(model_path):
-        return SwitchCheckpointResponse(
-            success=False,
-            reason=f"cannot find '{data.model}' under '{constants['model_root']}'",
-        )
-    try:
-        cflearn.scripts.sd.convert(model_path, api, load=True)
-        return SwitchCheckpointResponse(success=True, reason="")
-    except Exception as err:
-        logging.exception(err)
-        return SwitchCheckpointResponse(success=False, reason=get_err_msg(err))
-
-
-@app.post("/reset", responses=get_responses(ResetCheckpointResponse))
-def reset_checkpoint(data: ResetCheckpointModel) -> ResetCheckpointResponse:
-    err_msg = f"'{data.version}' is not a valid version, available versions are: {', '.join(available_apis())}"
-    current = get_api(data.version)
-    if current is None:
-        return ResetCheckpointResponse(success=False, reason=err_msg)
-    init_fn = get_init_fn(data.version)
-    if init_fn is None:
-        return ResetCheckpointResponse(success=False, reason=err_msg)
-    try:
-        with init_fn("cpu").load_context() as wrapper:
-            od = wrapper.state_dict()
-        cflearn.scripts.sd.inject(od, current)
-        return ResetCheckpointResponse(success=True, reason="")
-    except Exception as err:
-        return ResetCheckpointResponse(success=False, reason=get_err_msg(err))
 
 
 @app.post("/switch_root", responses=get_responses(SwitchCheckpointRootResponse))
