@@ -272,6 +272,21 @@ class SDSamplers(str, Enum):
     K_HEUN = "k_heun"
 
 
+class TomeInfoModel(BaseModel):
+    enable: bool = Field(False, description="Whether enable tomesd.")
+    ratio: float = Field(0.5, description="The ratio of tokens to merge.")
+    max_downsample: int = Field(
+        1,
+        description="Apply ToMe to layers with at most this amount of downsampling.",
+    )
+    sx: int = Field(2, description="The stride for computing dst sets.")
+    sy: int = Field(2, description="The stride for computing dst sets.")
+    use_rand: bool = Field(True, description="Whether allow random perturbations.")
+    merge_attn: bool = Field(True, description="Whether merge attention.")
+    merge_crossattn: bool = Field(False, description="Whether merge cross attention.")
+    merge_mlp: bool = Field(False, description="Whether merge mlp.")
+
+
 class DiffusionModel(CallbackModel):
     use_circular: bool = Field(
         False,
@@ -339,6 +354,7 @@ Number of CLIP layers that we want to skip.
         {},
         description="Custom embeddings, often used in textual inversion.",
     )
+    tome_info: TomeInfoModel = Field(TomeInfoModel(), description="tomesd settings.")
 
 
 class CommonSDInpaintingModel(BaseModel):
@@ -456,6 +472,9 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
             clip_skip = 1
         else:
             clip_skip = 0
+    tome_info = data.tome_info.dict()
+    enable_tome = tome_info.pop("enable")
+    m.set_tome_info(None if not enable_tome else tome_info)
     return dict(
         seed=seed,
         variation_seed=variation_seed,
