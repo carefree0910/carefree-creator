@@ -2,7 +2,6 @@ import os
 import json
 import yaml
 import torch
-import cflearn
 import logging
 import datetime
 import logging.config
@@ -22,7 +21,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from cfclient.models import *
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
-from cfclient.utils import get_err_msg
 from cfclient.utils import get_responses
 from cfclient.utils import run_algorithm
 from cfclient.utils import get_image_response_kwargs
