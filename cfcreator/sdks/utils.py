@@ -1,6 +1,8 @@
 from io import BytesIO
 from PIL import Image
 from typing import Any
+from typing import Dict
+from typing import Union
 from pydantic import BaseModel
 from cfclient.core import HttpClient
 from cfclient.core import ClientSession
@@ -25,9 +27,11 @@ class get_http_session:
         self._http_client = None
 
 
-async def get_image_res(url: str, model: BaseModel) -> Image.Image:
+async def get_image_res(url: str, d: Union[BaseModel, Dict[str, Any]]) -> Image.Image:
+    if isinstance(d, BaseModel):
+        d = d.dict()
     async with get_http_session() as session:
-        async with session.post(url, json=model.dict()) as response:
+        async with session.post(url, json=d) as response:
             return Image.open(BytesIO(await response.read()))
 
 
