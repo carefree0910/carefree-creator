@@ -13,9 +13,9 @@ from cflearn.api.utils import ILoadableItem
 from cflearn.api.utils import ILoadablePool
 
 from .parameters import lazy_load
+from .parameters import pool_limit
 from .parameters import init_to_cpu
 from .parameters import need_change_device
-from .parameters import weights_pool_limit
 
 
 def resize_image(input_image: np.ndarray, resolution: int) -> np.ndarray:
@@ -117,7 +117,7 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
 class APIPool(ILoadablePool[IAPI]):
     def __init__(self) -> None:
-        super().__init__(weights_pool_limit())
+        super().__init__(pool_limit())
 
     def get(self, key: str, **kwargs: Any) -> IAPI:
         if key in (APIs.SD, APIs.SD_INPAINTING):

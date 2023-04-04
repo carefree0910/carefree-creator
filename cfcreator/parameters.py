@@ -84,8 +84,8 @@ def need_change_device() -> bool:
     return lazy_load() and not OPT["cpu"]
 
 
-def weights_pool_limit() -> int:
-    return OPT.get("weights_pool_limit", -1)
+def pool_limit() -> int:
+    return OPT.get("pool_limit", -1)
 
 
 def use_cos() -> bool:

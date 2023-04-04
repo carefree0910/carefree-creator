@@ -37,7 +37,7 @@ from .utils import api_pool
 from .utils import APIs
 from .parameters import verbose
 from .parameters import get_focus
-from .parameters import weights_pool_limit
+from .parameters import pool_limit
 from .parameters import Focus
 
 
@@ -77,7 +77,7 @@ def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     m: ControlledDiffusionAPI = _get(ControlledDiffusionAPI.from_sd, init_to_cpu)
     focus = get_focus()
-    m.sd_weights.limit = weights_pool_limit()
+    m.sd_weights.limit = pool_limit()
     m.current_sd_version = MergedVersions.v1_5
     targets = []
     common = Focus.ALL, Focus.SD, Focus.CONTROL, Focus.PIPELINE

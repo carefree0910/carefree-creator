@@ -77,7 +77,7 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
     default=-1,
     show_default=True,
     type=int,
-    help="Limitation of the weights pool.",
+    help="Limitation of the pools (i.e. `WeightsPool` & `APIPool`).",
 )
 def serve(
     *,
@@ -89,7 +89,7 @@ def serve(
     lazy: bool,
     limit: int,
 ) -> None:
-    increment = dict(lazy_load=lazy, weights_pool_limit=limit)
+    increment = dict(lazy_load=lazy, pool_limit=limit)
     if cpu:
         increment["cpu"] = True
     if focus != "all":
