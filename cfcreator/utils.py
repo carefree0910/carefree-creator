@@ -127,6 +127,8 @@ class APIPool(ILoadablePool[IAPI]):
     def register(self, key: str, init_fn: APIInit) -> None:
         def _init(init: bool) -> LoadableAPI:
             api = LoadableAPI(init_fn, init=False)
+            if key == APIs.SD:
+                api.force_not_lazy = True
             print("> init", key, "(lazy)" if api.lazy else "")
             if init:
                 api.load()
