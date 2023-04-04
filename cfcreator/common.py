@@ -101,6 +101,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     else:
         print("> handling external weights")
         external_dir = os.path.join(os.path.expanduser("~"), ".cache", "external")
+        os.makedirs(external_dir, exist_ok=True)
         converted_sizes_path = os.path.join(external_dir, "sizes.json")
         sizes: Dict[str, int]
         if not os.path.isfile(converted_sizes_path):
