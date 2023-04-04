@@ -6,11 +6,10 @@ from typing import Union
 from pydantic import BaseModel
 from cfclient.core import HttpClient
 from cfclient.core import ClientSession
-from cflearn.parameters import OPT
 
 
-def get_url(endpoint: str) -> str:
-    return f"{OPT.host}{endpoint}"
+def get_url(host: str, endpoint: str) -> str:
+    return f"{host}{endpoint}"
 
 
 class get_http_session:
