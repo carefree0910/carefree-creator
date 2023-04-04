@@ -128,7 +128,7 @@ class APIPool(ILoadablePool[IAPI]):
                 api.force_not_lazy = True
             print("> init", key, "(lazy)" if api.lazy else "")
             if init:
-                api.load()
+                api.load(no_change=api.lazy)
             return api
 
         if key in self:
