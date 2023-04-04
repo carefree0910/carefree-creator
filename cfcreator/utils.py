@@ -101,7 +101,7 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
     def load(self, **kwargs: Any) -> IAPI:
         super().load()
-        if not kwargs.get("no_change", False) and self.need_change_device:
+        if not kwargs.pop("no_change", False) and self.need_change_device:
             self._item.to("cuda:0", use_half=True, **kwargs)
         return self._item
 
