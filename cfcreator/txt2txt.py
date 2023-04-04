@@ -7,8 +7,8 @@ from pydantic import BaseModel
 from cflearn.api.cv.third_party.prompt import PromptEnhanceConfig
 
 from .utils import api_pool
+from .utils import APIs
 from .common import register_prompt_enhance
-from .common import APIs
 from .common import IAlgorithm
 from .common import TextModel
 

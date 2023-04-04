@@ -8,12 +8,12 @@ from pydantic import BaseModel
 from cfclient.models import ImageModel
 
 from .utils import api_pool
+from .utils import APIs
 from .common import register_sd
 from .common import register_sd_inpainting
 from .common import get_sd_from
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
-from .common import APIs
 from .common import IAlgorithm
 from .common import Txt2ImgModel
 from .common import CommonSDInpaintingModel

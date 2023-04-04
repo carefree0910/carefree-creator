@@ -28,9 +28,9 @@ from cflearn.api.cv.diffusion import ControlledDiffusionAPI
 from .utils import api_pool
 from .utils import to_canvas
 from .utils import resize_image
+from .utils import APIs
 from .common import register_sd
 from .common import handle_diffusion_model
-from .common import APIs
 from .common import IAlgorithm
 from .common import ControlNetModel
 from .common import ReturnArraysModel

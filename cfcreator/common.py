@@ -34,6 +34,7 @@ from cflearn.api.cv.third_party.prompt import PromptEnhanceAPI
 from .cos import download_with_retry
 from .cos import download_image_with_retry
 from .utils import api_pool
+from .utils import APIs
 from .parameters import verbose
 from .parameters import get_focus
 from .parameters import weights_pool_limit
@@ -65,20 +66,6 @@ def merge_enums(*enums: Enum) -> Enum:
 
 
 MergedVersions = merge_enums(SDVersions, ExternalVersions)
-
-
-class APIs(str, Enum):
-    SD = "sd"
-    SD_INPAINTING = "sd_inpainting"
-    ESR = "esr"
-    ESR_ANIME = "esr_anime"
-    INPAINTING = "inpainting"
-    LAMA = "lama"
-    SEMANTIC = "semantic"
-    HRNET = "hrnet"
-    ISNET = "isnet"
-    BLIP = "blip"
-    PROMPT_ENHANCE = "prompt_enhance"
 
 
 def _get(init_fn: Callable, init_to_cpu: bool) -> Any:

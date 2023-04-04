@@ -4,6 +4,7 @@ import torch
 
 import numpy as np
 
+from enum import Enum
 from typing import Any
 from typing import List
 from typing import Optional
@@ -58,6 +59,20 @@ def to_canvas(results: List[np.ndarray], *, padding: int = 0) -> np.ndarray:
         iy = iy * h + iy * padding
         canvas[iy : iy + h, ix : ix + w] = out
     return canvas
+
+
+class APIs(str, Enum):
+    SD = "sd"
+    SD_INPAINTING = "sd_inpainting"
+    ESR = "esr"
+    ESR_ANIME = "esr_anime"
+    INPAINTING = "inpainting"
+    LAMA = "lama"
+    SEMANTIC = "semantic"
+    HRNET = "hrnet"
+    ISNET = "isnet"
+    BLIP = "blip"
+    PROMPT_ENHANCE = "prompt_enhance"
 
 
 class IAPI:

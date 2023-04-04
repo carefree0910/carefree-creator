@@ -6,8 +6,8 @@ from cftool.cv import to_rgb
 from cftool.cv import restrict_wh
 
 from .utils import api_pool
+from .utils import APIs
 from .common import register_blip
-from .common import APIs
 from .common import IAlgorithm
 from .common import TextModel
 from .common import ImageModel

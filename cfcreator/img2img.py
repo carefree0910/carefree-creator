@@ -22,6 +22,7 @@ from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv.third_party.lama import Config
 
 from .utils import api_pool
+from .utils import APIs
 from .common import register_sd
 from .common import register_esr
 from .common import register_lama
@@ -35,7 +36,6 @@ from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
 from .common import get_normalized_arr_from_diffusion
-from .common import APIs
 from .common import IAlgorithm
 from .common import ImageModel
 from .common import Img2ImgModel
