@@ -26,6 +26,7 @@ from cfclient.utils import run_algorithm
 from cfclient.utils import get_image_response_kwargs
 
 from cfcreator import *
+from cfcreator.utils import api_pool
 
 
 app = FastAPI()
@@ -283,6 +284,7 @@ if env_opt_json is not None:
     OPT.update(json.loads(env_opt_json))
 focus = get_focus()
 registered_algorithms = set()
+api_pool.update_limit()
 
 
 def register_endpoint(endpoint: str) -> None:
