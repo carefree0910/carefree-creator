@@ -15,7 +15,7 @@ from cflearn.api.utils import ILoadablePool
 from .parameters import lazy_load
 from .parameters import pool_limit
 from .parameters import init_to_cpu
-from .parameters import need_change_device
+from .parameters import OPT
 
 
 def resize_image(input_image: np.ndarray, resolution: int) -> np.ndarray:
@@ -89,11 +89,15 @@ class LoadableAPI(ILoadableItem[IAPI]):
     force_not_lazy: bool = False
 
     def __init__(self, init_fn: APIInit, *, init: bool = False):
-        super().__init__(lambda: init_fn(init_to_cpu() or self.lazy), init=init)
+        super().__init__(lambda: init_fn(self.init_to_cpu), init=init)
 
     @property
     def lazy(self) -> bool:
         return lazy_load() and not self.force_not_lazy
+
+    @property
+    def init_to_cpu(self) -> bool:
+        return OPT["cpu"] or self.lazy
 
     @property
     def need_change_device(self) -> bool:

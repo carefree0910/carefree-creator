@@ -76,10 +76,6 @@ def lazy_load() -> bool:
     return OPT.get("lazy_load", False)
 
 
-def init_to_cpu() -> bool:
-    return lazy_load() or OPT["cpu"]
-
-
 def need_change_device() -> bool:
     return lazy_load() and not OPT["cpu"]
 
@@ -141,7 +137,6 @@ __all__ = [
     "use_cos",
     "verbose",
     "get_focus",
-    "init_to_cpu",
     "need_change_device",
     "inject_headers",
     "redis_kwargs",
