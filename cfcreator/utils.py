@@ -14,7 +14,6 @@ from cflearn.api.utils import ILoadablePool
 
 from .parameters import lazy_load
 from .parameters import pool_limit
-from .parameters import init_to_cpu
 from .parameters import OPT
 
 
