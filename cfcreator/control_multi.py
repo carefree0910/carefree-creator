@@ -10,7 +10,8 @@ from cftool.misc import shallow_copy_dict
 from cflearn.api.cv.diffusion import ControlNetHints
 
 from .utils import to_canvas
-from .common import init_sd
+from .utils import APIs
+from .common import register_sd
 from .common import IAlgorithm
 from .common import ControlNetModel
 from .control import get_images
@@ -79,7 +80,7 @@ class ControlMulti(IAlgorithm):
     endpoint = control_multi_endpoint
 
     def initialize(self) -> None:
-        self.api = init_sd()
+        register_sd()
 
     async def run(self, data: ControlMultiModel, *args: Any) -> Response:
         self.log_endpoint(data)
@@ -88,7 +89,7 @@ class ControlMulti(IAlgorithm):
         t1 = time.time()
         results, latencies = apply_control(
             gather_all_data(data),
-            self.api,
+            APIs.SD,
             image,
             hint_image,
             data.types,
