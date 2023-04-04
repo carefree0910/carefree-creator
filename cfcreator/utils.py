@@ -119,6 +119,11 @@ class APIPool(ILoadablePool[IAPI]):
     def __init__(self) -> None:
         super().__init__(weights_pool_limit())
 
+    def get(self, key: str, **kwargs: Any) -> IAPI:
+        if key in (APIs.SD, APIs.SD_INPAINTING):
+            kwargs["no_annotator"] = True
+        return super().get(key, **kwargs)
+
     def register(self, key: str, init_fn: APIInit) -> None:
         def _init(init: bool) -> LoadableAPI:
             api = LoadableAPI(init_fn, init=False)
@@ -135,6 +140,8 @@ class APIPool(ILoadablePool[IAPI]):
         loadable_api: Optional[LoadableAPI] = self.pool.get(key)
         if loadable_api is None:
             raise ValueError(f"key '{key}' does not exist")
+        if key in (APIs.SD, APIs.SD_INPAINTING):
+            kwargs["no_annotator"] = True
         loadable_api.cleanup(**kwargs)
 
     def need_change_device(self, key: str) -> bool:

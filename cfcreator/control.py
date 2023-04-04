@@ -193,7 +193,7 @@ def apply_control(
         init_tensor = init_tensor.to(api.device)
         outs = api.img2img(init_tensor, **kw)
     dt = time.time()
-    api_pool.cleanup(api_key, no_annotator=True)
+    api_pool.cleanup(api_key)
     change_diffusion_device_time += time.time() - dt
     outs = 0.5 * (outs + 1.0)
     outs = to_uint8(outs).permute(0, 2, 3, 1).cpu().numpy()
