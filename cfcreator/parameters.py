@@ -76,10 +76,6 @@ def lazy_load() -> bool:
     return OPT.get("lazy_load", False)
 
 
-def need_change_device() -> bool:
-    return lazy_load() and not OPT["cpu"]
-
-
 def pool_limit() -> int:
     return OPT.get("pool_limit", -1)
 
@@ -137,7 +133,6 @@ __all__ = [
     "use_cos",
     "verbose",
     "get_focus",
-    "need_change_device",
     "inject_headers",
     "redis_kwargs",
     "audit_redis_kwargs",

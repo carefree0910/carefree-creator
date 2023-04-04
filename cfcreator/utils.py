@@ -101,7 +101,7 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
     @property
     def need_change_device(self) -> bool:
-        return need_change_device() and not self.force_not_lazy
+        return self.lazy and not OPT["cpu"]
 
     def load(self, **kwargs: Any) -> IAPI:
         super().load()
