@@ -116,9 +116,6 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
 
 class APIPool(ILoadablePool[IAPI]):
-    def __init__(self) -> None:
-        super().__init__(pool_limit())
-
     def get(self, key: str, **kwargs: Any) -> IAPI:
         if key in (APIs.SD, APIs.SD_INPAINTING):
             kwargs["no_annotator"] = True
@@ -151,6 +148,9 @@ class APIPool(ILoadablePool[IAPI]):
         if loadable_api is None:
             raise ValueError(f"key '{key}' does not exist")
         return loadable_api.need_change_device
+
+    def update_limit(self) -> None:
+        self.limit = pool_limit()
 
 
 api_pool = APIPool()
