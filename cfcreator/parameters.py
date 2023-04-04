@@ -10,7 +10,6 @@ from cftool.misc import shallow_copy_dict
 
 OPT = dict(
     verbose=True,
-    save_gpu_ram=False,
     cpu=False,
     use_cos=True,
     request_domain="localhost",
@@ -73,16 +72,16 @@ def get_focus() -> Focus:
     return OPT.get("focus", "all")
 
 
+def lazy_load() -> bool:
+    return OPT.get("lazy_load", False)
+
+
 def init_to_cpu() -> bool:
-    return OPT["save_gpu_ram"] or OPT["cpu"]
+    return lazy_load() or OPT["cpu"]
 
 
 def need_change_device() -> bool:
-    return OPT["save_gpu_ram"] and not OPT["cpu"]
-
-
-def auto_lazy_load() -> bool:
-    return OPT.get("auto_lazy_load", True) and get_focus() != Focus.SYNC
+    return lazy_load() and not OPT["cpu"]
 
 
 def weights_pool_limit() -> int:

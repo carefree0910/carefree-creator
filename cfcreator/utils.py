@@ -12,8 +12,8 @@ from typing import Protocol
 from cflearn.api.utils import ILoadableItem
 from cflearn.api.utils import ILoadablePool
 
+from .parameters import lazy_load
 from .parameters import init_to_cpu
-from .parameters import auto_lazy_load
 from .parameters import need_change_device
 from .parameters import weights_pool_limit
 
@@ -93,7 +93,7 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
     @property
     def lazy(self) -> bool:
-        return auto_lazy_load() and not self.force_not_lazy
+        return lazy_load() and not self.force_not_lazy
 
     @property
     def need_change_device(self) -> bool:

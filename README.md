@@ -557,10 +557,10 @@ cfcreator serve --cpu
 If your GPU RAM is not large enough, you may try:
 
 ```bash
-cfcreator serve --save_gpu_ram
+cfcreator serve --lazy
 ```
 
-> With the `--save_gpu_ram` flag, the models will be loaded to RAM, and only the executing model will be moved to GPU RAM.
+> With the `--lazy` flag, the models will be loaded to RAM, and only the executing model will be moved to GPU RAM.
 > 
 > So as an exchange, your RAM will be eaten up! 🤣
 

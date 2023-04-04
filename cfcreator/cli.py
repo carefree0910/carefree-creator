@@ -22,14 +22,6 @@ def main() -> None:
     help="Port of the service.",
 )
 @click.option(
-    "--save_gpu_ram",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    type=bool,
-    help="This flag will put all the models to RAM instead of GPU RAM, and only put models to GPU when they are being used.",
-)
-@click.option(
     "--cpu",
     is_flag=True,
     default=False,
@@ -73,12 +65,12 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
     help="Directory of the cache files.",
 )
 @click.option(
-    "--disable_lazy",
+    "--lazy",
     is_flag=True,
     default=False,
     show_default=True,
     type=bool,
-    help="This flag will disable the `auto lazy loading` mode.",
+    help="This flag will enable the `lazy loading` mode.",
 )
 @click.option(
     "--limit",
@@ -90,17 +82,14 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
 def serve(
     *,
     port: int,
-    save_gpu_ram: bool,
     cpu: bool,
     focus: str,
     reload: bool,
     cache_dir: str,
-    disable_lazy: bool,
+    lazy: bool,
     limit: int,
 ) -> None:
-    increment = dict(auto_lazy_load=not disable_lazy, weights_pool_limit=limit)
-    if save_gpu_ram:
-        increment["save_gpu_ram"] = True
+    increment = dict(lazy_load=lazy, weights_pool_limit=limit)
     if cpu:
         increment["cpu"] = True
     if focus != "all":
