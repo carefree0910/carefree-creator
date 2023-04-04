@@ -8,7 +8,6 @@ from io import BytesIO
 from PIL import Image
 from tqdm import tqdm
 from cftool.misc import print_info
-from cflearn.parameters import OPT
 
 
 test_parameters = {
