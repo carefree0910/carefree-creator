@@ -121,7 +121,7 @@ def apply_control(
         device = api.device
         use_half = api.use_half
         ht = time.time()
-        if need_change_device():
+        if need_change_device:
             device = "cuda:0"
             use_half = True
             api.annotators[hint_type].to(device, use_half=True)
@@ -131,7 +131,7 @@ def apply_control(
         else:
             o_hint_arr = api.get_hint_of(hint_type, hint_image, **h_data.dict())
         ht = time.time()
-        if need_change_device():
+        if need_change_device:
             api.annotators[hint_type].to("cpu", use_half=False)
             torch.cuda.empty_cache()
         all_annotator_change_device_times.append(time.time() - ht)
@@ -163,7 +163,7 @@ def apply_control(
     kw["hint_start"] = common_data.hint_starts
     kw["max_wh"] = common_data.max_wh
     dt = time.time()
-    if need_change_device():
+    if need_change_device:
         api.to("cuda:0", use_half=True, no_annotator=True)
     change_diffusion_device_time = time.time() - dt
     # inpainting workaround
