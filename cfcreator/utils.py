@@ -96,7 +96,7 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
     @property
     def init_to_cpu(self) -> bool:
-        return OPT["cpu"] or self.lazy
+        return self.lazy or OPT["cpu"]
 
     @property
     def need_change_device(self) -> bool:
