@@ -148,6 +148,7 @@ def simplify(params: Dict[str, Any]) -> Dict[str, Any]:
 # kafka & redis
 async def consume() -> None:
     OPT["verbose"] = False
+    OPT["lazy_load"] = True
 
     topic = kafka_topic()
     expire_seconds = 10 * 365 * 24 * 3600
