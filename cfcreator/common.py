@@ -16,6 +16,7 @@ from typing import Callable
 from typing import Optional
 from pydantic import Field
 from pydantic import BaseModel
+from functools import partial
 from cftool.cv import np_to_bytes
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
@@ -75,10 +76,12 @@ def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
 
 
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
-    m: ControlledDiffusionAPI = _get(ControlledDiffusionAPI.from_sd, init_to_cpu)
+    version = MergedVersions.v1_5
+    init_fn = partial(ControlledDiffusionAPI.from_sd_version, version)
+    m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     focus = get_focus()
     m.sd_weights.limit = pool_limit()
-    m.current_sd_version = MergedVersions.v1_5
+    m.current_sd_version = version
     targets = []
     common = Focus.ALL, Focus.SD, Focus.CONTROL, Focus.PIPELINE
     if focus in common + (Focus.SD_BASE,):
