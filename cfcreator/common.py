@@ -149,7 +149,7 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     m.annotators = sd.annotators
     m.controlnet_weights = sd.controlnet_weights
-    m.current_sd_version = sd.current_sd_version
+    m.current_sd_version = MergedVersions.v1_5
     m.switch_control(*m.available_control_hints)
     return m
 
