@@ -281,6 +281,16 @@ class TomeInfoModel(BaseModel):
     )
     sx: int = Field(2, description="The stride for computing dst sets.")
     sy: int = Field(2, description="The stride for computing dst sets.")
+    seed: int = Field(
+        -1,
+        ge=-1,
+        lt=2**32,
+        description="""
+Seed of the generation.
+> If `-1`, then seed from `DiffusionModel` will be used.
+> If `DiffusionModel.seed` is also `-1`, then random seed will be used.
+""",
+    )
     use_rand: bool = Field(True, description="Whether allow random perturbations.")
     merge_attn: bool = Field(True, description="Whether merge attention.")
     merge_crossattn: bool = Field(False, description="Whether merge cross attention.")
@@ -474,7 +484,15 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
             clip_skip = 0
     tome_info = data.tome_info.dict()
     enable_tome = tome_info.pop("enable")
-    m.set_tome_info(None if not enable_tome else tome_info)
+    if not enable_tome:
+        m.set_tome_info(None)
+    else:
+        if tome_info["seed"] == -1:
+            if seed is None:
+                tome_info.pop("seed")
+            else:
+                tome_info["seed"] = seed
+        m.set_tome_info(tome_info)
     return dict(
         seed=seed,
         variation_seed=variation_seed,
