@@ -6,6 +6,7 @@ import numpy as np
 
 from enum import Enum
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Protocol
@@ -85,14 +86,19 @@ class APIInit(Protocol):
 
 
 class LoadableAPI(ILoadableItem[IAPI]):
-    force_not_lazy: bool = False
-
-    def __init__(self, init_fn: APIInit, *, init: bool = False):
+    def __init__(
+        self,
+        init_fn: APIInit,
+        *,
+        init: bool = False,
+        is_sd: bool = False,
+    ):
         super().__init__(lambda: init_fn(self.init_to_cpu), init=init)
+        self.is_sd = is_sd
 
     @property
     def lazy(self) -> bool:
-        return lazy_load() and not self.force_not_lazy
+        return lazy_load() and not self.is_sd
 
     @property
     def init_to_cpu(self) -> bool:
@@ -102,15 +108,19 @@ class LoadableAPI(ILoadableItem[IAPI]):
     def need_change_device(self) -> bool:
         return self.lazy and not OPT["cpu"]
 
-    def load(self, **kwargs: Any) -> IAPI:
+    @property
+    def sd_kwargs(self) -> Dict[str, Any]:
+        return {"no_annotator": True} if self.is_sd else {}
+
+    def load(self, *, no_change: bool = False, **kwargs: Any) -> IAPI:
         super().load()
-        if not kwargs.pop("no_change", False) and self.need_change_device:
-            self._item.to("cuda:0", use_half=True, **kwargs)
+        if no_change and self.need_change_device:
+            self._item.to("cuda:0", use_half=True, **self.sd_kwargs)
         return self._item
 
-    def cleanup(self, **kwargs: Any) -> None:
+    def cleanup(self) -> None:
         if self.need_change_device:
-            self._item.to("cpu", use_half=False, **kwargs)
+            self._item.to("cpu", use_half=False, **self.sd_kwargs)
             torch.cuda.empty_cache()
 
     def unload(self) -> None:
@@ -119,16 +129,10 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
 
 class APIPool(ILoadablePool[IAPI]):
-    def get(self, key: str, **kwargs: Any) -> IAPI:
-        if key in (APIs.SD, APIs.SD_INPAINTING):
-            kwargs["no_annotator"] = True
-        return super().get(key, **kwargs)
-
     def register(self, key: str, init_fn: APIInit) -> None:
         def _init(init: bool) -> LoadableAPI:
-            api = LoadableAPI(init_fn, init=False)
-            if key in (APIs.SD, APIs.SD_INPAINTING):
-                api.force_not_lazy = True
+            is_sd = key in (APIs.SD, APIs.SD_INPAINTING)
+            api = LoadableAPI(init_fn, init=False, is_sd=is_sd)
             print("> init", key, "(lazy)" if api.lazy else "")
             if init:
                 api.load(no_change=api.lazy)
@@ -138,13 +142,11 @@ class APIPool(ILoadablePool[IAPI]):
             return
         return super().register(key, _init)
 
-    def cleanup(self, key: str, **kwargs: Any) -> None:
+    def cleanup(self, key: str) -> None:
         loadable_api: Optional[LoadableAPI] = self.pool.get(key)
         if loadable_api is None:
             raise ValueError(f"key '{key}' does not exist")
-        if key in (APIs.SD, APIs.SD_INPAINTING):
-            kwargs["no_annotator"] = True
-        loadable_api.cleanup(**kwargs)
+        loadable_api.cleanup()
 
     def need_change_device(self, key: str) -> bool:
         loadable_api: Optional[LoadableAPI] = self.pool.get(key)
