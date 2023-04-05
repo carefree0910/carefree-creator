@@ -147,8 +147,8 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     sd: ControlledDiffusionAPI = api_pool.get(APIs.SD)
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
     m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
-    m.weights = sd.weights
     m.annotators = sd.annotators
+    m.controlnet_weights = sd.controlnet_weights
     m.current_sd_version = sd.current_sd_version
     m.switch_control(*m.available_control_hints)
     return m
