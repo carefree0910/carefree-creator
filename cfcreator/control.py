@@ -263,6 +263,7 @@ def register_hint(
 
     class _(IAlgorithm):
         model_class = _Model
+        model_class.__name__ = hint_model_class.__name__
 
         endpoint = hint_endpoint
 
