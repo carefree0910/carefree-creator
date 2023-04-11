@@ -10,7 +10,6 @@ from typing import Tuple
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
-from cftool.cv import to_rgb
 from cftool.cv import to_uint8
 from cftool.cv import np_to_bytes
 from cfclient.models.core import ImageModel
@@ -60,10 +59,12 @@ def paste(
         original_h,
     )
     t1 = time.time()
-    rgb = affined_fg_array[..., :3].astype(np.float32) / 255.0
-    mask = affined_fg_array[..., -1:].astype(np.float32) / 255.0
-    original_bg_array = np.array(to_rgb(original_bg)).astype(np.float32) / 255.0
-    merged = rgb * mask + original_bg_array * (1.0 - mask)
+    affined_fg_array = affined_fg_array.astype(np.float32) / 255.0
+    rgb = affined_fg_array[..., :3]
+    mask = affined_fg_array[..., -1:]
+    bg_array = np.array(original_bg).astype(np.float32) / 255.0
+    fg_array = rgb if bg_array.shape[2] == 3 else affined_fg_array
+    merged = fg_array * mask + bg_array * (1.0 - mask)
     results = dict(rgb=rgb, mask=mask, merged=to_uint8(merged))
     latencies = {"affine": t1 - t0, "merge": time.time() - t1}
     return results, latencies
