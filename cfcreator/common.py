@@ -27,6 +27,7 @@ from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv import ControlledDiffusionAPI
 from cflearn.misc.toolkit import _get_file_size
+from cflearn.models.cv.diffusion import StableDiffusion
 from cflearn.api.cv.third_party.blip import BLIPAPI
 from cflearn.api.cv.third_party.lama import LaMa
 from cflearn.api.cv.third_party.isnet import ISNetAPI
@@ -97,15 +98,16 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     m.prepare_sd(targets)
     # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
     # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
+    user_folder = os.path.expanduser("~")
+    external_folder = os.path.join(user_folder, ".cache", "external")
     if focus == Focus.SYNC:
         print("> prepare ControlNet Annotators")
         for hint in m.control_defaults:
             m.prepare_annotator(hint)
     else:
         print("> handling external weights")
-        external_dir = os.path.join(os.path.expanduser("~"), ".cache", "external")
-        os.makedirs(external_dir, exist_ok=True)
-        converted_sizes_path = os.path.join(external_dir, "sizes.json")
+        os.makedirs(external_folder, exist_ok=True)
+        converted_sizes_path = os.path.join(external_folder, "sizes.json")
         sizes: Dict[str, int]
         if not os.path.isfile(converted_sizes_path):
             sizes = {}
@@ -114,7 +116,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
                 sizes = json.load(f)
         for version in ExternalVersions:
             print(f">> handling {version}")
-            converted_path = os.path.join(external_dir, f"{version}_converted.pt")
+            converted_path = os.path.join(external_folder, f"{version}_converted.pt")
             v_size = sizes.get(version)
             f_size = (
                 None
@@ -125,7 +127,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
                 if f_size is not None:
                     print(f">> {version} has been converted but size mismatch")
                 print(f">> converting {version}")
-                model_path = os.path.join(external_dir, f"{version}.ckpt")
+                model_path = os.path.join(external_folder, f"{version}.ckpt")
                 d = cflearn.scripts.sd.convert(model_path, m, load=False)
                 torch.save(d, converted_path)
                 sizes[version] = _get_file_size(converted_path)
@@ -138,6 +140,21 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
         m.prepare_annotators()
         print("> warmup ControlNet")
         m.switch_control(*m.available_control_hints)
+    # lora stuffs
+    print("> loading lora")
+    num_lora = 0
+    lora_folder = os.path.join(external_folder, "lora")
+    for lora_file in os.listdir(lora_folder):
+        try:
+            lora_name = os.path.splitext(lora_file)[0]
+            lora_path = os.path.join(lora_folder, lora_file)
+            print(f">> loading {lora_name}")
+            m.load_sd_lora(lora_name, path=lora_path)
+            num_lora += 1
+        except:
+            print(f">>>> Failed to load!")
+            continue
+    print(f"> {num_lora} lora loaded")
     # return
     return m
 
@@ -365,6 +382,10 @@ Number of CLIP layers that we want to skip.
         description="Custom embeddings, often used in textual inversion.",
     )
     tome_info: TomeInfoModel = Field(TomeInfoModel(), description="tomesd settings.")
+    lora_scales: Optional[Dict[str, float]] = Field(
+        None,
+        description="lora scales, key is the name, value is the weight.",
+    )
 
 
 class CommonSDInpaintingModel(BaseModel):
@@ -493,6 +514,16 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
             else:
                 tome_info["seed"] = seed
         m.set_tome_info(tome_info)
+    # lora
+    model = m.m
+    if isinstance(model, StableDiffusion):
+        manager = model.lora_manager
+        if manager.injected:
+            m.cleanup_sd_lora()
+        if data.lora_scales is not None:
+            m.inject_sd_lora(*list(data.lora_scales))
+            m.set_sd_lora_scales(data.lora_scales)
+    # return
     return dict(
         seed=seed,
         variation_seed=variation_seed,
