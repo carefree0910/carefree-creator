@@ -113,17 +113,32 @@ async def post_callback(
     uid: str,
     success: bool,
     data: Dict[str, Any],
+    retry: int = 10,
+    interval: int = 3,
 ) -> None:
-    if url:
+    if not url:
+        return
+
+    async def fn() -> None:
+        cb_data = dict(uid=uid, success=success, data=data)
+        async with http_client.session.post(url, json=cb_data, timeout=interval) as res:
+            await res.json()
+
+    msg = ""
+    for i in range(retry):
         try:
-            data = dict(uid=uid, success=success, data=data)
-            async with http_client.session.post(url, json=data, timeout=1) as res:
-                await res.json()
+            await fn()
+            if i > 0:
+                logging.warning(f"succeeded after {i} retries")
+            return
         except Exception as err:
-            print(
-                f"\n\n!!! post to callback_url ({url}) failed "
-                f"({get_err_msg(err)}) !!!\n\n"
-            )
+            msg = get_err_msg(err)
+        time.sleep(interval)
+    if err is not None:
+        print(
+            f"\n\n!!! post to callback_url ({url}) failed "
+            f"(After {retry} retries) ({msg}) !!!\n\n"
+        )
 
 
 def simplify(params: Dict[str, Any]) -> Dict[str, Any]:
