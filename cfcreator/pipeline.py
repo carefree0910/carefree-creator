@@ -10,6 +10,7 @@ from typing import Tuple
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from cftool.cv import to_rgb
 from cftool.cv import to_uint8
 from cftool.cv import np_to_bytes
 from cfclient.models.core import ImageModel
@@ -42,6 +43,7 @@ def paste(
     d: float,
     e: float,
     f: float,
+    force_rgb: bool,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
     t0 = time.time()
     if original_fg.mode != "RGBA":
@@ -62,6 +64,8 @@ def paste(
     affined_fg_array = affined_fg_array.astype(np.float32) / 255.0
     rgb = affined_fg_array[..., :3]
     mask = affined_fg_array[..., -1:]
+    if force_rgb:
+        original_bg = to_rgb(original_bg)
     bg_array = np.array(original_bg).astype(np.float32) / 255.0
     fg_array = rgb if bg_array.shape[2] == 3 else affined_fg_array
     merged = fg_array * mask + bg_array * (1.0 - mask)
@@ -78,6 +82,7 @@ The `cdn` / `cos` url of the background's image.
 > `cos` url from `qcloud` is preferred.
 """,
     )
+    force_rgb: bool = Field(False, description="Whether to force the output to be RGB.")
 
 
 class PastePipelineModel(
@@ -113,6 +118,7 @@ class PastePipeline(IAlgorithm):
             data.d,
             data.e,
             data.f,
+            data.force_rgb,
         )
         latencies["download"] = t1 - t0
         self.log_times(latencies)
