@@ -59,6 +59,26 @@ class ExternalVersions(str, Enum):
     """
 
 
+class SDInpaintingVersions(str, Enum):
+    v1_5 = "v1.5"
+
+
+class ExternalInpaintingVersions(str, Enum):
+    """
+    Specify external SD-inpainting weights that need to be loaded.
+    * these weights should be placed under ~/.cache/external/inpainting/ folder.
+    * file name should be {version}.ckpt
+
+    Example
+    -------
+    class ExternalVersions(str, Enum):
+        MY_FANCY_MODEL = "my_fancy_model"
+
+    then you can place your model at ~/.cache/external/inpainting/my_fancy_model.ckpt,
+    after which you can specify `my_fancy_model` as the `version` parameter!
+    """
+
+
 def merge_enums(*enums: Enum) -> Enum:
     members: Dict[str, str] = {}
     for e in enums:
@@ -68,6 +88,7 @@ def merge_enums(*enums: Enum) -> Enum:
 
 
 MergedVersions = merge_enums(SDVersions, ExternalVersions)
+MergedInpaintingVersions = merge_enums(SDInpaintingVersions, ExternalInpaintingVersions)
 
 
 def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
@@ -171,12 +192,19 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     register_sd()
     sd: ControlledDiffusionAPI = api_pool.get(APIs.SD)
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
-    m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
-    m.annotators = sd.annotators
-    m.controlnet_weights = sd.controlnet_weights
-    m.current_sd_version = MergedVersions.v1_5
-    m.switch_control(*m.available_control_hints)
-    return m
+    api: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
+    # manually maintain sd_weights
+    with api.load_context() as m:
+        api.sd_weights.register(MergedInpaintingVersions.v1_5, m.state_dict())
+    user_folder = os.path.expanduser("~")
+    external_folder = os.path.join(user_folder, ".cache", "external", "inpainting")
+    _load_external(api, ExternalInpaintingVersions, external_folder)
+    # inject properties from sd
+    api.annotators = sd.annotators
+    api.controlnet_weights = sd.controlnet_weights
+    api.current_sd_version = MergedInpaintingVersions.v1_5
+    api.switch_control(*api.available_control_hints)
+    return api
 
 
 def register_sd() -> None:
