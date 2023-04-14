@@ -76,6 +76,42 @@ def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
     return init_fn("cuda:0", use_half=True)
 
 
+def _load_external(
+    m: ControlledDiffusionAPI,
+    external_enum: Enum,
+    external_folder: str,
+) -> None:
+    print(f"> handling external weights under '{external_folder}'")
+    os.makedirs(external_folder, exist_ok=True)
+    converted_sizes_path = os.path.join(external_folder, "sizes.json")
+    sizes: Dict[str, int]
+    if not os.path.isfile(converted_sizes_path):
+        sizes = {}
+    else:
+        with open(converted_sizes_path, "r") as f:
+            sizes = json.load(f)
+    for version in external_enum:
+        print(f">> handling {version}")
+        converted_path = os.path.join(external_folder, f"{version}_converted.pt")
+        v_size = sizes.get(version)
+        f_size = (
+            None
+            if not os.path.isfile(converted_path)
+            else _get_file_size(converted_path)
+        )
+        if f_size is None or v_size != f_size:
+            if f_size is not None:
+                print(f">> {version} has been converted but size mismatch")
+            print(f">> converting {version}")
+            model_path = os.path.join(external_folder, f"{version}.ckpt")
+            d = cflearn.scripts.sd.convert(model_path, m, load=False)
+            torch.save(d, converted_path)
+            sizes[version] = _get_file_size(converted_path)
+        m.sd_weights.register(version, converted_path)
+    with open(converted_sizes_path, "w") as f:
+        json.dump(sizes, f)
+
+
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     version = MergedVersions.v1_5
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, version)
@@ -105,35 +141,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
         for hint in m.control_defaults:
             m.prepare_annotator(hint)
     else:
-        print("> handling external weights")
-        os.makedirs(external_folder, exist_ok=True)
-        converted_sizes_path = os.path.join(external_folder, "sizes.json")
-        sizes: Dict[str, int]
-        if not os.path.isfile(converted_sizes_path):
-            sizes = {}
-        else:
-            with open(converted_sizes_path, "r") as f:
-                sizes = json.load(f)
-        for version in ExternalVersions:
-            print(f">> handling {version}")
-            converted_path = os.path.join(external_folder, f"{version}_converted.pt")
-            v_size = sizes.get(version)
-            f_size = (
-                None
-                if not os.path.isfile(converted_path)
-                else _get_file_size(converted_path)
-            )
-            if f_size is None or v_size != f_size:
-                if f_size is not None:
-                    print(f">> {version} has been converted but size mismatch")
-                print(f">> converting {version}")
-                model_path = os.path.join(external_folder, f"{version}.ckpt")
-                d = cflearn.scripts.sd.convert(model_path, m, load=False)
-                torch.save(d, converted_path)
-                sizes[version] = _get_file_size(converted_path)
-            m.sd_weights.register(version, converted_path)
-        with open(converted_sizes_path, "w") as f:
-            json.dump(sizes, f)
+        _load_external(m, ExternalVersions, external_folder)
         print("> prepare ControlNet weights")
         m.prepare_control_defaults()
         print("> prepare ControlNet Annotators")
