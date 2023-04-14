@@ -21,12 +21,15 @@ from cftool.cv import np_to_bytes
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
+from cflearn.zoo import DLZoo
+from cflearn.parameters import OPT
 from cflearn.api.cv import SDVersions
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv import ControlledDiffusionAPI
 from cflearn.misc.toolkit import _get_file_size
+from cflearn.misc.toolkit import download_model
 from cflearn.models.cv.diffusion import StableDiffusion
 from cflearn.api.cv.third_party.blip import BLIPAPI
 from cflearn.api.cv.third_party.lama import LaMa
@@ -194,8 +197,9 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
     api: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     # manually maintain sd_weights
-    with api.load_context() as m:
-        api.sd_weights.register(MergedInpaintingVersions.v1_5, m.state_dict())
+    root = os.path.join(OPT.cache_dir, DLZoo.model_dir)
+    model_path = download_model("ldm.sd_inpainting", root=root)
+    api.sd_weights.register(MergedInpaintingVersions.v1_5, model_path)
     user_folder = os.path.expanduser("~")
     external_folder = os.path.join(user_folder, ".cache", "external", "inpainting")
     _load_external(api, ExternalInpaintingVersions, external_folder)
