@@ -1,7 +1,7 @@
 ![noli-creator](./static/images/social-image.jpg)
 
 
-# 🎉🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉🎉
+# 🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉
 
 [`carefree-drawboard`](https://github.com/carefree0910/carefree-drawboard) 🎨 is an Infinite Drawboard in `Python`, hope you enjoy it!
 
@@ -21,7 +21,7 @@ An open sourced, AI-powered creator for everyone.
 
 # Table of Content
 
-- [🎉🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉🎉](#-the-frontend-codes-are-open-sourced-)
+- [🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉](#-the-frontend-codes-are-open-sourced-)
 - [Table of Content](#table-of-content)
 - [tl;dr](#tldr)
 - [WebUI \& Local Deployment](#webui--local-deployment)
