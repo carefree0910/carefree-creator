@@ -1,6 +1,10 @@
 ![noli-creator](./static/images/social-image.jpg)
 
 
+# 🎉🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉🎉
+
+[`carefree-drawboard`](https://github.com/carefree0910/carefree-drawboard) 🎨 is an Infinite Drawboard in `Python`, hope you enjoy it!
+
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=AI%20Magics%20meet%20Infinite%20draw%20board!&url=https://github.com/carefree0910/carefree-creator&via=carefree0910&hashtags=stablediffusion,pytorch,developers)
 
 > Sometimes my poor cloud server will be on **FIRE** 🔥. You can know where your tasks are queued as shown in [this section](#is-it-free), but personally I'll always recommend you to try [local deployment](#webui--local-deployment)!
@@ -15,8 +19,10 @@ An open sourced, AI-powered creator for everyone.
 > This repo (`carefree-creator`) contains the backend server's codes, the **WebUI** codes (`noli-creator`) will be open sourced as well if it gains enough interests 😉.
 
 
-### Table of Content
+# Table of Content
 
+- [🎉🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉🎉](#-the-frontend-codes-are-open-sourced-)
+- [Table of Content](#table-of-content)
 - [tl;dr](#tldr)
 - [WebUI \& Local Deployment](#webui--local-deployment)
   - [Here is a Google Colab solution (Recommended!)](#here-is-a-google-colab-solution-recommended)
