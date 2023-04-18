@@ -134,7 +134,7 @@ async def post_callback(
         except Exception as err:
             msg = get_err_msg(err)
         time.sleep(interval)
-    if err is not None:
+    if msg:
         print(
             f"\n\n!!! post to callback_url ({url}) failed "
             f"(After {retry} retries) ({msg}) !!!\n\n"
