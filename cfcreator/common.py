@@ -176,6 +176,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     print("> loading lora")
     num_lora = 0
     lora_folder = os.path.join(external_folder, "lora")
+    os.makedirs(lora_folder, exist_ok=True)
     for lora_file in os.listdir(lora_folder):
         try:
             lora_name = os.path.splitext(lora_file)[0]
