@@ -194,7 +194,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
 
 def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     register_sd()
-    sd: ControlledDiffusionAPI = api_pool.get(APIs.SD)
+    sd: ControlledDiffusionAPI = api_pool.get(APIs.SD, no_change=True)
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
     api: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     # manually maintain sd_weights
