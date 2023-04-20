@@ -174,6 +174,8 @@ def apply_control(
             raise ValueError("`normalized_input_mask` should be provided to inpainting")
         image = Image.fromarray(input_image)
         inpainting_mask = Image.fromarray(to_uint8(normalized_inpainting_mask))
+        kw["use_latent_guidance"] = common_data.use_latent_guidance
+        kw["reference_fidelity"] = common_data.reference_fidelity
         outs = api.txt2img_inpainting(cond, image, inpainting_mask, **kw)
     elif not common_data.use_img2img:
         kw["size"] = w, h

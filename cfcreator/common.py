@@ -529,8 +529,20 @@ The `cdn` / `cos` url of the user's hint image.
     )
 
 
+# only useful when inpainting model is used
+class _InpaintingMixin(BaseModel):
+    use_latent_guidance: bool = Field(
+        False,
+        description="Whether use the latent of the givent image to guide the generation.",
+    )
+    reference_fidelity: float = Field(
+        0.0, description="Fidelity of the reference image."
+    )
+
+
 class ControlNetModel(
     ReturnArraysModel,
+    _InpaintingMixin,
     DiffusionModel,
     MaxWHModel,
     _ControlNetModel,
