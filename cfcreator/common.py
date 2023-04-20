@@ -92,6 +92,12 @@ def merge_enums(*enums: Enum) -> Enum:
 
 MergedVersions = merge_enums(SDVersions, ExternalVersions)
 MergedInpaintingVersions = merge_enums(SDInpaintingVersions, ExternalInpaintingVersions)
+BaseSDTag = "_base_sd"
+
+
+def _base_sd_path() -> str:
+    root = os.path.join(OPT.cache_dir, DLZoo.model_dir)
+    return download_model("ldm_sd_v1.5", root=root)
 
 
 def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
@@ -156,6 +162,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
         targets.append(MergedVersions.ANIME_ORANGE)
     print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
     m.prepare_sd(targets)
+    m.sd_weights.register(BaseSDTag, _base_sd_path())
     # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
     # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
     user_folder = os.path.expanduser("~")
@@ -198,9 +205,12 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
     api: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     # manually maintain sd_weights
+    ## original weights
+    api.sd_weights.register(BaseSDTag, _base_sd_path())
+    ## inpainting weights
     root = os.path.join(OPT.cache_dir, DLZoo.model_dir)
-    model_path = download_model("ldm.sd_inpainting", root=root)
-    api.sd_weights.register(MergedInpaintingVersions.v1_5, model_path)
+    inpainting_path = download_model("ldm.sd_inpainting", root=root)
+    api.sd_weights.register(MergedInpaintingVersions.v1_5, inpainting_path)
     user_folder = os.path.expanduser("~")
     external_folder = os.path.join(user_folder, ".cache", "external", "inpainting")
     _load_external(api, ExternalInpaintingVersions, external_folder)
@@ -513,6 +523,10 @@ The `cdn` / `cos` url of the user's hint image.
     )
     guess_mode: bool = Field(False, description="Guess mode.")
     use_audit: bool = Field(False, description="Whether audit the outputs.")
+    no_switch: bool = Field(
+        False,
+        description="Whether not to switch the ControlNet weights even when the base model has switched.",
+    )
 
 
 class ControlNetModel(
