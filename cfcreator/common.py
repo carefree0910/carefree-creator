@@ -216,8 +216,11 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     inpainting_path = download_model("ldm.sd_inpainting", root=root)
     api.sd_weights.register(MergedInpaintingVersions.v1_5, inpainting_path)
     user_folder = os.path.expanduser("~")
-    external_folder = os.path.join(user_folder, ".cache", "external", "inpainting")
-    _load_external(api, ExternalInpaintingVersions, external_folder)
+    external_folder = os.path.join(user_folder, ".cache", "external")
+    external_inpainting_folder = os.path.join(external_folder, "inpainting")
+    _load_external(api, ExternalInpaintingVersions, external_inpainting_folder)
+    # lora stuffs
+    _load_lora(api, external_folder)
     # inject properties from sd
     api.annotators = sd.annotators
     api.controlnet_weights = sd.controlnet_weights
