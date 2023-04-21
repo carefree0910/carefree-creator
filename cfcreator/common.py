@@ -142,6 +142,24 @@ def _load_external(
         json.dump(sizes, f)
 
 
+def _load_lora(m: ControlledDiffusionAPI, external_folder: str) -> None:
+    print("> loading lora")
+    num_lora = 0
+    lora_folder = os.path.join(external_folder, "lora")
+    os.makedirs(lora_folder, exist_ok=True)
+    for lora_file in os.listdir(lora_folder):
+        try:
+            lora_name = os.path.splitext(lora_file)[0]
+            lora_path = os.path.join(lora_folder, lora_file)
+            print(f">> loading {lora_name}")
+            m.load_sd_lora(lora_name, path=lora_path)
+            num_lora += 1
+        except:
+            print(f">>>> Failed to load!")
+            continue
+    print(f"> {num_lora} lora loaded")
+
+
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     version = MergedVersions.v1_5
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, version)
@@ -180,21 +198,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
         print("> warmup ControlNet")
         m.switch_control(*m.available_control_hints)
     # lora stuffs
-    print("> loading lora")
-    num_lora = 0
-    lora_folder = os.path.join(external_folder, "lora")
-    os.makedirs(lora_folder, exist_ok=True)
-    for lora_file in os.listdir(lora_folder):
-        try:
-            lora_name = os.path.splitext(lora_file)[0]
-            lora_path = os.path.join(lora_folder, lora_file)
-            print(f">> loading {lora_name}")
-            m.load_sd_lora(lora_name, path=lora_path)
-            num_lora += 1
-        except:
-            print(f">>>> Failed to load!")
-            continue
-    print(f"> {num_lora} lora loaded")
+    _load_lora(m, external_folder)
     # return
     return m
 
