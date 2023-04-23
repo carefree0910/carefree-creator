@@ -238,7 +238,7 @@ async def consume() -> None:
                             if audit.safe:
                                 reasons.append("")
                             else:
-                                urls[i] = None
+                                urls[i] = ""
                                 reasons.append(audit.reason)
                     t3 = time.time()
                     procedure = "audit_image -> redis"
