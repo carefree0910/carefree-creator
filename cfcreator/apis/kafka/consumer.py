@@ -129,7 +129,7 @@ async def post_callback(
         try:
             await fn()
             if i > 0:
-                logging.warning(f"succeeded after {i} retries")
+                logging.warning(f"succeeded after {i} retries ({msg})")
             return
         except Exception as err:
             msg = get_err_msg(err)
