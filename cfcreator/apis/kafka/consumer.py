@@ -122,7 +122,8 @@ async def post_callback(
     async def fn() -> None:
         cb_data = dict(uid=uid, success=success, data=data)
         async with http_client.session.post(url, json=cb_data, timeout=interval) as res:
-            await res.json()
+            if not res.ok:
+                raise ValueError(f"post callback failed ({res.status})")
 
     msg = ""
     for i in range(retry):
