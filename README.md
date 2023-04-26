@@ -2,9 +2,9 @@
 
 An open sourced, AI-powered creator for everyone.
 
-> * This is the backend codes of the `Creator` product. If you are looking for the **WebUI** codes, you may checkout the [`carefree-drawboard`](https://github.com/carefree0910/carefree-drawboard) 🎨 project.
+> * This is the backend project of the `Creator` product. If you are looking for the **WebUI** codes, you may checkout the [`carefree-drawboard`](https://github.com/carefree0910/carefree-drawboard) 🎨 project.
 >
-> * Most of the contents have been moved to the [Wiki](https://github.com/carefree0910/carefree-creator/wiki) page
+> * Most of the contents have been moved to the [Wiki](https://github.com/carefree0910/carefree-creator/wiki) page.
 
 <div align="center">
 
