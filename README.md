@@ -3,7 +3,7 @@
 
 # 🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉
 
-[`carefree-drawboard`](https://github.com/carefree0910/carefree-drawboard) 🎨 is an Infinite Drawboard in `Python`, hope you enjoy it!
+## [`carefree-drawboard`](https://github.com/carefree0910/carefree-drawboard) 🎨 is an Infinite Drawboard in `Python`, hope you enjoy it!
 
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=AI%20Magics%20meet%20Infinite%20draw%20board!&url=https://github.com/carefree0910/carefree-creator&via=carefree0910&hashtags=stablediffusion,pytorch,developers)
 
@@ -22,6 +22,7 @@ An open sourced, AI-powered creator for everyone.
 # Table of Content
 
 - [🎉🎉 The Frontend Codes are Open Sourced! 🎉🎉](#-the-frontend-codes-are-open-sourced-)
+  - [`carefree-drawboard` 🎨 is an Infinite Drawboard in `Python`, hope you enjoy it!](#carefree-drawboard--is-an-infinite-drawboard-in-python-hope-you-enjoy-it)
 - [Table of Content](#table-of-content)
 - [tl;dr](#tldr)
 - [WebUI \& Local Deployment](#webui--local-deployment)
