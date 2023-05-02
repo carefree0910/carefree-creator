@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from cftool.cv import to_uint8
 from cfclient.models import ImageModel
 
 from .utils import api_pool
@@ -14,8 +15,10 @@ from .common import register_sd_inpainting
 from .common import get_sd_from
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
+from .common import get_normalized_arr_from_diffusion
 from .common import IAlgorithm
 from .common import Txt2ImgModel
+from .common import ReturnArraysModel
 from .common import CommonSDInpaintingModel
 
 
@@ -29,7 +32,7 @@ class _Txt2ImgSDModel(BaseModel):
     h: int = Field(512, description="The desired output height.")
 
 
-class Txt2ImgSDModel(Txt2ImgModel, _Txt2ImgSDModel):
+class Txt2ImgSDModel(ReturnArraysModel, Txt2ImgModel, _Txt2ImgSDModel):
     pass
 
 
@@ -55,7 +58,10 @@ class Txt2ImgSD(IAlgorithm):
             max_wh=data.max_wh,
             **kwargs,
         ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        if data.return_arrays:
+            content = None
+        else:
+            content = get_bytes_from_diffusion(img_arr)
         t2 = time.time()
         api_pool.cleanup(APIs.SD)
         self.log_times(
@@ -65,6 +71,8 @@ class Txt2ImgSD(IAlgorithm):
                 "cleanup": time.time() - t2,
             }
         )
+        if content is None:
+            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
         return Response(content=content, media_type="image/png")
 
 

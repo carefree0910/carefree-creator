@@ -40,6 +40,7 @@ from .common import IAlgorithm
 from .common import ImageModel
 from .common import Img2ImgModel
 from .common import CallbackModel
+from .common import ReturnArraysModel
 from .common import Img2ImgDiffusionModel
 from .parameters import verbose
 from .parameters import get_focus
@@ -78,7 +79,7 @@ Whether the returned image should keep the alpha-channel of the input image or n
     )
 
 
-class Img2ImgSDModel(Img2ImgDiffusionModel, _Img2ImgSDModel):
+class Img2ImgSDModel(ReturnArraysModel, Img2ImgDiffusionModel, _Img2ImgSDModel):
     pass
 
 
@@ -113,7 +114,10 @@ class Img2ImgSD(IAlgorithm):
             anchor=64,
             **kwargs,
         ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        if data.return_arrays:
+            content = None
+        else:
+            content = get_bytes_from_diffusion(img_arr)
         t4 = time.time()
         api_pool.cleanup(APIs.SD)
         self.log_times(
@@ -125,6 +129,8 @@ class Img2ImgSD(IAlgorithm):
                 "cleanup": time.time() - t4,
             }
         )
+        if content is None:
+            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
         return Response(content=content, media_type="image/png")
 
 
@@ -140,7 +146,7 @@ class _Img2ImgSRModel(BaseModel):
     target_h: int = Field(0, description="The target height. 0 means as-is.")
 
 
-class Img2ImgSRModel(CallbackModel, _Img2ImgSRModel, Img2ImgModel):
+class Img2ImgSRModel(ReturnArraysModel, CallbackModel, _Img2ImgSRModel, Img2ImgModel):
     pass
 
 
@@ -204,7 +210,10 @@ class Img2ImgSR(IAlgorithm):
             data.target_h,
         )
         t3 = time.time()
-        content = get_bytes_from_translator(img_arr, transpose=False)
+        if data.return_arrays:
+            content = None
+        else:
+            content = get_bytes_from_translator(img_arr, transpose=False)
         t4 = time.time()
         api_pool.cleanup(api_key)
         t5 = time.time()
@@ -217,6 +226,8 @@ class Img2ImgSR(IAlgorithm):
             }
         )
         self.log_times(latencies)
+        if content is None:
+            return [to_uint8(img_arr)]
         return Response(content=content, media_type="image/png")
 
 
@@ -228,7 +239,7 @@ class InpaintingModels(str, Enum):
     LAMA = "lama"
 
 
-class Img2ImgInpaintingModel(Img2ImgDiffusionModel):
+class Img2ImgInpaintingModel(ReturnArraysModel, Img2ImgDiffusionModel):
     model: InpaintingModels = Field(
         InpaintingModels.SD,
         description="The inpainting model that we want to use.",
@@ -298,10 +309,13 @@ class Img2ImgInpainting(IAlgorithm):
                 to_torch_fmt=False,
             ).image
             mask_arr[mask_arr > 0.0] = 1.0
-            result = m(image_arr, mask_arr, cfg)
-            content = np_to_bytes(result)
+            img_arr = m(image_arr, mask_arr, cfg)
+            content = None if data.return_arrays else np_to_bytes(img_arr)
         else:
             kwargs = handle_diffusion_model(m, data)
+            mask_arr = np.array(mask)
+            mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
+            mask = Image.fromarray(mask_arr)
             if not data.use_pipeline:
                 refine_fidelity = data.refine_fidelity if data.use_refine else None
                 img_arr = m.inpainting(
@@ -328,7 +342,11 @@ class Img2ImgInpainting(IAlgorithm):
                     refine_fidelity=data.refine_fidelity,
                     **kwargs,
                 ).numpy()[0]
-            content = get_bytes_from_diffusion(img_arr)
+            if not data.return_arrays:
+                content = get_bytes_from_diffusion(img_arr)
+            else:
+                content = None
+                img_arr = get_normalized_arr_from_diffusion(img_arr)
         t3 = time.time()
         api_pool.cleanup(api_key)
         self.log_times(
@@ -339,6 +357,8 @@ class Img2ImgInpainting(IAlgorithm):
                 "cleanup": time.time() - t3,
             }
         )
+        if content is None:
+            return [to_uint8(img_arr)]
         return Response(content=content, media_type="image/png")
 
 
@@ -542,16 +562,20 @@ class Img2ImgHarmonization(IAlgorithm):
 # salient object detection (isnet)
 
 
+class Img2ImgSODModel(ReturnArraysModel, ImageModel):
+    pass
+
+
 @IAlgorithm.auto_register()
 class Img2ImgSOD(IAlgorithm):
-    model_class = ImageModel
+    model_class = Img2ImgSODModel
 
     endpoint = img2img_sod_endpoint
 
     def initialize(self) -> None:
         register_isnet()
 
-    async def run(self, data: ImageModel, *args: Any) -> Response:
+    async def run(self, data: Img2ImgSODModel, *args: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
@@ -559,7 +583,7 @@ class Img2ImgSOD(IAlgorithm):
         m = api_pool.get(APIs.ISNET)
         t2 = time.time()
         alpha = to_uint8(m.segment(image))
-        content = np_to_bytes(alpha)
+        content = None if data.return_arrays else np_to_bytes(alpha)
         t3 = time.time()
         api_pool.cleanup(APIs.ISNET)
         self.log_times(
@@ -570,6 +594,8 @@ class Img2ImgSOD(IAlgorithm):
                 "cleanup": time.time() - t3,
             }
         )
+        if content is None:
+            return [np.concatenate([np.array(image), alpha[..., None]], axis=2)]
         return Response(content=content, media_type="image/png")
 
 
@@ -582,6 +608,7 @@ __all__ = [
     "img2img_sod_endpoint",
     "Img2ImgSDModel",
     "Img2ImgSRModel",
+    "Img2ImgSODModel",
     "Img2ImgInpaintingModel",
     "Img2ImgSemantic2ImgModel",
     "Img2ImgSD",
