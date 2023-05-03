@@ -92,7 +92,7 @@ class Img2ImgSD(IAlgorithm):
     def initialize(self) -> None:
         register_sd()
 
-    async def run(self, data: Img2ImgSDModel, *args: Any) -> Response:
+    async def run(self, data: Img2ImgSDModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
@@ -105,7 +105,7 @@ class Img2ImgSD(IAlgorithm):
         t2 = time.time()
         m = get_sd_from(data)
         t3 = time.time()
-        kwargs = handle_diffusion_model(m, data)
+        kwargs.update(handle_diffusion_model(m, data))
         img_arr = m.img2img(
             image,
             cond=[data.text],
@@ -279,7 +279,12 @@ class Img2ImgInpainting(IAlgorithm):
             register_inpainting()
         register_lama()
 
-    async def run(self, data: Img2ImgInpaintingModel, *args: Any) -> Response:
+    async def run(
+        self,
+        data: Img2ImgInpaintingModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
@@ -312,7 +317,7 @@ class Img2ImgInpainting(IAlgorithm):
             img_arr = m(image_arr, mask_arr, cfg)
             content = None if data.return_arrays else np_to_bytes(img_arr)
         else:
-            kwargs = handle_diffusion_model(m, data)
+            kwargs.update(handle_diffusion_model(m, data))
             mask_arr = np.array(mask)
             mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
             mask = Image.fromarray(mask_arr)
@@ -394,7 +399,12 @@ class Img2ImgSemantic2Img(IAlgorithm):
     def initialize(self) -> None:
         register_semantic()
 
-    async def run(self, data: Img2ImgSemantic2ImgModel, *args: Any) -> Response:
+    async def run(
+        self,
+        data: Img2ImgSemantic2ImgModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         raw_semantic = await self.download_image_with_retry(data.url)
@@ -452,6 +462,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
             max_wh=data.max_wh,
             verbose=verbose(),
             seed=data.seed,
+            **kwargs,
         ).numpy()[0]
         content = get_bytes_from_diffusion(img_arr)
         t5 = time.time()
