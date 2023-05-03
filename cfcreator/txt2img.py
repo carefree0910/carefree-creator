@@ -136,7 +136,10 @@ class Txt2ImgSDInpainting(IAlgorithm):
             keep_original=data.keep_original,
             **kwargs,
         ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        if data.return_arrays:
+            content = None
+        else:
+            content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
         api_pool.cleanup(api_key)
         self.log_times(
@@ -147,6 +150,8 @@ class Txt2ImgSDInpainting(IAlgorithm):
                 "cleanup": time.time() - t3,
             }
         )
+        if content is None:
+            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
         return Response(content=content, media_type="image/png")
 
 
@@ -182,7 +187,10 @@ class Txt2ImgSDOutpainting(IAlgorithm):
             keep_original=data.keep_original,
             **kwargs,
         ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        if data.return_arrays:
+            content = None
+        else:
+            content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
         api_pool.cleanup(APIs.SD_INPAINTING)
         self.log_times(
@@ -193,6 +201,8 @@ class Txt2ImgSDOutpainting(IAlgorithm):
                 "cleanup": time.time() - t3,
             }
         )
+        if content is None:
+            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
         return Response(content=content, media_type="image/png")
 
 

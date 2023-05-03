@@ -446,7 +446,14 @@ Number of CLIP layers that we want to skip.
     )
 
 
-class CommonSDInpaintingModel(BaseModel):
+class ReturnArraysModel(BaseModel):
+    return_arrays: bool = Field(
+        False,
+        description="Whether return List[np.ndarray] directly, only for internal usages.",
+    )
+
+
+class CommonSDInpaintingModel(ReturnArraysModel):
     keep_original: bool = Field(
         False,
         description="Whether strictly keep the original image identical in the output image.",
@@ -492,13 +499,6 @@ class Img2ImgDiffusionModel(DiffusionModel, Img2ImgModel):
 
 class ControlStrengthModel(BaseModel):
     control_strength: float = Field(1.0, description="The strength of the control.")
-
-
-class ReturnArraysModel(BaseModel):
-    return_arrays: bool = Field(
-        False,
-        description="Whether return List[np.ndarray] directly, only for internal usages.",
-    )
 
 
 class _ControlNetModel(BaseModel):
