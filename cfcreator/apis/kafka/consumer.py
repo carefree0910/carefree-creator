@@ -265,7 +265,8 @@ async def consume() -> None:
                     result = dict(uid=uid, response=res.dict())
                 else:
                     procedure = "run_algorithm -> upload_temp_image"
-                    urls = upload_temp_image(cos_client, res.body)
+                    content = res[0] if isinstance(res, list) else res.body
+                    urls = upload_temp_image(cos_client, content)
                     t2 = time.time()
                     procedure = "upload_temp_image -> audit_image"
                     if task != "img2img.sr":
