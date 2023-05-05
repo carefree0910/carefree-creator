@@ -9,6 +9,8 @@ from .control import *
 from .control_multi import *
 from .pipeline import *
 from .parameters import Focus
+from .legacy.control import *
+from .legacy.control_multi import *
 
 
 endpoint_to_focuses = {
@@ -48,6 +50,11 @@ endpoint_to_focuses = {
     control_pose_endpoint: [Focus.ALL, Focus.CONTROL],
     control_mlsd_endpoint: [Focus.ALL, Focus.CONTROL],
     control_multi_endpoint: [Focus.ALL, Focus.CONTROL],
+    new_control_depth_endpoint: [Focus.ALL, Focus.CONTROL],
+    new_control_canny_endpoint: [Focus.ALL, Focus.CONTROL],
+    new_control_pose_endpoint: [Focus.ALL, Focus.CONTROL],
+    new_control_mlsd_endpoint: [Focus.ALL, Focus.CONTROL],
+    new_control_multi_endpoint: [Focus.ALL, Focus.CONTROL],
     control_depth_hint_endpoint: [Focus.ALL, Focus.SYNC, Focus.CONTROL],
     control_canny_hint_endpoint: [Focus.ALL, Focus.SYNC, Focus.CONTROL],
     control_pose_hint_endpoint: [Focus.ALL, Focus.SYNC, Focus.CONTROL],

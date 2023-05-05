@@ -21,7 +21,7 @@ from .control import ControlCannyModel
 from .control import ControlDepthModel
 
 
-control_multi_endpoint = "/control/multi"
+new_control_multi_endpoint = "/control_new/multi"
 
 
 class MLSDBundle(BaseModel):
@@ -55,7 +55,7 @@ class ControlMultiModel(ControlNetModel):
 class ControlMulti(IAlgorithm):
     model_class = ControlMultiModel
 
-    endpoint = control_multi_endpoint
+    endpoint = new_control_multi_endpoint
 
     def initialize(self) -> None:
         register_sd()
@@ -74,7 +74,7 @@ class ControlMulti(IAlgorithm):
 
 
 __all__ = [
-    "control_multi_endpoint",
+    "new_control_multi_endpoint",
     "ControlMultiModel",
     "ControlMulti",
 ]
