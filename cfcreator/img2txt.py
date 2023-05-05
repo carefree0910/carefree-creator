@@ -59,5 +59,6 @@ class Img2TxtCaption(IAlgorithm):
 
 __all__ = [
     "img2txt_caption_endpoint",
+    "Img2TxtModel",
     "Img2TxtCaption",
 ]
