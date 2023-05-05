@@ -517,7 +517,7 @@ The `cdn` / `cos` url of the user's hint image.
         0.05,
         ge=0.0,
         le=1.0,
-        description="The fidelity of the input image, only take effects when `use_img2img` is True.",
+        description="The fidelity of the input image, only take effects when `url` is not `None`.",
     )
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     bypass_annotator: bool = Field(False, description="Bypass the annotator.")
