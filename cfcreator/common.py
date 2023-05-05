@@ -502,6 +502,7 @@ class ReturnArraysModel(BaseModel):
 
 
 class _ControlNetModel(BaseModel):
+    url: Optional[str] = Field(None, description="specify this to perform img2img")
     hint_url: str = Field(
         "",
         description="""
@@ -510,18 +511,14 @@ The `cdn` / `cos` url of the user's hint image.
 > `cos` url from `qcloud` is preferred.
 """,
     )
-    hint_starts: Dict[str, float] = Field(
-        default_factory=lambda: {},
-        description="start ratio of each hint",
-    )
-    prompt: str = Field(..., description="Prompt.")
+    hint_start: Optional[float] = Field(None, description="start ratio of the control")
+    prompt: str = Field("", description="Prompt.")
     fidelity: float = Field(
         0.05,
         ge=0.0,
         le=1.0,
         description="The fidelity of the input image, only take effects when `use_img2img` is True.",
     )
-    use_img2img: bool = Field(True, description="Whether use img2img method.")
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     bypass_annotator: bool = Field(False, description="Bypass the annotator.")
     base_model: MergedVersions = Field(
@@ -553,7 +550,6 @@ class ControlNetModel(
     DiffusionModel,
     MaxWHModel,
     _ControlNetModel,
-    ImageModel,
 ):
     pass
 

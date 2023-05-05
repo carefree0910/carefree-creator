@@ -2,6 +2,7 @@ import os
 import cv2
 import time
 import torch
+import asyncio
 
 import numpy as np
 
@@ -57,140 +58,157 @@ class ControlNetModelPlaceholder(ControlStrengthModel, ControlNetModel):
     pass
 
 
-async def get_images(self: IAlgorithm, data: ControlNetModel) -> images_type:
-    image = np.array(to_rgb(await self.download_image_with_retry(data.url)))
-    if not data.hint_url:
-        return image, image
-    hint_image = np.array(to_rgb(await self.download_image_with_retry(data.hint_url)))
-    return image, hint_image
+class ControlNetBundle(BaseModel):
+    type: ControlNetHints
+    data: ControlNetModelPlaceholder
 
 
-def apply_control(
-    data: Union[ControlNetModelPlaceholder, Dict[str, ControlNetModelPlaceholder]],
+async def apply_control(
+    self: IAlgorithm,
     api_key: APIs,
-    input_image: np.ndarray,
-    hint_image: np.ndarray,
-    hint_types: Union[ControlNetHints, List[ControlNetHints]],
+    common: ControlNetModel,
+    controls: List[ControlNetBundle],
     normalized_inpainting_mask: Optional[np.ndarray] = None,
 ) -> apply_response:
     api: ControlledDiffusionAPI = api_pool.get(api_key, no_change=True)
     need_change_device = api_pool.need_change_device(api_key)
     api.enable_control()
-    if not isinstance(data, dict):
-        common_data = data
-        detect_resolution = getattr(data, "detect_resolution", None)
-    else:
-        common_data = list(data.values())[0]
-        detect_resolution = {}
-        for hint_type, h_data in data.items():
-            detect_resolution[hint_type] = getattr(h_data, "detect_resolution", None)
-    original_h, original_w = input_image.shape[:2]
+    # download images
+    urls = set() if common.url is None else {common.url}
+    for bundle in controls:
+        if not bundle.data.hint_url:
+            raise ValueError("hint url should be provided in `controls`")
+        urls.add(bundle.data.hint_url)
+    sorted_urls = sorted(urls)
+    futures = [self.download_image_with_retry(url) for url in sorted_urls]
+    images = await asyncio.gather(*futures)
+    image_arrays = [np.array(to_rgb(image)) for image in images]
+    ## make sure that every image should have the same size
+    original_h, original_w = image_arrays[0].shape[:2]
+    for image_array in image_arrays[1:]:
+        h, w = image_array.shape[:2]
+        if h != original_h or w != original_w:
+            msg = f"image shape mismatch: {(original_h, original_w)} vs {(h, w)}"
+            raise ValueError(msg)
+    ## construct a lookup table
+    image_array_d = {url: array for url, array in zip(sorted_urls, image_arrays)}
+    # gather detect resolution
+    detect_resolutions = []
+    for bundle in controls:
+        detect_resolutions.append(getattr(bundle.data, "detect_resolution", None))
+    # calculate suitable size
     resize_to_original = lambda array: cv2.resize(
         array,
         (original_w, original_h),
         interpolation=cv2.INTER_CUBIC,
     )
-    w, h = restrict_wh(original_w, original_h, common_data.max_wh)
+    w, h = restrict_wh(original_w, original_h, common.max_wh)
     w = get_suitable_size(w, 64)
     h = get_suitable_size(h, 64)
+    # activate corresponding ControlNet
     t0 = time.time()
-    if not isinstance(hint_types, list):
-        hint_types = [hint_types]
+    hint_types = sorted(set(bundle.type for bundle in controls))
     if len(hint_types) > api.num_pool:
         msg = f"maximum number of control is {api.num_pool}, but got {len(hint_types)}"
         raise ValueError(msg)
-    api.switch_sd(common_data.base_model)
-    base_md = api.sd_weights.get(BaseSDTag) if common_data.no_switch else None
+    api.switch_sd(common.base_model)
+    base_md = api.sd_weights.get(BaseSDTag) if common.no_switch else None
     api.switch_control(*hint_types, base_md=base_md)
     t1 = time.time()
-    all_hint = {}
-    all_o_hint_arrays = []
+    # gather hints
+    TKey = Tuple[str, str, bool]
+    all_keys: List[TKey] = []
+    ## Tensor for input, ndarray for results
+    all_key_values: Dict[TKey, Tuple[torch.Tensor, np.ndarray]] = {}
     all_annotator_change_device_times = []
-    for hint_type in sorted(hint_types):
-        if detect_resolution is None or isinstance(detect_resolution, int):
-            h_res = detect_resolution
-        else:
-            h_res = detect_resolution.get(hint_type)
-        if not isinstance(data, dict):
-            h_data = data
-        else:
-            h_data = data.get(hint_type)
-            if h_data is None:
-                raise ValueError(f"cannot find data for '{hint_type}'")
-        bypass_annotator = h_data.bypass_annotator
-        if h_res is not None and not bypass_annotator:
-            hint_image = resize_image(hint_image, h_res)
+    for bundle, detect_resolution in zip(controls, detect_resolutions):
+        i_type = bundle.type
+        i_data = bundle.data
+        i_hint_image = image_array_d[i_data.hint_url]
+        i_bypass_annotator = i_data.bypass_annotator
+        key = i_type, i_data.hint_url, i_bypass_annotator
+        all_keys.append(key)
+        i_value = all_key_values.get(key)
+        if i_value is not None:
+            continue
+        if detect_resolution is not None and not i_bypass_annotator:
+            i_hint_image = resize_image(i_hint_image, detect_resolution)
         device = api.device
         use_half = api.use_half
         ht = time.time()
         if need_change_device:
             device = "cuda:0"
             use_half = True
-            api.annotators[hint_type].to(device, use_half=True)
+            api.annotators[i_type].to(device, use_half=True)
         all_annotator_change_device_times.append(time.time() - ht)
-        if bypass_annotator:
-            o_hint_arr = np.array(hint_image)
+        if i_bypass_annotator:
+            i_o_hint_arr = i_hint_image
         else:
-            o_hint_arr = api.get_hint_of(hint_type, hint_image, **h_data.dict())
+            i_o_hint_arr = api.get_hint_of(i_type, i_hint_image, **i_data.dict())
         ht = time.time()
         if need_change_device:
-            api.annotators[hint_type].to("cpu", use_half=False)
+            api.annotators[i_type].to("cpu", use_half=False)
             torch.cuda.empty_cache()
         all_annotator_change_device_times.append(time.time() - ht)
-        hint_array = cv2.resize(o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
-        hint = torch.from_numpy(hint_array)[None].permute(0, 3, 1, 2)
+        i_hint_array = cv2.resize(i_o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
+        i_hint = torch.from_numpy(i_hint_array)[None].permute(0, 3, 1, 2)
         if use_half:
-            hint = hint.half()
-        hint = hint.contiguous().to(device) / 255.0
-        all_o_hint_arrays.append(o_hint_arr)
-        all_hint[hint_type] = hint
+            i_hint = i_hint.half()
+        i_hint = i_hint.contiguous().to(device) / 255.0
+        all_key_values[key] = i_hint, i_o_hint_arr
     change_annotator_device_time = sum(all_annotator_change_device_times)
     t2 = time.time()
+    # gather scales
     num_scales = api.m.num_control_scales
-    all_scales = {}
-    for hint_type in sorted(hint_types):
-        h_data = data[hint_type] if isinstance(data, dict) else data
-        all_scales[hint_type] = (
+    all_scales = []
+    for bundle in controls:
+        i_type = bundle.type
+        i_data = bundle.data
+        all_scales.append(
             [
-                h_data.control_strength * (0.825 ** float(12 - i))
+                i_data.control_strength * (0.825 ** float(12 - i))
                 for i in range(num_scales)
             ]
-            if h_data.guess_mode
-            else ([h_data.control_strength] * num_scales)
+            if i_data.guess_mode
+            else ([i_data.control_strength] * num_scales)
         )
     api.m.control_scales = all_scales
-    cond = [common_data.prompt] * common_data.num_samples
-    kw = handle_diffusion_model(api, common_data)
-    kw["hint"] = all_hint
-    kw["hint_start"] = common_data.hint_starts
-    kw["max_wh"] = common_data.max_wh
+    if not common.prompt:
+        raise ValueError("prompt should be provided in `common`")
+    cond = [common.prompt] * common.num_samples
+    kw = handle_diffusion_model(api, common)
+    kw["hint"] = [(b.type, all_key_values[k][0]) for b, k in zip(controls, all_keys)]
+    kw["hint_start"] = [b.data.hint_start for b in controls]
+    kw["max_wh"] = common.max_wh
     dt = time.time()
     if need_change_device:
         api.to("cuda:0", use_half=True, no_annotator=True)
     change_diffusion_device_time = time.time() - dt
     # inpainting workaround
     if api.m.unet_kw["in_channels"] == 9:
+        if common.url is None:
+            raise ValueError("`url` should be provided to inpainting")
         if normalized_inpainting_mask is None:
             raise ValueError("`normalized_input_mask` should be provided to inpainting")
-        image = Image.fromarray(input_image)
+        image = Image.fromarray(image_array_d[common.url])
         inpainting_mask = Image.fromarray(to_uint8(normalized_inpainting_mask))
-        kw["use_latent_guidance"] = common_data.use_latent_guidance
-        kw["reference_fidelity"] = common_data.reference_fidelity
+        kw["use_latent_guidance"] = common.use_latent_guidance
+        kw["reference_fidelity"] = common.reference_fidelity
         outs = api.txt2img_inpainting(cond, image, inpainting_mask, **kw)
-    elif not common_data.use_img2img:
+    elif common.url is None:
         kw["size"] = w, h
         outs = api.txt2img(cond, **kw)
     else:
         init_image = cv2.resize(
-            input_image,
+            image_array_d[common.url],
             (w, h),
             interpolation=cv2.INTER_LINEAR,
         )
-        init_image = init_image[None].repeat(common_data.num_samples, axis=0)
+        init_image = init_image[None].repeat(common.num_samples, axis=0)
         init_image = init_image.transpose([0, 3, 1, 2])
         init_image = init_image.astype(np.float32) / 255.0
         kw["cond"] = cond
-        kw["fidelity"] = common_data.fidelity
+        kw["fidelity"] = common.fidelity
         init_tensor = torch.from_numpy(init_image)
         if api.use_half:
             init_tensor = init_tensor.half()
@@ -202,8 +220,8 @@ def apply_control(
     outs = 0.5 * (outs + 1.0)
     outs = to_uint8(outs).permute(0, 2, 3, 1).cpu().numpy()
     t3 = time.time()
-    results = list(map(resize_to_original, all_o_hint_arrays))
-    for i in range(common_data.num_samples):
+    results = list(map(resize_to_original, [p[1] for p in all_key_values.values()]))
+    for i in range(common.num_samples):
         results.append(resize_to_original(outs[i]))
     latencies = dict(
         switch=t1 - t0,
@@ -216,18 +234,14 @@ def apply_control(
     return results, latencies
 
 
-async def run_control(
+async def run_single_control(
     self: IAlgorithm,
     data: ControlNetModel,
     hint_type: ControlNetHints,
 ) -> Tuple[List[np.ndarray], Dict[str, float]]:
     self.log_endpoint(data)
-    t0 = time.time()
-    image, hint_image = await get_images(self, data)
-    t1 = time.time()
-    results, latencies = apply_control(data, APIs.SD, image, hint_image, hint_type)
-    latencies["download"] = t1 - t0
-    return results, latencies
+    bundle = ControlNetBundle(type=hint_type, data=data)
+    return await apply_control(self, APIs.SD, data, [bundle])
 
 
 def register_control(
@@ -244,7 +258,7 @@ def register_control(
             register_sd()
 
         async def run(self, data: algorithm_model_class, *args: Any) -> Response:
-            results, latencies = await run_control(self, data, hint_type)
+            results, latencies = await run_single_control(self, data, hint_type)
             t0 = time.time()
             content = None if data.return_arrays else np_to_bytes(to_canvas(results))
             t1 = time.time()
@@ -257,7 +271,7 @@ def register_control(
     IAlgorithm.auto_register()(_)
 
 
-def register_hint(
+def register_control_hint(
     hint_model_class: Type,
     hint_endpoint: str,
     hint_type: ControlNetHints,
@@ -329,11 +343,7 @@ class _DepthModel(DetectResolutionModel):
     pass
 
 
-class DepthModel(_DepthModel, ControlStrengthModel):
-    pass
-
-
-class ControlDepthModel(DepthModel, ControlNetModel):
+class ControlDepthModel(_DepthModel, ControlStrengthModel, ControlNetModel):
     pass
 
 
@@ -355,11 +365,7 @@ class _CannyModel(LargeDetectResolutionModel):
     )
 
 
-class CannyModel(_CannyModel, ControlStrengthModel):
-    pass
-
-
-class ControlCannyModel(CannyModel, ControlNetModel):
+class ControlCannyModel(_CannyModel, ControlStrengthModel, ControlNetModel):
     pass
 
 
@@ -370,11 +376,7 @@ class _PoseModel(LargeDetectResolutionModel):
     pass
 
 
-class PoseModel(_PoseModel, ControlStrengthModel):
-    pass
-
-
-class ControlPoseModel(PoseModel, ControlNetModel):
+class ControlPoseModel(_PoseModel, ControlStrengthModel, ControlNetModel):
     pass
 
 
@@ -396,11 +398,7 @@ class _MLSDModel(LargeDetectResolutionModel):
     )
 
 
-class MLSDModel(_MLSDModel, ControlStrengthModel):
-    pass
-
-
-class ControlMLSDModel(MLSDModel, ControlNetModel):
+class ControlMLSDModel(_MLSDModel, ControlStrengthModel, ControlNetModel):
     pass
 
 
@@ -410,10 +408,10 @@ register_control(ControlDepthModel, control_depth_endpoint, ControlNetHints.DEPT
 register_control(ControlCannyModel, control_canny_endpoint, ControlNetHints.CANNY)
 register_control(ControlPoseModel, control_pose_endpoint, ControlNetHints.POSE)
 register_control(ControlMLSDModel, control_mlsd_endpoint, ControlNetHints.MLSD)
-register_hint(_DepthModel, control_depth_hint_endpoint, ControlNetHints.DEPTH)
-register_hint(_CannyModel, control_canny_hint_endpoint, ControlNetHints.CANNY)
-register_hint(_PoseModel, control_pose_hint_endpoint, ControlNetHints.POSE)
-register_hint(_MLSDModel, control_mlsd_hint_endpoint, ControlNetHints.MLSD)
+register_control_hint(_DepthModel, control_depth_hint_endpoint, ControlNetHints.DEPTH)
+register_control_hint(_CannyModel, control_canny_hint_endpoint, ControlNetHints.CANNY)
+register_control_hint(_PoseModel, control_pose_hint_endpoint, ControlNetHints.POSE)
+register_control_hint(_MLSDModel, control_mlsd_hint_endpoint, ControlNetHints.MLSD)
 
 
 __all__ = [
