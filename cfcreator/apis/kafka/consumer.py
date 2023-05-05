@@ -27,6 +27,8 @@ from cfclient.utils import run_algorithm
 
 # This is necessary to register the algorithms
 from cfcreator import *
+from cfcreator.legacy.control import ControlNetModel as LegacyControlNetModel
+from cfcreator.legacy.control_multi import ControlMultiModel as LegacyControlMultiModel
 
 
 # logging
@@ -225,7 +227,10 @@ async def consume() -> None:
                     urls = [rs.cdn for rs in url_results]
                     t2 = time.time()
                     procedure = "upload_temp_image -> audit_image"
-                    if not isinstance(model, ControlNetModel) or not model.use_audit:
+                    if (
+                        not isinstance(model, (ControlNetModel, LegacyControlNetModel))
+                        or not model.use_audit
+                    ):
                         reasons = [""] * len(urls)
                     else:
                         reasons = []
@@ -244,8 +249,12 @@ async def consume() -> None:
                     t3 = time.time()
                     procedure = "audit_image -> redis"
                     if task.startswith("control"):
-                        types = params.get("types")
-                        num_cond = 1 if types is None else len(types)
+                        if isinstance(model, ControlMultiModel):
+                            num_cond = len(set(b.type for b in model.controls))
+                        elif isinstance(model, LegacyControlMultiModel):
+                            num_cond = len(model.types)
+                        else:
+                            num_cond = 1
                         result = dict(
                             uid=uid,
                             response=dict(
