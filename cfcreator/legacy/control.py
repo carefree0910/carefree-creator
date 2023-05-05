@@ -154,12 +154,13 @@ def apply_control(
             if h_data.guess_mode
             else ([h_data.control_strength] * num_scales)
         )
-    api.m.control_scales = all_scales
     cond = [common_data.prompt] * common_data.num_samples
     kw = handle_diffusion_model(api, common_data)
-    kw["hint"] = all_hint
-    kw["hint_start"] = common_data.hint_starts
+    keys = sorted([k.value if isinstance(k, ControlNetHints) else k for k in all_hint])
+    kw["hint"] = [(k, all_hint[k]) for k in keys]
+    kw["hint_start"] = [common_data.hint_starts.get(k) for k in keys]
     kw["max_wh"] = common_data.max_wh
+    api.m.control_scales = [all_scales[k] for k in keys]
     dt = time.time()
     if need_change_device:
         api.to("cuda:0", use_half=True, no_annotator=True)
