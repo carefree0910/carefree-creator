@@ -1,5 +1,8 @@
 import time
 
+import numpy as np
+
+from PIL import Image
 from enum import Enum
 from typing import Any
 from fastapi import Response
@@ -45,13 +48,13 @@ class Txt2ImgSD(IAlgorithm):
     def initialize(self) -> None:
         register_sd()
 
-    async def run(self, data: Txt2ImgSDModel, *args: Any) -> Response:
+    async def run(self, data: Txt2ImgSDModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         m = get_sd_from(data)
         t1 = time.time()
         size = data.w, data.h
-        kwargs = handle_diffusion_model(m, data)
+        kwargs.update(handle_diffusion_model(m, data))
         img_arr = m.txt2img(
             data.text,
             size=size,
@@ -106,7 +109,12 @@ class Txt2ImgSDInpainting(IAlgorithm):
         register_sd()
         register_sd_inpainting()
 
-    async def run(self, data: Txt2ImgSDInpaintingModel, *args: Any) -> Response:
+    async def run(
+        self,
+        data: Txt2ImgSDInpaintingModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
@@ -120,8 +128,11 @@ class Txt2ImgSDInpainting(IAlgorithm):
             m = api_pool.get(api_key)
             m.disable_control()
         t2 = time.time()
-        kwargs = handle_diffusion_model(m, data)
+        kwargs.update(handle_diffusion_model(m, data))
         kwargs.update(await self.handle_diffusion_inpainting_model(data))
+        mask_arr = np.array(mask)
+        mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
+        mask = Image.fromarray(mask_arr)
         img_arr = m.txt2img_inpainting(
             data.text,
             image,
@@ -131,7 +142,10 @@ class Txt2ImgSDInpainting(IAlgorithm):
             keep_original=data.keep_original,
             **kwargs,
         ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        if data.return_arrays:
+            content = None
+        else:
+            content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
         api_pool.cleanup(api_key)
         self.log_times(
@@ -142,6 +156,8 @@ class Txt2ImgSDInpainting(IAlgorithm):
                 "cleanup": time.time() - t3,
             }
         )
+        if content is None:
+            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
         return Response(content=content, media_type="image/png")
 
 
@@ -154,7 +170,12 @@ class Txt2ImgSDOutpainting(IAlgorithm):
     def initialize(self) -> None:
         register_sd_inpainting()
 
-    async def run(self, data: Txt2ImgSDOutpaintingModel, *args: Any) -> Response:
+    async def run(
+        self,
+        data: Txt2ImgSDOutpaintingModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
@@ -162,7 +183,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         m = api_pool.get(APIs.SD_INPAINTING)
         m.disable_control()
         t2 = time.time()
-        kwargs = handle_diffusion_model(m, data)
+        kwargs.update(handle_diffusion_model(m, data))
         kwargs.update(await self.handle_diffusion_inpainting_model(data))
         img_arr = m.outpainting(
             data.text,
@@ -172,7 +193,10 @@ class Txt2ImgSDOutpainting(IAlgorithm):
             keep_original=data.keep_original,
             **kwargs,
         ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
+        if data.return_arrays:
+            content = None
+        else:
+            content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
         api_pool.cleanup(APIs.SD_INPAINTING)
         self.log_times(
@@ -183,6 +207,8 @@ class Txt2ImgSDOutpainting(IAlgorithm):
                 "cleanup": time.time() - t3,
             }
         )
+        if content is None:
+            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
         return Response(content=content, media_type="image/png")
 
 
