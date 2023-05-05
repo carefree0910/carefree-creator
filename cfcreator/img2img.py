@@ -593,7 +593,8 @@ class Img2ImgSOD(IAlgorithm):
         t1 = time.time()
         m = api_pool.get(APIs.ISNET)
         t2 = time.time()
-        alpha = to_uint8(m.segment(image))
+        rgb = to_rgb(image)
+        alpha = to_uint8(m.segment(rgb))
         content = None if data.return_arrays else np_to_bytes(alpha)
         t3 = time.time()
         api_pool.cleanup(APIs.ISNET)
@@ -606,7 +607,7 @@ class Img2ImgSOD(IAlgorithm):
             }
         )
         if content is None:
-            return [np.concatenate([np.array(image), alpha[..., None]], axis=2)]
+            return [np.concatenate([np.array(rgb), alpha[..., None]], axis=2)]
         return Response(content=content, media_type="image/png")
 
 
