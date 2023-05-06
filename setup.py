@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 PACKAGE_NAME = "carefree-creator"
 
 DESCRIPTION = "An AI-powered creator for everyone."
@@ -17,7 +17,7 @@ setup(
         "click>=8.1.3",
         "fastapi>=0.95.1",
         "carefree-client>=0.1.9",
-        "carefree-learn[cv_full]>=0.4.1",
+        "carefree-learn[cv_full]>=0.4.2",
     ],
     extras_require={
         "kafka": [
