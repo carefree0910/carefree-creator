@@ -485,6 +485,12 @@ The `cdn` / `cos` url of the reference image.
     )
 
 
+class HighresModel(BaseModel):
+    fidelity: float = Field(0.3, description="Fidelity of the original latent.")
+    upscale_factor: float = Field(2.0, description="Upscale factor.")
+    max_wh: int = Field(1024, description="Max width or height of the output image.")
+
+
 class Txt2ImgModel(DiffusionModel, MaxWHModel, TextModel):
     pass
 
@@ -699,6 +705,7 @@ def get_sd_from(data: SDParameters) -> ControlledDiffusionAPI:
 __all__ = [
     "endpoint2algorithm",
     "DiffusionModel",
+    "HighresModel",
     "Txt2ImgModel",
     "Img2ImgModel",
     "Img2ImgDiffusionModel",

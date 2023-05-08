@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from enum import Enum
 from typing import Any
+from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
@@ -20,6 +21,7 @@ from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_normalized_arr_from_diffusion
 from .common import IAlgorithm
+from .common import HighresModel
 from .common import Txt2ImgModel
 from .common import ReturnArraysModel
 from .common import CommonSDInpaintingModel
@@ -33,6 +35,7 @@ txt2img_sd_outpainting_endpoint = "/txt2img/sd.outpainting"
 class _Txt2ImgSDModel(BaseModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
+    highres_info: Optional[HighresModel] = Field(None, description="Highres info.")
 
 
 class Txt2ImgSDModel(ReturnArraysModel, Txt2ImgModel, _Txt2ImgSDModel):
@@ -55,6 +58,8 @@ class Txt2ImgSD(IAlgorithm):
         t1 = time.time()
         size = data.w, data.h
         kwargs.update(handle_diffusion_model(m, data))
+        if data.highres_info is not None:
+            kwargs["highres_info"] = data.highres_info.dict()
         img_arr = m.txt2img(
             data.text,
             size=size,

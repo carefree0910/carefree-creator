@@ -1,6 +1,5 @@
 import cv2
 import time
-import torch
 
 import numpy as np
 
@@ -10,6 +9,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
@@ -38,6 +38,7 @@ from .common import get_bytes_from_translator
 from .common import get_normalized_arr_from_diffusion
 from .common import IAlgorithm
 from .common import ImageModel
+from .common import HighresModel
 from .common import Img2ImgModel
 from .common import CallbackModel
 from .common import ReturnArraysModel
@@ -77,6 +78,7 @@ Whether the returned image should keep the alpha-channel of the input image or n
         (0, 0),
         description="The output size, `0` means as-is",
     )
+    highres_info: Optional[HighresModel] = Field(None, description="Highres info.")
 
 
 class Img2ImgSDModel(ReturnArraysModel, Img2ImgDiffusionModel, _Img2ImgSDModel):
@@ -106,6 +108,8 @@ class Img2ImgSD(IAlgorithm):
         m = get_sd_from(data)
         t3 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
+        if data.highres_info is not None:
+            kwargs["highres_info"] = data.highres_info.dict()
         img_arr = m.img2img(
             image,
             cond=[data.text],
