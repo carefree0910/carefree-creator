@@ -250,7 +250,8 @@ async def consume() -> None:
                     procedure = "audit_image -> redis"
                     if task.startswith("control"):
                         if isinstance(model, ControlMultiModel):
-                            num_cond = len(set(b.type for b in model.controls))
+                            keys = set(get_bundle_key(b) for b in model.controls)
+                            num_cond = len(keys)
                         elif isinstance(model, LegacyControlMultiModel):
                             num_cond = len(model.types)
                         else:
