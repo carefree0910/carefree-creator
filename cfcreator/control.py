@@ -63,6 +63,13 @@ class ControlNetBundle(BaseModel):
     data: ControlNetModelPlaceholder
 
 
+TKey = Tuple[str, str, bool]
+
+
+def get_bundle_key(bundle: ControlNetBundle) -> TKey:
+    return bundle.type, bundle.data.hint_url, bundle.data.bypass_annotator
+
+
 async def apply_control(
     self: IAlgorithm,
     api_key: APIs,
@@ -116,7 +123,6 @@ async def apply_control(
     api.switch_control(*hint_types, base_md=base_md)
     t1 = time.time()
     # gather hints
-    TKey = Tuple[str, str, bool]
     all_keys: List[TKey] = []
     ## Tensor for input, ndarray for results
     all_key_values: Dict[TKey, Tuple[torch.Tensor, np.ndarray]] = {}
@@ -126,7 +132,7 @@ async def apply_control(
         i_data = bundle.data
         i_hint_image = image_array_d[i_data.hint_url]
         i_bypass_annotator = i_data.bypass_annotator
-        key = i_type, i_data.hint_url, i_bypass_annotator
+        key = get_bundle_key(bundle)
         all_keys.append(key)
         i_value = all_key_values.get(key)
         if i_value is not None:
@@ -415,6 +421,7 @@ register_control_hint(_MLSDModel, control_mlsd_hint_endpoint, ControlNetHints.ML
 
 
 __all__ = [
+    "get_bundle_key",
     "new_control_depth_endpoint",
     "new_control_canny_endpoint",
     "new_control_pose_endpoint",
