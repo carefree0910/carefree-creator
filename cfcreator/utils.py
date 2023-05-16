@@ -4,12 +4,14 @@ import torch
 
 import numpy as np
 
+from PIL import Image
 from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Protocol
+from cftool.cv import to_rgb
 from cflearn.api.utils import ILoadableItem
 from cflearn.api.utils import ILoadablePool
 
@@ -59,6 +61,30 @@ def to_canvas(results: List[np.ndarray], *, padding: int = 0) -> np.ndarray:
         iy = iy * h + iy * padding
         canvas[iy : iy + h, ix : ix + w] = out
     return canvas
+
+
+def get_contrast_bg(rgba_image: Image.Image) -> int:
+    rgba = np.array(rgba_image)
+    rgb = rgba[..., :3]
+    alpha = rgba[..., -1]
+    target_mask = alpha >= 10
+    hls = cv2.cvtColor(rgb, cv2.COLOR_RGB2HLS)
+    lightness = hls[..., 1].astype(np.float32) / 255.0
+    target_lightness = lightness[target_mask]
+    mean = target_lightness.mean().item()
+    std = target_lightness.std().item()
+    if 0.45 <= mean <= 0.55 and std >= 0.25:
+        return 127
+    if mean <= 0.2 or 0.8 <= mean:
+        return 127
+    return 0 if mean >= 0.5 else 255
+
+
+def to_contrast_rgb(image: Image.Image) -> Image.Image:
+    if not image.mode == "RGBA":
+        return to_rgb(image)
+    bg = get_contrast_bg(image)
+    return to_rgb(image, (bg, bg, bg))
 
 
 class APIs(str, Enum):
