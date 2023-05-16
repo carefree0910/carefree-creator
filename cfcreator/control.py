@@ -28,6 +28,7 @@ from cflearn.api.cv.diffusion import ControlledDiffusionAPI
 from .utils import api_pool
 from .utils import to_canvas
 from .utils import resize_image
+from .utils import to_contrast_rgb
 from .utils import APIs
 from .common import BaseSDTag
 from .common import register_sd
@@ -69,6 +70,10 @@ def get_bundle_key(bundle: ControlNetBundle) -> TKey:
     return bundle.type, bundle.data.hint_url, bundle.data.bypass_annotator
 
 
+def get_hint_url_key(url: str) -> str:
+    return f"{url}-hint"
+
+
 async def apply_control(
     self: IAlgorithm,
     api_key: APIs,
@@ -81,27 +86,38 @@ async def apply_control(
     api.enable_control()
     # download images
     urls = set()
+    is_hint = {}
+    is_global = {}
     if common.url is not None:
         urls.add(common.url)
+        is_global[common.url] = True
     if common.mask_url is not None:
         urls.add(common.mask_url)
+        is_global[common.mask_url] = True
     for bundle in controls:
         if not bundle.data.hint_url:
             raise ValueError("hint url should be provided in `controls`")
         urls.add(bundle.data.hint_url)
+        is_hint[bundle.data.hint_url] = True
     sorted_urls = sorted(urls)
     futures = [self.download_image_with_retry(url) for url in sorted_urls]
-    images = await asyncio.gather(*futures)
-    image_arrays = [np.array(to_rgb(image)) for image in images]
+    images: List[Image.Image] = await asyncio.gather(*futures)
     ## make sure that every image should have the same size
-    original_h, original_w = image_arrays[0].shape[:2]
-    for image_array in image_arrays[1:]:
-        h, w = image_array.shape[:2]
-        if h != original_h or w != original_w:
-            msg = f"image shape mismatch: {(original_h, original_w)} vs {(h, w)}"
+    original_w, original_h = images[0].size
+    for im in images[1:]:
+        w, h = im.size
+        if w != original_w or h != original_h:
+            msg = f"image size mismatch: {(original_w, original_h)} vs {(w, h)}"
             raise ValueError(msg)
     ## construct a lookup table
-    image_array_d = {url: array for url, array in zip(sorted_urls, image_arrays)}
+    image_array_d: Dict[str, np.ndarray] = {}
+    for url, image in zip(sorted_urls, images):
+        i_is_global = is_global.get(url, False)
+        i_is_hint = is_hint.get(url, False)
+        if i_is_global:
+            image_array_d[url] = np.array(to_rgb(image))
+        if i_is_hint:
+            image_array_d[get_hint_url_key(url)] = np.array(to_contrast_rgb(image))
     # gather detect resolution
     detect_resolutions = []
     for bundle in controls:
@@ -133,7 +149,7 @@ async def apply_control(
     for bundle, detect_resolution in zip(controls, detect_resolutions):
         i_type = bundle.type
         i_data = bundle.data
-        i_hint_image = image_array_d[i_data.hint_url]
+        i_hint_image = image_array_d[get_hint_url_key(i_data.hint_url)]
         i_bypass_annotator = i_data.bypass_annotator
         key = get_bundle_key(bundle)
         all_keys.append(key)
