@@ -80,7 +80,11 @@ async def apply_control(
     need_change_device = api_pool.need_change_device(api_key)
     api.enable_control()
     # download images
-    urls = set() if common.url is None else {common.url}
+    urls = set()
+    if common.url is not None:
+        urls.add(common.url)
+    if common.mask_url is not None:
+        urls.add(common.mask_url)
     for bundle in controls:
         if not bundle.data.hint_url:
             raise ValueError("hint url should be provided in `controls`")
@@ -190,13 +194,23 @@ async def apply_control(
         api.to("cuda:0", use_half=True, no_annotator=True)
     change_diffusion_device_time = time.time() - dt
     # inpainting workaround
-    if api.m.unet_kw["in_channels"] == 9:
+    common = common.copy()
+    is_sd_inpainting = api.m.unet_kw["in_channels"] == 9
+    common.use_raw_inpainting = not is_sd_inpainting
+    if common.mask_url is not None or is_sd_inpainting:
         if common.url is None:
             raise ValueError("`url` should be provided to inpainting")
-        if normalized_inpainting_mask is None:
-            raise ValueError("`normalized_input_mask` should be provided to inpainting")
+        if normalized_inpainting_mask is not None:
+            inpainting_mask = Image.fromarray(to_uint8(normalized_inpainting_mask))
+        else:
+            if common.mask_url is None:
+                raise ValueError(
+                    "either `mask_url` or `normalized_input_mask` "
+                    "should be provided to perform ControlNet inpainting"
+                )
+            inpainting_mask = Image.fromarray(image_array_d[common.mask_url])
+            inpainting_mask = inpainting_mask.convert("L")
         image = Image.fromarray(image_array_d[common.url])
-        inpainting_mask = Image.fromarray(to_uint8(normalized_inpainting_mask))
         kw.update(self.handle_diffusion_inpainting_model(common))
         outs = api.txt2img_inpainting(cond, image, inpainting_mask, **kw)
     elif common.url is None:

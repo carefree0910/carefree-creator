@@ -511,7 +511,7 @@ class ControlStrengthModel(BaseModel):
 
 
 class _ControlNetModel(BaseModel):
-    url: Optional[str] = Field(None, description="specify this to perform img2img")
+    url: Optional[str] = Field(None, description="specify this to do img2img")
     hint_url: str = Field(
         "",
         description="""
@@ -540,6 +540,7 @@ The `cdn` / `cos` url of the user's hint image.
         False,
         description="Whether not to switch the ControlNet weights even when the base model has switched.",
     )
+    mask_url: Optional[str] = Field(None, description="specify this to do inpainting")
 
 
 class ControlNetModel(
