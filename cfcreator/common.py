@@ -479,6 +479,13 @@ Whether use the raw inpainting method.
         le=1.0,
         description="The fidelity of the input image when it is used as reference in raw inpainting.",
     )
+    use_latent_guidance: bool = Field(
+        False,
+        description="Whether use the latent of the givent image to guide the generation.",
+    )
+    reference_fidelity: float = Field(
+        0.0, description="Fidelity of the reference image."
+    )
 
 
 class HighresModel(BaseModel):
@@ -535,20 +542,8 @@ The `cdn` / `cos` url of the user's hint image.
     )
 
 
-# only useful when inpainting model is used
-class _InpaintingMixin(BaseModel):
-    use_latent_guidance: bool = Field(
-        False,
-        description="Whether use the latent of the givent image to guide the generation.",
-    )
-    reference_fidelity: float = Field(
-        0.0, description="Fidelity of the reference image."
-    )
-
-
 class ControlNetModel(
-    ReturnArraysModel,
-    _InpaintingMixin,
+    CommonSDInpaintingModel,
     DiffusionModel,
     MaxWHModel,
     _ControlNetModel,
