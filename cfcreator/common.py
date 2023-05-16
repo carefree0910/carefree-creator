@@ -19,11 +19,12 @@ from pydantic import Field
 from pydantic import BaseModel
 from functools import partial
 from cftool.cv import np_to_bytes
+from cflearn.zoo import DLZoo
+from cflearn.parameters import OPT
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
-from cflearn.zoo import DLZoo
-from cflearn.parameters import OPT
+from safetensors.torch import load_file
 from cflearn.api.cv import SDVersions
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
@@ -135,6 +136,9 @@ def _load_external(
                 print(f">> {version} has been converted but size mismatch")
             print(f">> converting {version}")
             model_path = os.path.join(external_folder, f"{version}.ckpt")
+            if not os.path.isfile(model_path):
+                st_path = os.path.join(external_folder, f"{version}.safetensors")
+                torch.save(load_file(st_path), model_path)
             d = cflearn.scripts.sd.convert(model_path, m, load=False)
             torch.save(d, converted_path)
             sizes[version] = _get_file_size(converted_path)
