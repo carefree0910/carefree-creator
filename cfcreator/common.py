@@ -14,6 +14,7 @@ from typing import List
 from typing import Type
 from typing import Callable
 from typing import Optional
+from pathlib import Path
 from pydantic import Field
 from pydantic import BaseModel
 from functools import partial
@@ -444,6 +445,10 @@ Number of CLIP layers that we want to skip.
         None,
         description="lora scales, key is the name, value is the weight.",
     )
+    lora_paths: Optional[List[str]] = Field(
+        None,
+        description="If provided, we will dynamically load lora from the given paths.",
+    )
 
 
 class ReturnArraysModel(BaseModel):
@@ -677,6 +682,7 @@ class Status(str, Enum):
 class SDParameters(BaseModel):
     is_anime: bool
     version: MergedVersions
+    lora_paths: Optional[List[str]]
 
 
 def get_sd_from(data: SDParameters) -> ControlledDiffusionAPI:
@@ -687,6 +693,13 @@ def get_sd_from(data: SDParameters) -> ControlledDiffusionAPI:
     sd: ControlledDiffusionAPI = api_pool.get(APIs.SD)
     sd.switch_sd(version)
     sd.disable_control()
+    if data.lora_paths is not None:
+        sd_m = sd.m
+        if not isinstance(sd_m, StableDiffusion):
+            raise ValueError("sd lora only works for StableDiffusion")
+        for lora_path in data.lora_paths:
+            key = Path(lora_path).stem
+            sd.load_sd_lora(key, path=lora_path)
     return sd
 
 
