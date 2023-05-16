@@ -12,7 +12,6 @@ from typing import Dict
 from typing import List
 from typing import Type
 from typing import Tuple
-from typing import Union
 from typing import Optional
 from fastapi import Response
 from pydantic import Field

@@ -458,6 +458,10 @@ class CommonSDInpaintingModel(ReturnArraysModel):
         False,
         description="Whether strictly keep the original image identical in the output image.",
     )
+    ref_mask_smooth: int = Field(
+        3,
+        description="The smoothness of the reference's mask, `0` means no smooth.",
+    )
     use_raw_inpainting: bool = Field(
         False,
         description="""
@@ -465,23 +469,15 @@ Whether use the raw inpainting method.
 > This is useful when you want to apply inpainting with custom SD models.
 """,
     )
+    raw_inpainting_use_ref: bool = Field(
+        False,
+        description="Whether use input image as reference.",
+    )
     raw_inpainting_fidelity: float = Field(
         0.2,
         ge=0.0,
         le=1.0,
-        description="The fidelity of the input image when using raw inpainting.",
-    )
-    ref_url: str = Field(
-        "",
-        description="""
-The `cdn` / `cos` url of the reference image.
-> `cos` url from cloud is preferred.
-> If empty string is provided, we will not use the reference feature.  
-""",
-    )
-    ref_fidelity: float = Field(
-        0.2,
-        description="Fidelity of the reference image (if provided)",
+        description="The fidelity of the input image when it is used as reference in raw inpainting.",
     )
 
 
@@ -655,19 +651,15 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     async def download_image_with_retry(self, url: str) -> Image.Image:
         return await download_image_with_retry(self.http_client.session, url)
 
-    async def handle_diffusion_inpainting_model(
+    def handle_diffusion_inpainting_model(
         self,
         data: CommonSDInpaintingModel,
     ) -> Dict[str, Any]:
-        if not data.ref_url:
-            reference = None
-        else:
-            reference = await self.download_image_with_retry(data.ref_url)
         return dict(
+            ref_mask_smooth=data.ref_mask_smooth,
             use_raw_inpainting=data.use_raw_inpainting,
+            raw_inpainting_use_ref=data.raw_inpainting_use_ref,
             raw_inpainting_fidelity=data.raw_inpainting_fidelity,
-            reference=reference,
-            reference_fidelity=data.ref_fidelity,
         )
 
 
