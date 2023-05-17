@@ -19,10 +19,10 @@ from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
 
 from cfclient.models import *
+from cftool.misc import get_err_msg
 from cftool.misc import shallow_copy_dict
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
-from cfclient.utils import get_err_msg
 from cfclient.utils import run_algorithm
 
 # This is necessary to register the algorithms

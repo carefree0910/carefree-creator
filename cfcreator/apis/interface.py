@@ -19,11 +19,11 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 
 from cfclient.models import *
+from cftool.web import get_responses
+from cftool.web import get_image_response_kwargs
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
-from cfclient.utils import get_responses
 from cfclient.utils import run_algorithm
-from cfclient.utils import get_image_response_kwargs
 
 from cfcreator import *
 from cfcreator.utils import api_pool

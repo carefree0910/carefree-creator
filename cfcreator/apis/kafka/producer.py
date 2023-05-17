@@ -21,12 +21,12 @@ from pydantic import BaseModel
 from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
 from pkg_resources import get_distribution
-from cftool.misc import random_hash
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 
-from cfclient.utils import get_err_msg
-from cfclient.utils import get_responses
+from cftool.web import get_responses
+from cftool.misc import get_err_msg
+from cftool.misc import random_hash
 
 from cfcreator import *
 
