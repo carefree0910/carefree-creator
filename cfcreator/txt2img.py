@@ -20,6 +20,7 @@ from .common import get_sd_from
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_normalized_arr_from_diffusion
+from .common import handle_diffusion_inpainting_model
 from .common import IAlgorithm
 from .common import HighresModel
 from .common import Txt2ImgModel
@@ -134,7 +135,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
             m.disable_control()
         t2 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
-        kwargs.update(self.handle_diffusion_inpainting_model(data))
+        kwargs.update(handle_diffusion_inpainting_model(data))
         mask_arr = np.array(mask)
         mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
         mask = Image.fromarray(mask_arr)
@@ -189,7 +190,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         m.disable_control()
         t2 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
-        kwargs.update(self.handle_diffusion_inpainting_model(data))
+        kwargs.update(handle_diffusion_inpainting_model(data))
         img_arr = m.outpainting(
             data.text,
             image,

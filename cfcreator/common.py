@@ -616,6 +616,15 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     )
 
 
+def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str, Any]:
+    return dict(
+        ref_mask_smooth=data.ref_mask_smooth,
+        use_raw_inpainting=data.use_raw_inpainting,
+        raw_inpainting_use_ref=data.raw_inpainting_use_ref,
+        raw_inpainting_fidelity=data.raw_inpainting_fidelity,
+    )
+
+
 class GetPromptModel(BaseModel):
     text: str
     need_translate: bool = Field(
@@ -655,17 +664,6 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
 
     async def download_image_with_retry(self, url: str) -> Image.Image:
         return await download_image_with_retry(self.http_client.session, url)
-
-    def handle_diffusion_inpainting_model(
-        self,
-        data: CommonSDInpaintingModel,
-    ) -> Dict[str, Any]:
-        return dict(
-            ref_mask_smooth=data.ref_mask_smooth,
-            use_raw_inpainting=data.use_raw_inpainting,
-            raw_inpainting_use_ref=data.raw_inpainting_use_ref,
-            raw_inpainting_fidelity=data.raw_inpainting_fidelity,
-        )
 
 
 # kafka

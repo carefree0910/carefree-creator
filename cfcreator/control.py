@@ -33,6 +33,7 @@ from .utils import APIs
 from .common import BaseSDTag
 from .common import register_sd
 from .common import handle_diffusion_model
+from .common import handle_diffusion_inpainting_model
 from .common import IAlgorithm
 from .common import ControlNetModel
 from .common import ReturnArraysModel
@@ -227,7 +228,7 @@ async def apply_control(
             inpainting_mask = Image.fromarray(image_array_d[common.mask_url])
             inpainting_mask = inpainting_mask.convert("L")
         image = Image.fromarray(image_array_d[common.url])
-        kw.update(self.handle_diffusion_inpainting_model(common))
+        kw.update(handle_diffusion_inpainting_model(common))
         outs = api.txt2img_inpainting(cond, image, inpainting_mask, **kw)
     elif common.url is None:
         kw["size"] = w, h
