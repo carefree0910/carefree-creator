@@ -687,6 +687,13 @@ class SDParameters(BaseModel):
     lora_paths: Optional[List[str]]
 
 
+def load_sd_lora_with(sd: ControlledDiffusionAPI, data: SDParameters) -> None:
+    if data.lora_paths is not None:
+        for lora_path in data.lora_paths:
+            key = Path(lora_path).stem
+            sd.load_sd_lora(key, path=lora_path)
+
+
 def get_sd_from(data: SDParameters) -> ControlledDiffusionAPI:
     if not data.is_anime:
         version = data.version
@@ -695,13 +702,7 @@ def get_sd_from(data: SDParameters) -> ControlledDiffusionAPI:
     sd: ControlledDiffusionAPI = api_pool.get(APIs.SD)
     sd.switch_sd(version)
     sd.disable_control()
-    if data.lora_paths is not None:
-        sd_m = sd.m
-        if not isinstance(sd_m, StableDiffusion):
-            raise ValueError("sd lora only works for StableDiffusion")
-        for lora_path in data.lora_paths:
-            key = Path(lora_path).stem
-            sd.load_sd_lora(key, path=lora_path)
+    load_sd_lora_with(sd, data)
     return sd
 
 
