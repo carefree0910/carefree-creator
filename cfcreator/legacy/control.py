@@ -32,6 +32,7 @@ from ..utils import resize_image
 from ..utils import APIs
 from ..common import BaseSDTag
 from ..common import register_sd
+from ..common import load_sd_lora_with
 from ..common import handle_diffusion_model
 from ..common import IAlgorithm
 from ..common import ReturnArraysModel
@@ -96,6 +97,7 @@ def apply_control(
         msg = f"maximum number of control is {api.num_pool}, but got {len(hint_types)}"
         raise ValueError(msg)
     api.switch_sd(common_data.base_model)
+    load_sd_lora_with(api, common_data)
     base_md = api.sd_weights.get(BaseSDTag) if common_data.no_switch else None
     api.switch_control(*hint_types, base_md=base_md)
     t1 = time.time()
