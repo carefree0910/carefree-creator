@@ -84,7 +84,7 @@ def _load_lora(m: ControlledDiffusionAPI, external_folder: str) -> None:
 
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     version = SDVersions.v1_5
-    init_fn = partial(ControlledDiffusionAPI.from_sd_version, version)
+    init_fn = partial(ControlledDiffusionAPI.from_sd_version, version, lazy=True)
     m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     focus = get_focus()
     m.sd_weights.limit = pool_limit()
@@ -114,7 +114,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
 
 
 def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
-    init_fn = ControlledDiffusionAPI.from_sd_inpainting
+    init_fn = partial(ControlledDiffusionAPI.from_sd_inpainting, lazy=True)
     api: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     # manually maintain sd_weights
     ## original weights
