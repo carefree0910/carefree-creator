@@ -125,6 +125,7 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     root = os.path.join(OPT.cache_dir, DLZoo.model_dir)
     inpainting_path = download_model("ldm.sd_inpainting", root=root)
     api.sd_weights.register(SDInpaintingVersions.v1_5, inpainting_path)
+    api.current_sd_version = SDInpaintingVersions.v1_5
     # lora stuffs
     user_folder = os.path.expanduser("~")
     external_folder = os.path.join(user_folder, ".cache", "external")
@@ -132,7 +133,6 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     # inject properties from sd
     api.annotators = sd.annotators
     api.controlnet_weights = sd.controlnet_weights
-    api.current_sd_version = SDInpaintingVersions.v1_5
     api.switch_control(*api.available_control_hints)
     return api
 
@@ -601,14 +601,16 @@ def load_sd_lora_with(sd: ControlledDiffusionAPI, data: SDParameters) -> None:
             sd.load_sd_lora(key, path=lora_path)
 
 
-def get_sd_from(api_key: APIs, data: SDParameters, **kwargs: Any) -> ControlledDiffusionAPI:
+def get_sd_from(api_key: APIs, data: SDParameters, **kw: Any) -> ControlledDiffusionAPI:
     if not data.is_anime:
         version = data.version
     else:
         version = data.version if data.version.startswith("anime") else "anime"
-    sd: ControlledDiffusionAPI = api_pool.get(api_key, **kwargs)
-    sub_folder = "inpainting" if api_key == APIs.SD_INPAINTING else None
-    sd.prepare_sd([version], sub_folder)
+    sd: ControlledDiffusionAPI = api_pool.get(api_key, **kw)
+    if api_key != APIs.SD_INPAINTING:
+        sd.prepare_sd([version])
+    elif version != SDInpaintingVersions.v1_5:
+        sd.prepare_sd([version], "inpainting")
     sd.switch_sd(version)
     sd.disable_control()
     load_sd_lora_with(sd, data)
