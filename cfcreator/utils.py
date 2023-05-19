@@ -118,9 +118,11 @@ class LoadableAPI(ILoadableItem[IAPI]):
         *,
         init: bool = False,
         is_sd: bool = False,
+        has_annotator: bool = False,
     ):
         super().__init__(lambda: init_fn(self.init_to_cpu), init=init)
         self.is_sd = is_sd
+        self.has_annotator = has_annotator
 
     @property
     def lazy(self) -> bool:
@@ -135,18 +137,18 @@ class LoadableAPI(ILoadableItem[IAPI]):
         return self.lazy and not OPT["cpu"]
 
     @property
-    def sd_kwargs(self) -> Dict[str, Any]:
-        return {"no_annotator": True} if self.is_sd else {}
+    def annotator_kwargs(self) -> Dict[str, Any]:
+        return {"no_annotator": True} if self.has_annotator else {}
 
     def load(self, *, no_change: bool = False, **kwargs: Any) -> IAPI:
         super().load()
         if not no_change and self.need_change_device:
-            self._item.to("cuda:0", use_half=True, **self.sd_kwargs)
+            self._item.to("cuda:0", use_half=True, **self.annotator_kwargs)
         return self._item
 
     def cleanup(self) -> None:
         if self.need_change_device:
-            self._item.to("cpu", use_half=False, **self.sd_kwargs)
+            self._item.to("cpu", use_half=False, **self.annotator_kwargs)
             torch.cuda.empty_cache()
 
     def unload(self) -> None:
@@ -157,8 +159,11 @@ class LoadableAPI(ILoadableItem[IAPI]):
 class APIPool(ILoadablePool[IAPI]):
     def register(self, key: str, init_fn: APIInit) -> None:
         def _init(init: bool) -> LoadableAPI:
-            is_sd = key in (APIs.SD, APIs.SD_INPAINTING)
-            api = LoadableAPI(init_fn, init=False, is_sd=is_sd)
+            kw = dict(
+                is_sd=key in (APIs.SD, APIs.SD_INPAINTING),
+                has_annotator=key in (APIs.SD, APIs.SD_INPAINTING),
+            )
+            api = LoadableAPI(init_fn, init=False, **kw)
             print("> init", key, "(lazy)" if api.lazy else "")
             if init:
                 api.load(no_change=api.lazy)
