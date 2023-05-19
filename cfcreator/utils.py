@@ -164,8 +164,8 @@ class APIPool(ILoadablePool[IAPI]):
                 has_annotator=key in (APIs.SD, APIs.SD_INPAINTING),
             )
             api = LoadableAPI(init_fn, init=False, **kw)
-            print("> init", key, "(lazy)" if api.lazy else "")
             if init:
+                print("> init", key, "(lazy)" if api.lazy else "")
                 api.load(no_change=api.lazy)
             return api
 

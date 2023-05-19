@@ -114,8 +114,6 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
 
 
 def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
-    register_sd()
-    sd: ControlledDiffusionAPI = api_pool.get(APIs.SD, no_change=True)
     init_fn = ControlledDiffusionAPI.from_sd_inpainting
     api: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     # manually maintain sd_weights
@@ -131,6 +129,8 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     external_folder = os.path.join(user_folder, ".cache", "external")
     _load_lora(api, external_folder)
     # inject properties from sd
+    register_sd()
+    sd: ControlledDiffusionAPI = api_pool.get(APIs.SD, no_change=True)
     api.annotators = sd.annotators
     api.controlnet_weights = sd.controlnet_weights
     api.switch_control(*api.available_control_hints)
