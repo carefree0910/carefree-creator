@@ -2,8 +2,8 @@ from typing import Dict
 from pydantic import Field
 from pydantic import BaseModel
 from cfclient.models import ImageModel
+from cflearn.api.cv import SDVersions
 
-from ..common import MergedVersions
 from ..common import MaxWHModel
 from ..common import DiffusionModel
 from ..common import ReturnArraysModel
@@ -32,8 +32,8 @@ The `cdn` / `cos` url of the user's hint image.
     use_img2img: bool = Field(True, description="Whether use img2img method.")
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     bypass_annotator: bool = Field(False, description="Bypass the annotator.")
-    base_model: MergedVersions = Field(
-        MergedVersions.v1_5,
+    base_model: str = Field(
+        SDVersions.v1_5,
         description="The base model.",
     )
     guess_mode: bool = Field(False, description="Guess mode.")

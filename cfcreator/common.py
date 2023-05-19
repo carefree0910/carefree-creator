@@ -24,13 +24,11 @@ from cflearn.parameters import OPT
 from cfclient.models import TextModel
 from cfclient.models import ImageModel
 from cfclient.models import AlgorithmBase
-from safetensors.torch import load_file
 from cflearn.api.cv import SDVersions
 from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv import ControlledDiffusionAPI
-from cflearn.misc.toolkit import _get_file_size
 from cflearn.misc.toolkit import download_model
 from cflearn.models.cv.diffusion import StableDiffusion
 from cflearn.api.cv.third_party.blip import BLIPAPI
@@ -48,52 +46,10 @@ from .parameters import pool_limit
 from .parameters import Focus
 
 
-class ExternalVersions(str, Enum):
-    """
-    Specify external SD weights that need to be loaded.
-    * these weights should be placed under ~/.cache/external/ folder.
-    * file name should be {version}.ckpt
-
-    Example
-    -------
-    class ExternalVersions(str, Enum):
-        MY_FANCY_MODEL = "my_fancy_model"
-
-    then you can place your model at ~/.cache/external/my_fancy_model.ckpt,
-    after which you can specify `my_fancy_model` as the `version` parameter!
-    """
-
-
 class SDInpaintingVersions(str, Enum):
     v1_5 = "v1.5"
 
 
-class ExternalInpaintingVersions(str, Enum):
-    """
-    Specify external SD-inpainting weights that need to be loaded.
-    * these weights should be placed under ~/.cache/external/inpainting/ folder.
-    * file name should be {version}.ckpt
-
-    Example
-    -------
-    class ExternalVersions(str, Enum):
-        MY_FANCY_MODEL = "my_fancy_model"
-
-    then you can place your model at ~/.cache/external/inpainting/my_fancy_model.ckpt,
-    after which you can specify `my_fancy_model` as the `version` parameter!
-    """
-
-
-def merge_enums(*enums: Enum) -> Enum:
-    members: Dict[str, str] = {}
-    for e in enums:
-        for name, member in e.__members__.items():
-            members[name] = member.value
-    return Enum("MergedVersions", members, type=str)
-
-
-MergedVersions = merge_enums(SDVersions, ExternalVersions)
-MergedInpaintingVersions = merge_enums(SDInpaintingVersions, ExternalInpaintingVersions)
 BaseSDTag = "_base_sd"
 
 
@@ -106,45 +62,6 @@ def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
     if init_to_cpu:
         return init_fn()
     return init_fn("cuda:0", use_half=True)
-
-
-def _load_external(
-    m: ControlledDiffusionAPI,
-    external_enum: Enum,
-    external_folder: str,
-) -> None:
-    print(f"> handling external weights under '{external_folder}'")
-    os.makedirs(external_folder, exist_ok=True)
-    converted_sizes_path = os.path.join(external_folder, "sizes.json")
-    sizes: Dict[str, int]
-    if not os.path.isfile(converted_sizes_path):
-        sizes = {}
-    else:
-        with open(converted_sizes_path, "r") as f:
-            sizes = json.load(f)
-    for version in external_enum:
-        print(f">> handling {version}")
-        converted_path = os.path.join(external_folder, f"{version}_converted.pt")
-        v_size = sizes.get(version)
-        f_size = (
-            None
-            if not os.path.isfile(converted_path)
-            else _get_file_size(converted_path)
-        )
-        if f_size is None or v_size != f_size:
-            if f_size is not None:
-                print(f">> {version} has been converted but size mismatch")
-            print(f">> converting {version}")
-            model_path = os.path.join(external_folder, f"{version}.ckpt")
-            if not os.path.isfile(model_path):
-                st_path = os.path.join(external_folder, f"{version}.safetensors")
-                torch.save(load_file(st_path), model_path)
-            d = cflearn.scripts.sd.convert(model_path, m, load=False)
-            torch.save(d, converted_path)
-            sizes[version] = _get_file_size(converted_path)
-        m.sd_weights.register(version, converted_path)
-    with open(converted_sizes_path, "w") as f:
-        json.dump(sizes, f)
 
 
 def _load_lora(m: ControlledDiffusionAPI, external_folder: str) -> None:
@@ -166,25 +83,14 @@ def _load_lora(m: ControlledDiffusionAPI, external_folder: str) -> None:
 
 
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
-    version = MergedVersions.v1_5
+    version = SDVersions.v1_5
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, version)
     m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     focus = get_focus()
     m.sd_weights.limit = pool_limit()
     m.current_sd_version = version
-    targets = []
-    common = Focus.ALL, Focus.SD, Focus.CONTROL, Focus.PIPELINE
-    if focus in common + (Focus.SD_BASE,):
-        targets.append(MergedVersions.v1_5)
-    if focus in common + (Focus.SD_ANIME,):
-        targets.append(MergedVersions.ANIME)
-        targets.append(MergedVersions.DREAMLIKE)
-        targets.append(MergedVersions.ANIME_ANYTHING)
-        targets.append(MergedVersions.ANIME_HYBRID)
-        targets.append(MergedVersions.ANIME_GUOFENG)
-        targets.append(MergedVersions.ANIME_ORANGE)
-    print(f"> preparing sd weights ({', '.join(targets)}) (focus={focus})")
-    m.prepare_sd(targets)
+    print("> registering base sd")
+    m.prepare_sd([version])
     m.sd_weights.register(BaseSDTag, _base_sd_path())
     # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
     # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
@@ -195,7 +101,6 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
         for hint in m.control_defaults:
             m.prepare_annotator(hint)
     else:
-        _load_external(m, ExternalVersions, external_folder)
         print("> prepare ControlNet weights")
         m.prepare_control_defaults()
         print("> prepare ControlNet Annotators")
@@ -219,17 +124,16 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     ## inpainting weights
     root = os.path.join(OPT.cache_dir, DLZoo.model_dir)
     inpainting_path = download_model("ldm.sd_inpainting", root=root)
-    api.sd_weights.register(MergedInpaintingVersions.v1_5, inpainting_path)
+    api.sd_weights.register(SDInpaintingVersions.v1_5, inpainting_path)
     user_folder = os.path.expanduser("~")
     external_folder = os.path.join(user_folder, ".cache", "external")
     external_inpainting_folder = os.path.join(external_folder, "inpainting")
-    _load_external(api, ExternalInpaintingVersions, external_inpainting_folder)
     # lora stuffs
     _load_lora(api, external_folder)
     # inject properties from sd
     api.annotators = sd.annotators
     api.controlnet_weights = sd.controlnet_weights
-    api.current_sd_version = MergedInpaintingVersions.v1_5
+    api.current_sd_version = SDInpaintingVersions.v1_5
     api.switch_control(*api.available_control_hints)
     return api
 
@@ -423,8 +327,8 @@ Seed of the variation generation.
         False,
         description="Whether should we generate anime images or not.",
     )
-    version: MergedVersions = Field(
-        MergedVersions.v1_5,
+    version: str = Field(
+        SDVersions.v1_5,
         description="Version of the diffusion model",
     )
     sampler: SDSamplers = Field(
@@ -539,8 +443,8 @@ The `cdn` / `cos` url of the user's hint image.
     )
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
     bypass_annotator: bool = Field(False, description="Bypass the annotator.")
-    base_model: MergedVersions = Field(
-        MergedVersions.v1_5,
+    base_model: str = Field(
+        SDVersions.v1_5,
         description="The base model.",
     )
     guess_mode: bool = Field(False, description="Guess mode.")
@@ -683,7 +587,7 @@ class Status(str, Enum):
 
 class SDParameters(BaseModel):
     is_anime: bool
-    version: MergedVersions
+    version: str
     lora_paths: Optional[List[str]]
 
 
@@ -694,12 +598,14 @@ def load_sd_lora_with(sd: ControlledDiffusionAPI, data: SDParameters) -> None:
             sd.load_sd_lora(key, path=lora_path)
 
 
-def get_sd_from(data: SDParameters) -> ControlledDiffusionAPI:
+def get_sd_from(api_key: APIs, data: SDParameters) -> ControlledDiffusionAPI:
     if not data.is_anime:
         version = data.version
     else:
         version = data.version if data.version.startswith("anime") else "anime"
-    sd: ControlledDiffusionAPI = api_pool.get(APIs.SD)
+    sd: ControlledDiffusionAPI = api_pool.get(api_key)
+    sub_folder = "inpainting" if api_key == APIs.SD_INPAINTING else None
+    sd.prepare_sd([version], sub_folder)
     sd.switch_sd(version)
     sd.disable_control()
     load_sd_lora_with(sd, data)

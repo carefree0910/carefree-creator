@@ -57,7 +57,6 @@ class Focus(str, Enum):
     ALL = "all"
     SD = "sd"
     SD_BASE = "sd.base"
-    SD_ANIME = "sd.anime"
     SD_INPAINTING = "sd.inpainting"
     SYNC = "sync"
     CONTROL = "control"

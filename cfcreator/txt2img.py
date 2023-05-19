@@ -55,7 +55,7 @@ class Txt2ImgSD(IAlgorithm):
     async def run(self, data: Txt2ImgSDModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        m = get_sd_from(data)
+        m = get_sd_from(APIs.SD, data)
         t1 = time.time()
         size = data.w, data.h
         kwargs.update(handle_diffusion_model(m, data))
@@ -128,11 +128,9 @@ class Txt2ImgSDInpainting(IAlgorithm):
         t1 = time.time()
         if data.use_raw_inpainting:
             api_key = APIs.SD
-            m = get_sd_from(data)
         else:
             api_key = APIs.SD_INPAINTING
-            m = api_pool.get(api_key)
-            m.disable_control()
+        m = get_sd_from(api_key, data)
         t2 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
         kwargs.update(handle_diffusion_inpainting_model(data))

@@ -105,7 +105,7 @@ class Img2ImgSD(IAlgorithm):
         if w > 0 and h > 0:
             image = image.resize((w, h), Image.LANCZOS)
         t2 = time.time()
-        m = get_sd_from(data)
+        m = get_sd_from(APIs.SD, data)
         t3 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
         if data.highres_info is not None:
