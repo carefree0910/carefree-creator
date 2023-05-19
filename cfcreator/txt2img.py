@@ -184,7 +184,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         t0 = time.time()
         image = await self.download_image_with_retry(data.url)
         t1 = time.time()
-        m = api_pool.get(APIs.SD_INPAINTING)
+        m = get_sd_from(APIs.SD_INPAINTING, data)
         m.disable_control()
         t2 = time.time()
         kwargs.update(handle_diffusion_model(m, data))

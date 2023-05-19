@@ -31,6 +31,7 @@ from ..utils import to_canvas
 from ..utils import resize_image
 from ..utils import APIs
 from ..common import BaseSDTag
+from ..common import get_sd_from
 from ..common import register_sd
 from ..common import load_sd_lora_with
 from ..common import handle_diffusion_model
@@ -70,9 +71,6 @@ def apply_control(
     hint_types: Union[ControlNetHints, List[ControlNetHints]],
     normalized_inpainting_mask: Optional[np.ndarray] = None,
 ) -> apply_response:
-    api: ControlledDiffusionAPI = api_pool.get(api_key, no_change=True)
-    need_change_device = api_pool.need_change_device(api_key)
-    api.enable_control()
     if not isinstance(data, dict):
         common_data = data
         detect_resolution = getattr(data, "detect_resolution", None)
@@ -81,6 +79,9 @@ def apply_control(
         detect_resolution = {}
         for hint_type, h_data in data.items():
             detect_resolution[hint_type] = getattr(h_data, "detect_resolution", None)
+    api = get_sd_from(api_key, common_data, no_change=True)
+    need_change_device = api_pool.need_change_device(api_key)
+    api.enable_control()
     original_h, original_w = input_image.shape[:2]
     resize_to_original = lambda array: cv2.resize(
         array,

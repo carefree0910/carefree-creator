@@ -31,6 +31,7 @@ from .utils import resize_image
 from .utils import to_contrast_rgb
 from .utils import APIs
 from .common import BaseSDTag
+from .common import get_sd_from
 from .common import register_sd
 from .common import handle_diffusion_model
 from .common import handle_diffusion_inpainting_model
@@ -82,7 +83,7 @@ async def apply_control(
     controls: List[ControlNetBundle],
     normalized_inpainting_mask: Optional[np.ndarray] = None,
 ) -> apply_response:
-    api: ControlledDiffusionAPI = api_pool.get(api_key, no_change=True)
+    api = get_sd_from(api_key, common, no_change=True)
     need_change_device = api_pool.need_change_device(api_key)
     api.enable_control()
     # download images

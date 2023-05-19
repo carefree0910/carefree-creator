@@ -455,6 +455,10 @@ The `cdn` / `cos` url of the user's hint image.
     )
     mask_url: Optional[str] = Field(None, description="specify this to do inpainting")
 
+    @property
+    def version(self) -> str:
+        return self.base_model
+
 
 class ControlNetModel(
     CommonSDInpaintingModel,
@@ -598,12 +602,12 @@ def load_sd_lora_with(sd: ControlledDiffusionAPI, data: SDParameters) -> None:
             sd.load_sd_lora(key, path=lora_path)
 
 
-def get_sd_from(api_key: APIs, data: SDParameters) -> ControlledDiffusionAPI:
+def get_sd_from(api_key: APIs, data: SDParameters, **kwargs: Any) -> ControlledDiffusionAPI:
     if not data.is_anime:
         version = data.version
     else:
         version = data.version if data.version.startswith("anime") else "anime"
-    sd: ControlledDiffusionAPI = api_pool.get(api_key)
+    sd: ControlledDiffusionAPI = api_pool.get(api_key, **kwargs)
     sub_folder = "inpainting" if api_key == APIs.SD_INPAINTING else None
     sd.prepare_sd([version], sub_folder)
     sd.switch_sd(version)
