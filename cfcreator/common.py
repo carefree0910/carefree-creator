@@ -125,10 +125,9 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     root = os.path.join(OPT.cache_dir, DLZoo.model_dir)
     inpainting_path = download_model("ldm.sd_inpainting", root=root)
     api.sd_weights.register(SDInpaintingVersions.v1_5, inpainting_path)
+    # lora stuffs
     user_folder = os.path.expanduser("~")
     external_folder = os.path.join(user_folder, ".cache", "external")
-    external_inpainting_folder = os.path.join(external_folder, "inpainting")
-    # lora stuffs
     _load_lora(api, external_folder)
     # inject properties from sd
     api.annotators = sd.annotators
