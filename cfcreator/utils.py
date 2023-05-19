@@ -117,16 +117,16 @@ class LoadableAPI(ILoadableItem[IAPI]):
         init_fn: APIInit,
         *,
         init: bool = False,
-        is_sd: bool = False,
+        force_not_lazy: bool = False,
         has_annotator: bool = False,
     ):
         super().__init__(lambda: init_fn(self.init_to_cpu), init=init)
-        self.is_sd = is_sd
+        self.force_not_lazy = force_not_lazy
         self.has_annotator = has_annotator
 
     @property
     def lazy(self) -> bool:
-        return lazy_load() and not self.is_sd
+        return lazy_load() and not self.force_not_lazy
 
     @property
     def init_to_cpu(self) -> bool:
@@ -160,7 +160,7 @@ class APIPool(ILoadablePool[IAPI]):
     def register(self, key: str, init_fn: APIInit) -> None:
         def _init(init: bool) -> LoadableAPI:
             kw = dict(
-                is_sd=key == APIs.SD,
+                force_not_lazy=key == APIs.SD,
                 has_annotator=key in (APIs.SD, APIs.SD_INPAINTING),
             )
             api = LoadableAPI(init_fn, init=False, **kw)
