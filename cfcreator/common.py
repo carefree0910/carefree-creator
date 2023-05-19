@@ -610,7 +610,7 @@ def get_sd_from(api_key: APIs, data: SDParameters, **kw: Any) -> ControlledDiffu
     if api_key != APIs.SD_INPAINTING:
         sd.prepare_sd([version])
     elif version != SDInpaintingVersions.v1_5:
-        sd.prepare_sd([version], "inpainting")
+        sd.prepare_sd([version], sub_folder="inpainting", force_external=True)
     sd.switch_sd(version)
     sd.disable_control()
     load_sd_lora_with(sd, data)
