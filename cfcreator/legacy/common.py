@@ -43,6 +43,10 @@ The `cdn` / `cos` url of the user's hint image.
         description="Whether not to switch the ControlNet weights even when the base model has switched.",
     )
 
+    @property
+    def version(self) -> str:
+        return self.base_model
+
 
 # only useful when inpainting model is used
 class _InpaintingMixin(BaseModel):
