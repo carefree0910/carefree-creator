@@ -160,7 +160,7 @@ class APIPool(ILoadablePool[IAPI]):
     def register(self, key: str, init_fn: APIInit) -> None:
         def _init(init: bool) -> LoadableAPI:
             kw = dict(
-                force_not_lazy=key == APIs.SD,
+                force_not_lazy=key in (APIs.SD, APIs.SD_INPAINTING),
                 has_annotator=key in (APIs.SD, APIs.SD_INPAINTING),
             )
             api = LoadableAPI(init_fn, init=False, **kw)
