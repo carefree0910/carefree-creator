@@ -23,7 +23,6 @@ from cftool.cv import restrict_wh
 from cftool.cv import get_suitable_size
 from cfclient.models.core import ImageModel
 from cflearn.api.cv.diffusion import ControlNetHints
-from cflearn.api.cv.diffusion import ControlledDiffusionAPI
 
 from .utils import api_pool
 from .utils import to_canvas
@@ -78,11 +77,11 @@ def get_hint_url_key(url: str) -> str:
 
 async def apply_control(
     self: IAlgorithm,
-    api_key: APIs,
     common: ControlNetModel,
     controls: List[ControlNetBundle],
     normalized_inpainting_mask: Optional[np.ndarray] = None,
 ) -> apply_response:
+    api_key = APIs.SD_INPAINTING if common.use_inpainting else APIs.SD
     api = get_sd_from(api_key, common, no_change=True)
     need_change_device = api_pool.need_change_device(api_key)
     api.enable_control()
@@ -212,7 +211,7 @@ async def apply_control(
     change_diffusion_device_time = time.time() - dt
     # inpainting workaround
     common = common.copy()
-    is_sd_inpainting = api.m.unet_kw["in_channels"] == 9
+    is_sd_inpainting = common.use_inpainting
     common.use_raw_inpainting = not is_sd_inpainting
     if common.mask_url is not None or is_sd_inpainting:
         if common.url is None:
@@ -276,7 +275,7 @@ async def run_single_control(
 ) -> Tuple[List[np.ndarray], Dict[str, float]]:
     self.log_endpoint(data)
     bundle = ControlNetBundle(type=hint_type, data=data)
-    return await apply_control(self, APIs.SD, data, [bundle])
+    return await apply_control(self, data, [bundle])
 
 
 def register_control(

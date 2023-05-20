@@ -62,7 +62,7 @@ class ControlMulti(IAlgorithm):
 
     async def run(self, data: ControlMultiModel, *args: Any) -> Response:
         self.log_endpoint(data)
-        results, latencies = await apply_control(self, APIs.SD, data, data.controls)
+        results, latencies = await apply_control(self, data, data.controls)
         t0 = time.time()
         content = None if data.return_arrays else np_to_bytes(to_canvas(results))
         t1 = time.time()

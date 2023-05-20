@@ -453,6 +453,7 @@ The `cdn` / `cos` url of the user's hint image.
         description="Whether not to switch the ControlNet weights even when the base model has switched.",
     )
     mask_url: Optional[str] = Field(None, description="specify this to do inpainting")
+    use_inpainting: bool = Field(False, description="Whether use inpainting model.")
 
     @property
     def version(self) -> str:
