@@ -397,7 +397,7 @@ the latent of the background is the only information for us to inpaint.
         description="Inpainting mode. MASKED is preferred when the masked area is small.",
     )
     inpainting_mask_blur: Optional[int] = Field(
-        4,
+        None,
         description="The smoothness of the inpainting's mask, `None` means no smooth.",
     )
     inpainting_mask_padding: Optional[int] = Field(
