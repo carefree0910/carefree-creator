@@ -23,7 +23,6 @@ from cftool.cv import restrict_wh
 from cftool.cv import get_suitable_size
 from cfclient.models.core import ImageModel
 from cflearn.api.cv.diffusion import ControlNetHints
-from cflearn.api.cv.diffusion import ControlledDiffusionAPI
 
 from .common import ControlNetModel
 from ..utils import api_pool
@@ -33,8 +32,8 @@ from ..utils import APIs
 from ..common import BaseSDTag
 from ..common import get_sd_from
 from ..common import register_sd
-from ..common import load_sd_lora_with
 from ..common import handle_diffusion_model
+from ..common import handle_diffusion_inpainting_model
 from ..common import IAlgorithm
 from ..common import ReturnArraysModel
 from ..common import ControlStrengthModel
@@ -172,8 +171,7 @@ def apply_control(
             raise ValueError("`normalized_input_mask` should be provided to inpainting")
         image = Image.fromarray(input_image)
         inpainting_mask = Image.fromarray(to_uint8(normalized_inpainting_mask))
-        kw["use_latent_guidance"] = common_data.use_latent_guidance
-        kw["reference_fidelity"] = common_data.reference_fidelity
+        kw.update(handle_diffusion_inpainting_model(common_data))
         outs = api.txt2img_inpainting(cond, image, inpainting_mask, **kw)
     elif not common_data.use_img2img:
         kw["size"] = w, h
