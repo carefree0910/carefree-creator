@@ -1,7 +1,4 @@
 import os
-import json
-import torch
-import cflearn
 
 import numpy as np
 
@@ -29,6 +26,8 @@ from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv import ControlledDiffusionAPI
+from cflearn.api.cv.diffusion import InpaintingMode
+from cflearn.api.cv.diffusion import InpaintingSettings
 from cflearn.misc.toolkit import download_model
 from cflearn.models.cv.diffusion import StableDiffusion
 from cflearn.api.cv.third_party.blip import BLIPAPI
@@ -370,10 +369,6 @@ class CommonSDInpaintingModel(ReturnArraysModel):
         False,
         description="Whether strictly keep the original image identical in the output image.",
     )
-    ref_mask_smooth: int = Field(
-        3,
-        description="The smoothness of the reference's mask, `0` means no smooth.",
-    )
     use_raw_inpainting: bool = Field(
         False,
         description="""
@@ -381,22 +376,37 @@ Whether use the raw inpainting method.
 > This is useful when you want to apply inpainting with custom SD models.
 """,
     )
-    raw_inpainting_use_ref: bool = Field(
+    use_background_guidance: bool = Field(
         False,
-        description="Whether use input image as reference.",
+        description="""
+Whether inject the latent of the background during the generation.
+> If `use_raw_inpainting`, this will always be `True` because in this case
+the latent of the background is the only information for us to inpaint.
+""",
     )
-    raw_inpainting_fidelity: float = Field(
-        0.2,
-        ge=0.0,
-        le=1.0,
-        description="The fidelity of the input image when it is used as reference in raw inpainting.",
-    )
-    use_latent_guidance: bool = Field(
+    use_reference: bool = Field(
         False,
-        description="Whether use the latent of the givent image to guide the generation.",
+        description="Whether use the original image as reference.",
     )
     reference_fidelity: float = Field(
-        0.0, description="Fidelity of the reference image."
+        0.0,
+        description="Fidelity of the reference image, only take effects when `use_reference` is `True`.",
+    )
+    inpainting_mode: InpaintingMode = Field(
+        InpaintingMode.NORMAL,
+        description="Inpainting mode. MASKED is preferred when the masked area is small.",
+    )
+    inpainting_mask_blur: Optional[int] = Field(
+        4,
+        description="The smoothness of the inpainting's mask, `None` means no smooth.",
+    )
+    inpainting_mask_padding: Optional[int] = Field(
+        32,
+        description="Padding of the inpainting mask under MASKED mode. If `None`, then no padding.",
+    )
+    inpainting_mask_binary_threshold: Optional[int] = Field(
+        32,
+        description="Binary threshold of the inpainting mask under MASKED mode. If `None`, then no thresholding.",
     )
 
 
@@ -526,10 +536,16 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
 
 def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str, Any]:
     return dict(
-        ref_mask_smooth=data.ref_mask_smooth,
         use_raw_inpainting=data.use_raw_inpainting,
-        raw_inpainting_use_ref=data.raw_inpainting_use_ref,
-        raw_inpainting_fidelity=data.raw_inpainting_fidelity,
+        use_background_guidance=data.use_background_guidance,
+        use_reference=data.use_reference,
+        reference_fidelity=data.reference_fidelity,
+        inpainting_settings=InpaintingSettings(
+            data.inpainting_mode,
+            data.inpainting_mask_blur,
+            data.inpainting_mask_padding,
+            data.inpainting_mask_binary_threshold,
+        ),
     )
 
 
