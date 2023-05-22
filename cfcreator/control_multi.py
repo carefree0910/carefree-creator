@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from cftool.cv import np_to_bytes
 
 from .utils import to_canvas
-from .utils import APIs
 from .common import register_sd
+from .common import register_sd_inpainting
 from .common import IAlgorithm
 from .common import ControlNetModel
 from .control import apply_control
@@ -59,6 +59,7 @@ class ControlMulti(IAlgorithm):
 
     def initialize(self) -> None:
         register_sd()
+        register_sd_inpainting()
 
     async def run(self, data: ControlMultiModel, *args: Any) -> Response:
         self.log_endpoint(data)

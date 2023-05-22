@@ -34,6 +34,7 @@ from .utils import APIs
 from .common import BaseSDTag
 from .common import get_sd_from
 from .common import register_sd
+from .common import register_sd_inpainting
 from .common import handle_diffusion_model
 from .common import handle_diffusion_inpainting_model
 from .common import IAlgorithm
@@ -293,6 +294,7 @@ def register_control(
 
         def initialize(self) -> None:
             register_sd()
+            register_sd_inpainting()
 
         async def run(self, data: algorithm_model_class, *args: Any) -> Response:
             results, latencies = await run_single_control(self, data, hint_type)
