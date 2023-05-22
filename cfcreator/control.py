@@ -23,6 +23,8 @@ from cftool.cv import restrict_wh
 from cftool.cv import get_suitable_size
 from cfclient.models.core import ImageModel
 from cflearn.api.cv.diffusion import ControlNetHints
+from cflearn.models.cv.diffusion.utils import CONTROL_HINT_KEY
+from cflearn.models.cv.diffusion.utils import CONTROL_HINT_START_KEY
 
 from .utils import api_pool
 from .utils import to_canvas
@@ -202,8 +204,9 @@ async def apply_control(
         raise ValueError("prompt should be provided in `common`")
     cond = [common.prompt] * common.num_samples
     kw = handle_diffusion_model(api, common)
-    kw["hint"] = [(b.type, all_key_values[k][0]) for b, k in zip(controls, all_keys)]
-    kw["hint_start"] = [b.data.hint_start for b in controls]
+    hint = [(b.type, all_key_values[k][0]) for b, k in zip(controls, all_keys)]
+    kw[CONTROL_HINT_KEY] = hint
+    kw[CONTROL_HINT_START_KEY] = [b.data.hint_start for b in controls]
     kw["max_wh"] = common.max_wh
     dt = time.time()
     if need_change_device:
