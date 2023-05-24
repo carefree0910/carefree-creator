@@ -333,6 +333,7 @@ def register_hint(
             t1 = time.time()
             m = api_pool.get(APIs.SD)
             t2 = time.time()
+            image = to_contrast_rgb(image)
             hint_image = np.array(image)
             detect_resolution = getattr(data, "detect_resolution", None)
             if detect_resolution is not None:
