@@ -10,6 +10,7 @@ from typing import List
 from typing import Optional
 from pydantic import BaseModel
 from cfclient.core import HttpClient
+from cflearn.api.cv.diffusion import ControlNetHints
 
 
 class APIs:
@@ -82,6 +83,13 @@ class APIs:
         result: TextModel = await self.algorithms[task].run(data)
         return [result.text]
 
+    async def get_control_hint(
+        self, hint_type: ControlNetHints, **kw: Any
+    ) -> List[Image.Image]:
+        data = control_hint2hint_data_models[hint_type](**kw)
+        endpoint = control_hint2hint_endpoints[hint_type]
+        return await self._run(data, endpoint)
+
 
 __all__ = [
     "APIs",
@@ -94,4 +102,5 @@ __all__ = [
     "Img2ImgInpaintingModel",
     "Txt2ImgSDInpaintingModel",
     "Txt2ImgSDOutpaintingModel",
+    "ControlNetHints",
 ]
