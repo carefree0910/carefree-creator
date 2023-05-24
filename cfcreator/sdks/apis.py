@@ -90,6 +90,11 @@ class APIs:
         endpoint = control_hint2hint_endpoints[hint_type]
         return await self._run(data, endpoint)
 
+    async def run_multi_controlnet(
+        self, data: ControlMultiModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, new_control_multi_endpoint, **kw)
+
 
 __all__ = [
     "APIs",
@@ -103,4 +108,5 @@ __all__ = [
     "Txt2ImgSDInpaintingModel",
     "Txt2ImgSDOutpaintingModel",
     "ControlNetHints",
+    "ControlMultiModel",
 ]
