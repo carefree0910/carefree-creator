@@ -310,16 +310,13 @@ def register_control(
     IAlgorithm.auto_register()(_)
 
 
-def register_control_hint(
+def register_hint(
     hint_model_class: Type,
     hint_endpoint: str,
     hint_type: ControlNetHints,
 ) -> None:
-    class _Model(hint_model_class, ReturnArraysModel, ImageModel):
-        pass
-
     class _(IAlgorithm):
-        model_class = _Model
+        model_class = hint_model_class
         model_class.__name__ = hint_model_class.__name__
 
         endpoint = hint_endpoint
@@ -327,7 +324,7 @@ def register_control_hint(
         def initialize(self) -> None:
             register_sd()
 
-        async def run(self, data: _Model, *args: Any) -> Response:
+        async def run(self, data: hint_model_class, *args: Any) -> Response:
             t0 = time.time()
             image = await self.download_image_with_retry(data.url)
             w, h = image.size
@@ -386,6 +383,10 @@ class ControlDepthModel(_DepthModel, ControlStrengthModel, ControlNetModel):
     pass
 
 
+class ControlDepthHintModel(_DepthModel, ReturnArraysModel, ImageModel):
+    pass
+
+
 # ControlNet (canny2image)
 
 
@@ -408,6 +409,10 @@ class ControlCannyModel(_CannyModel, ControlStrengthModel, ControlNetModel):
     pass
 
 
+class ControlCannyHintModel(_CannyModel, ReturnArraysModel, ImageModel):
+    pass
+
+
 # ControlNet (pose2image)
 
 
@@ -416,6 +421,10 @@ class _PoseModel(LargeDetectResolutionModel):
 
 
 class ControlPoseModel(_PoseModel, ControlStrengthModel, ControlNetModel):
+    pass
+
+
+class ControlPoseHintModel(_PoseModel, ReturnArraysModel, ImageModel):
     pass
 
 
@@ -441,16 +450,20 @@ class ControlMLSDModel(_MLSDModel, ControlStrengthModel, ControlNetModel):
     pass
 
 
+class ControlMLSDHintModel(_MLSDModel, ReturnArraysModel, ImageModel):
+    pass
+
+
 # register
 
 register_control(ControlDepthModel, new_control_depth_endpoint, ControlNetHints.DEPTH)
 register_control(ControlCannyModel, new_control_canny_endpoint, ControlNetHints.CANNY)
 register_control(ControlPoseModel, new_control_pose_endpoint, ControlNetHints.POSE)
 register_control(ControlMLSDModel, new_control_mlsd_endpoint, ControlNetHints.MLSD)
-register_control_hint(_DepthModel, control_depth_hint_endpoint, ControlNetHints.DEPTH)
-register_control_hint(_CannyModel, control_canny_hint_endpoint, ControlNetHints.CANNY)
-register_control_hint(_PoseModel, control_pose_hint_endpoint, ControlNetHints.POSE)
-register_control_hint(_MLSDModel, control_mlsd_hint_endpoint, ControlNetHints.MLSD)
+register_hint(ControlDepthHintModel, control_depth_hint_endpoint, ControlNetHints.DEPTH)
+register_hint(ControlCannyHintModel, control_canny_hint_endpoint, ControlNetHints.CANNY)
+register_hint(ControlPoseHintModel, control_pose_hint_endpoint, ControlNetHints.POSE)
+register_hint(ControlMLSDHintModel, control_mlsd_hint_endpoint, ControlNetHints.MLSD)
 
 
 __all__ = [
@@ -464,7 +477,11 @@ __all__ = [
     "control_pose_hint_endpoint",
     "control_mlsd_hint_endpoint",
     "ControlDepthModel",
+    "ControlDepthHintModel",
     "ControlCannyModel",
+    "ControlCannyHintModel",
     "ControlPoseModel",
+    "ControlPoseHintModel",
     "ControlMLSDModel",
+    "ControlMLSDHintModel",
 ]
