@@ -524,7 +524,7 @@ def apply_harmonization(
     return result, latencies
 
 
-class Img2ImgHarmonizationModel(ImageModel):
+class Img2ImgHarmonizationModel(ReturnArraysModel, ImageModel):
     mask_url: str = Field(
         ...,
         description="The `cdn` / `cos` url of the harmonization mask. (`cos` url is preferred)",
@@ -573,6 +573,8 @@ class Img2ImgHarmonization(IAlgorithm):
         )
         latencies["download"] = t1 - t0
         self.log_times(latencies)
+        if data.return_arrays:
+            return [result]
         return Response(content=np_to_bytes(result), media_type="image/png")
 
 
