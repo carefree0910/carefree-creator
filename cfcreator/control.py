@@ -308,6 +308,8 @@ def register_control(
             return Response(content=content, media_type="image/png")
 
     IAlgorithm.auto_register()(_)
+    control_hint2endpoints[hint_type] = algorithm_endpoint
+    control_hint2data_models[hint_type] = algorithm_model_class
 
 
 def register_hint(
@@ -352,6 +354,8 @@ def register_hint(
             return Response(content=np_to_bytes(hint), media_type="image/png")
 
     IAlgorithm.auto_register()(_)
+    control_hint2hint_endpoints[hint_type] = hint_endpoint
+    control_hint2hint_data_models[hint_type] = hint_model_class
 
 
 class DetectResolutionModel(BaseModel):
@@ -456,6 +460,10 @@ class ControlMLSDHintModel(_MLSDModel, ReturnArraysModel, ImageModel):
 
 # register
 
+control_hint2endpoints: Dict[ControlNetHints, str] = {}
+control_hint2hint_endpoints: Dict[ControlNetHints, str] = {}
+control_hint2data_models: Dict[ControlNetHints, Type[BaseModel]] = {}
+control_hint2hint_data_models: Dict[ControlNetHints, Type[BaseModel]] = {}
 register_control(ControlDepthModel, new_control_depth_endpoint, ControlNetHints.DEPTH)
 register_control(ControlCannyModel, new_control_canny_endpoint, ControlNetHints.CANNY)
 register_control(ControlPoseModel, new_control_pose_endpoint, ControlNetHints.POSE)
@@ -484,4 +492,8 @@ __all__ = [
     "ControlPoseHintModel",
     "ControlMLSDModel",
     "ControlMLSDHintModel",
+    "control_hint2endpoints",
+    "control_hint2hint_endpoints",
+    "control_hint2data_models",
+    "control_hint2hint_data_models",
 ]
