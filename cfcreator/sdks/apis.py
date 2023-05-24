@@ -95,6 +95,9 @@ class APIs:
     ) -> List[Image.Image]:
         return await self._run(data, new_control_multi_endpoint, **kw)
 
+    async def harmonization(self, data: Img2ImgHarmonizationModel) -> List[Image.Image]:
+        return await self._run(data, img2img_harmonization_endpoint)
+
 
 __all__ = [
     "APIs",
@@ -109,4 +112,5 @@ __all__ = [
     "Txt2ImgSDOutpaintingModel",
     "ControlNetHints",
     "ControlMultiModel",
+    "Img2ImgHarmonizationModel",
 ]
