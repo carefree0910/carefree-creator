@@ -21,6 +21,7 @@ from cftool.cv import to_uint8
 from cftool.cv import np_to_bytes
 from cftool.cv import restrict_wh
 from cftool.cv import get_suitable_size
+from cftool.misc import shallow_copy_dict
 from cfclient.models.core import ImageModel
 from cflearn.api.cv.diffusion import ControlNetHints
 from cflearn.models.cv.diffusion.utils import CONTROL_HINT_KEY
@@ -83,6 +84,7 @@ async def apply_control(
     common: ControlNetModel,
     controls: List[ControlNetBundle],
     normalized_inpainting_mask: Optional[np.ndarray] = None,
+    **kwargs: Any,
 ) -> apply_response:
     api_key = APIs.SD_INPAINTING if common.use_inpainting else APIs.SD
     api = get_sd_from(api_key, common, no_change=True)
@@ -204,7 +206,8 @@ async def apply_control(
     if not common.prompt:
         raise ValueError("prompt should be provided in `common`")
     cond = [common.prompt] * common.num_samples
-    kw = handle_diffusion_model(api, common)
+    kw = shallow_copy_dict(kwargs)
+    kw.update(handle_diffusion_model(api, common))
     hint = [(b.type, all_key_values[k][0]) for b, k in zip(controls, all_keys)]
     kw[CONTROL_HINT_KEY] = hint
     kw[CONTROL_HINT_START_KEY] = [b.data.hint_start for b in controls]
@@ -276,10 +279,11 @@ async def run_single_control(
     self: IAlgorithm,
     data: ControlNetModel,
     hint_type: ControlNetHints,
+    **kwargs: Any,
 ) -> Tuple[List[np.ndarray], Dict[str, float]]:
     self.log_endpoint(data)
     bundle = ControlNetBundle(type=hint_type, data=data)
-    return await apply_control(self, data, [bundle])
+    return await apply_control(self, data, [bundle], **kwargs)
 
 
 def register_control(
@@ -296,15 +300,17 @@ def register_control(
             register_sd()
             register_sd_inpainting()
 
-        async def run(self, data: algorithm_model_class, *args: Any) -> Response:
-            results, latencies = await run_single_control(self, data, hint_type)
+        async def run(
+            self, data: algorithm_model_class, *args: Any, **kwargs: Any
+        ) -> Response:
+            rs, latencies = await run_single_control(self, data, hint_type, **kwargs)
             t0 = time.time()
-            content = None if data.return_arrays else np_to_bytes(to_canvas(results))
+            content = None if data.return_arrays else np_to_bytes(to_canvas(rs))
             t1 = time.time()
             latencies["to_canvas"] = t1 - t0
             self.log_times(latencies)
             if data.return_arrays:
-                return results
+                return rs
             return Response(content=content, media_type="image/png")
 
     IAlgorithm.auto_register()(_)

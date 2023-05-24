@@ -61,9 +61,9 @@ class ControlMulti(IAlgorithm):
         register_sd()
         register_sd_inpainting()
 
-    async def run(self, data: ControlMultiModel, *args: Any) -> Response:
+    async def run(self, data: ControlMultiModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
-        results, latencies = await apply_control(self, data, data.controls)
+        results, latencies = await apply_control(self, data, data.controls, **kwargs)
         t0 = time.time()
         content = None if data.return_arrays else np_to_bytes(to_canvas(results))
         t1 = time.time()
