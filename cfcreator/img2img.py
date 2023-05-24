@@ -551,6 +551,14 @@ class Img2ImgHarmonization(IAlgorithm):
         image = await self.download_image_with_retry(data.url)
         mask = await self.download_image_with_retry(data.mask_url)
         t1 = time.time()
+        mask_arr = read_image(
+            mask,
+            None,
+            anchor=None,
+            to_mask=True,
+            to_torch_fmt=False,
+        ).image
+        mask_arr[mask_arr > 0.0] = 1.0
         result, latencies = apply_harmonization(
             data.harmonization_max_wh,
             data.strength,
@@ -561,13 +569,7 @@ class Img2ImgHarmonization(IAlgorithm):
                 normalize=False,
                 to_torch_fmt=False,
             ).image,
-            read_image(
-                mask,
-                None,
-                anchor=None,
-                to_mask=True,
-                to_torch_fmt=False,
-            ).image,
+            mask_arr,
         )
         latencies["download"] = t1 - t0
         self.log_times(latencies)
