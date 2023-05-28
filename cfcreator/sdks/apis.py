@@ -34,6 +34,7 @@ class WorkNode(BaseModel):
             "'property' of the algorithm's field. In runtime, we'll collect "
             "the (list of) results from the depedencies (other `WorkNode`) and "
             "inject the specific result (based on 'index') to the algorithm's field.\n"
+            "> If external caches is provided, the 'key' could be the key of the external cache.\n"
             "> Hierarchy injection is also supported, you just need to set 'property' to:\n"
             ">> `a.b.c` to inject the result to data['a']['b']['c']\n"
             ">> `a.0.b` to inject the first result to data['a'][0]['b']\n"
@@ -202,7 +203,12 @@ class APIs:
 
     # workflow
 
-    async def execute(self, workflow: Workflow, target: str) -> Dict[str, TRes]:
+    async def execute(
+        self,
+        workflow: Workflow,
+        target: str,
+        caches: Optional[OrderedDict] = None,
+    ) -> Dict[str, TRes]:
         def _inject(k: str, ki_cache: TRes, current_node_data: dict) -> None:
             k_split = k.split(".")
             k0 = k_split[0]
@@ -246,7 +252,8 @@ class APIs:
                     f"but got '{type(v0)}'"
                 )
 
-        caches = OrderedDict()
+        if caches is None:
+            caches = OrderedDict()
         for batch in workflow.get_dependency_path(target):
             for item in batch:
                 node = item.data
