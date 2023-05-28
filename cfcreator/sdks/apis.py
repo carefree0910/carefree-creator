@@ -252,13 +252,11 @@ class APIs:
                 node = item.data
                 node_kw = {}
                 node_data = shallow_copy_dict(node.data)
-                print("> before", node_data)
                 for (k, i), data_key in node.injections.items():
                     ki_cache = caches[k][i]
                     _inject(data_key, ki_cache, node_data)
                     if isinstance(ki_cache, Image.Image):
                         node_kw[data_key] = ki_cache
-                print("> after", node_data)
                 endpoint = node.endpoint
                 method_fn = getattr(self, endpoint2method[endpoint])
                 if endpoint == CONTROL_HINT_ENDPOINT:
