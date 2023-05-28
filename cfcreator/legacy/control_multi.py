@@ -82,10 +82,10 @@ class ControlMulti(IAlgorithm):
     def initialize(self) -> None:
         register_sd()
 
-    async def run(self, data: ControlMultiModel, *args: Any) -> Response:
+    async def run(self, data: ControlMultiModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image, hint_image = await get_images(self, data)
+        image, hint_image = await get_images(self, data, kwargs)
         t1 = time.time()
         results, latencies = apply_control(
             gather_all_data(data),

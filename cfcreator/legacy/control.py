@@ -56,11 +56,15 @@ class ControlNetModelPlaceholder(ControlStrengthModel, ControlNetModel):
     pass
 
 
-async def get_images(self: IAlgorithm, data: ControlNetModel) -> images_type:
-    image = np.array(to_rgb(await self.download_image_with_retry(data.url)))
+async def get_images(
+    self: IAlgorithm,
+    data: ControlNetModel,
+    kwargs: Dict[str, Any],
+) -> images_type:
+    image = np.array(to_rgb(await self.get_image_from("url", data, kwargs)))
     if not data.hint_url:
         return image, image
-    hint_image = np.array(to_rgb(await self.download_image_with_retry(data.hint_url)))
+    hint_image = np.array(to_rgb(await self.get_image_from("hint_url", data, kwargs)))
     return image, hint_image
 
 
@@ -218,10 +222,11 @@ async def run_control(
     self: IAlgorithm,
     data: ControlNetModel,
     hint_type: ControlNetHints,
+    kwargs: Dict[str, Any],
 ) -> Tuple[List[np.ndarray], Dict[str, float]]:
     self.log_endpoint(data)
     t0 = time.time()
-    image, hint_image = await get_images(self, data)
+    image, hint_image = await get_images(self, data, kwargs)
     t1 = time.time()
     results, latencies = apply_control(data, APIs.SD, image, hint_image, hint_type)
     latencies["download"] = t1 - t0
@@ -241,8 +246,13 @@ def register_control(
         def initialize(self) -> None:
             register_sd()
 
-        async def run(self, data: algorithm_model_class, *args: Any) -> Response:
-            results, latencies = await run_control(self, data, hint_type)
+        async def run(
+            self,
+            data: algorithm_model_class,
+            *args: Any,
+            **kwargs: Any,
+        ) -> Response:
+            results, latencies = await run_control(self, data, hint_type, kwargs)
             t0 = time.time()
             content = None if data.return_arrays else np_to_bytes(to_canvas(results))
             t1 = time.time()
@@ -272,9 +282,9 @@ def register_hint(
         def initialize(self) -> None:
             register_sd()
 
-        async def run(self, data: _Model, *args: Any) -> Response:
+        async def run(self, data: _Model, *args: Any, **kwargs: Any) -> Response:
             t0 = time.time()
-            image = await self.download_image_with_retry(data.url)
+            image = await self.get_image_from("url", data, kwargs)
             w, h = image.size
             t1 = time.time()
             m = api_pool.get(APIs.SD)

@@ -103,11 +103,16 @@ class PastePipeline(IAlgorithm):
     def initialize(self) -> None:
         pass
 
-    async def run(self, data: PastePipelineModel, *args: Any) -> Response:
+    async def run(
+        self,
+        data: PastePipelineModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        original_fg = await self.download_image_with_retry(data.url)
-        original_bg = await self.download_image_with_retry(data.bg_url)
+        original_fg = await self.get_image_from("url", data, kwargs)
+        original_bg = await self.get_image_from("bg_url", data, kwargs)
         t1 = time.time()
         results, latencies = paste(
             original_fg,

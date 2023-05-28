@@ -31,10 +31,10 @@ class Img2TxtCaption(IAlgorithm):
     def initialize(self) -> None:
         register_blip()
 
-    async def run(self, data: Img2TxtModel, *args: Any) -> TextModel:
+    async def run(self, data: Img2TxtModel, *args: Any, **kwargs: Any) -> TextModel:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
+        image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         w, h = image.size
         w, h = restrict_wh(w, h, data.max_wh)

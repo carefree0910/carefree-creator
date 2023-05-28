@@ -589,6 +589,17 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     async def download_image_with_retry(self, url: str) -> Image.Image:
         return await download_image_with_retry(self.http_client.session, url)
 
+    async def get_image_from(
+        self,
+        key: str,
+        data: BaseModel,
+        kwargs: Dict[str, Any],
+    ) -> Image.Image:
+        existing = kwargs.pop(key, None)
+        if existing is not None and isinstance(existing, Image.Image):
+            return existing
+        return await self.download_image_with_retry(getattr(data, key))
+
 
 # kafka
 

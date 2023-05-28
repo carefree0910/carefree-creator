@@ -97,7 +97,7 @@ class Img2ImgSD(IAlgorithm):
     async def run(self, data: Img2ImgSDModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
+        image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         if not data.keep_alpha:
             image = to_rgb(image)
@@ -198,10 +198,10 @@ class Img2ImgSR(IAlgorithm):
         register_esr()
         register_esr_anime()
 
-    async def run(self, data: Img2ImgSRModel, *args: Any) -> Response:
+    async def run(self, data: Img2ImgSRModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
+        image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         api_key = APIs.ESR_ANIME if data.is_anime else APIs.ESR
         m = api_pool.get(api_key)
@@ -291,12 +291,12 @@ class Img2ImgInpainting(IAlgorithm):
     ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
+        image = await self.get_image_from("url", data, kwargs)
         mask_url = data.mask_url
-        if not mask_url:
+        if not mask_url and "mask_url" not in kwargs:
             mask = Image.new("L", image.size, color=0)
         else:
-            mask = await self.download_image_with_retry(mask_url)
+            mask = await self.get_image_from("mask_url", data, kwargs)
         t1 = time.time()
         model = data.model
         api_key = APIs.LAMA if model == InpaintingModels.LAMA else APIs.INPAINTING
@@ -411,7 +411,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
     ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        raw_semantic = await self.download_image_with_retry(data.url)
+        raw_semantic = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         w, h = raw_semantic.size
         raw_arr = np.array(raw_semantic)
@@ -545,11 +545,16 @@ class Img2ImgHarmonization(IAlgorithm):
     def initialize(self) -> None:
         register_hrnet()
 
-    async def run(self, data: Img2ImgHarmonizationModel, *args: Any) -> Response:
+    async def run(
+        self,
+        data: Img2ImgHarmonizationModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
-        mask = await self.download_image_with_retry(data.mask_url)
+        image = await self.get_image_from("url", data, kwargs)
+        mask = await self.get_image_from("mask_url", data, kwargs)
         t1 = time.time()
         mask_arr = read_image(
             mask,
@@ -594,10 +599,10 @@ class Img2ImgSOD(IAlgorithm):
     def initialize(self) -> None:
         register_isnet()
 
-    async def run(self, data: Img2ImgSODModel, *args: Any) -> Response:
+    async def run(self, data: Img2ImgSODModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
+        image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         m = api_pool.get(APIs.ISNET)
         t2 = time.time()

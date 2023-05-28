@@ -123,8 +123,8 @@ class Txt2ImgSDInpainting(IAlgorithm):
     ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
-        mask = await self.download_image_with_retry(data.mask_url)
+        image = await self.get_image_from("url", data, kwargs)
+        mask = await self.get_image_from("mask_url", data, kwargs)
         t1 = time.time()
         if data.use_raw_inpainting:
             api_key = APIs.SD
@@ -182,7 +182,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
     ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
+        image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         m = get_sd_from(APIs.SD_INPAINTING, data)
         m.disable_control()

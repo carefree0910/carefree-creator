@@ -57,10 +57,10 @@ class Affine(IAlgorithm):
     def initialize(self) -> None:
         pass
 
-    async def run(self, data: AffineModel, *args: Any) -> Response:
+    async def run(self, data: AffineModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
+        image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         output = affine(
             np.array(image),
@@ -100,11 +100,16 @@ class HistogramMatch(IAlgorithm):
     def initialize(self) -> None:
         pass
 
-    async def run(self, data: HistogramMatchModel, *args: Any) -> Response:
+    async def run(
+        self,
+        data: HistogramMatchModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
-        image = await self.download_image_with_retry(data.url)
-        bg = await self.download_image_with_retry(data.bg_url)
+        image = await self.get_image_from("url", data, kwargs)
+        bg = await self.get_image_from("bg_url", data, kwargs)
         t1 = time.time()
         to_normalized = lambda im: np.array(im).astype(np.float32) / 255.0
         rgba, bg_arr = map(to_normalized, [image, bg])

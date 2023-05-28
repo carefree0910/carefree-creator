@@ -94,20 +94,28 @@ async def apply_control(
     urls = set()
     is_hint = {}
     is_global = {}
+    url_to_image = {}
     if common.url is not None:
         urls.add(common.url)
+        url_to_image[common.url] = kwargs.get("url")
         is_global[common.url] = True
     if common.mask_url is not None:
         urls.add(common.mask_url)
+        url_to_image[common.mask_url] = kwargs.get("mask_url")
         is_global[common.mask_url] = True
-    for bundle in controls:
+    for i, bundle in enumerate(controls):
         if not bundle.data.hint_url:
             raise ValueError("hint url should be provided in `controls`")
         urls.add(bundle.data.hint_url)
+        url_to_image[bundle.data.hint_url] = kwargs.get(f"controls.{i}.data.hint_url")
         is_hint[bundle.data.hint_url] = True
     sorted_urls = sorted(urls)
-    futures = [self.download_image_with_retry(url) for url in sorted_urls]
-    images: List[Image.Image] = await asyncio.gather(*futures)
+    remained = [i for i, url in enumerate(sorted_urls) if url_to_image[url] is None]
+    futures = [self.download_image_with_retry(sorted_urls[i]) for i in remained]
+    remained_images: List[Image.Image] = await asyncio.gather(*futures)
+    images: List[Image.Image] = [url_to_image[url] for url in sorted_urls]
+    for i, index in enumerate(remained):
+        images[index] = remained_images[i]
     ## make sure that every image should have the same size
     original_w, original_h = images[0].size
     for im in images[1:]:
@@ -332,9 +340,11 @@ def register_hint(
         def initialize(self) -> None:
             register_sd()
 
-        async def run(self, data: hint_model_class, *args: Any) -> Response:
+        async def run(
+            self, data: hint_model_class, *args: Any, **kwargs: Any
+        ) -> Response:
             t0 = time.time()
-            image = await self.download_image_with_retry(data.url)
+            image = await self.get_image_from("url", data, kwargs)
             w, h = image.size
             t1 = time.time()
             m = api_pool.get(APIs.SD)
