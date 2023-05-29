@@ -256,6 +256,8 @@ class APIs:
             caches = OrderedDict()
         for batch in workflow.get_dependency_path(target):
             for item in batch:
+                if item.key in caches:
+                    continue
                 node = item.data
                 node_kw = {}
                 node_data = shallow_copy_dict(node.data)
