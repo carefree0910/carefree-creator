@@ -5,11 +5,13 @@ from cfcreator import *
 from cfclient.models import *
 from PIL import Image
 from typing import Any
+from typing import Set
 from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
 from typing import Optional
+from typing import NamedTuple
 from pydantic import Field
 from pydantic import BaseModel
 from collections import OrderedDict
@@ -46,25 +48,33 @@ class WorkNode(BaseModel):
         return Item(self.key, self)
 
 
+class ToposortResult(NamedTuple):
+    in_edges: Dict[str, Set[str]]
+    hierarchy: List[List[Item[WorkNode]]]
+    edge_labels: Dict[Tuple[str, str], str]
+
+
 class Workflow(Bundle[WorkNode]):
     def push(self, node: WorkNode) -> None:
         return super().push(node.to_item())
 
-    def toposort(self) -> List[List[Item[WorkNode]]]:
+    def toposort(self) -> ToposortResult:
+        in_edges = {item.key: set() for item in self}
         out_degrees = {item.key: 0 for item in self}
-        in_edges = {item.key: [] for item in self}
+        edge_labels: Dict[Tuple[str, str], str] = {}
         for item in self:
-            for dep, _ in item.data.injections:
+            for (dep, _), field in item.data.injections.items():
+                in_edges[dep].add(item.key)
                 out_degrees[item.key] += 1
-                in_edges[dep].append(item.key)
+                edge_labels[(item.key, dep)] = field
 
         ready = [k for k, v in out_degrees.items() if v == 0]
         result = []
         while ready:
-            batch = ready.copy()
-            result.append(batch)
+            layer = ready.copy()
+            result.append(layer)
             ready.clear()
-            for dep in batch:
+            for dep in layer:
                 for node in in_edges[dep]:
                     out_degrees[node] -= 1
                     if out_degrees[node] == 0:
@@ -73,9 +83,10 @@ class Workflow(Bundle[WorkNode]):
         if len(self) != sum(map(len, result)):
             raise ValueError("cyclic dependency detected")
 
-        return [list(map(self.get, batch)) for batch in result]
+        hierarchy = [list(map(self.get, layer)) for layer in result]
+        return ToposortResult(in_edges, hierarchy, edge_labels)
 
-    def get_dependency_path(self, target: str) -> List[List[Item[WorkNode]]]:
+    def get_dependency_path(self, target: str) -> ToposortResult:
         def dfs(key: str) -> None:
             if key in reachable:
                 return
@@ -85,16 +96,16 @@ class Workflow(Bundle[WorkNode]):
 
         reachable = set()
         dfs(target)
-        raw_result = self.toposort()
-        result = []
-        for raw_batch in raw_result:
-            batch = []
-            for item in raw_batch:
+        in_edges, raw_hierarchy, edge_labels = self.toposort()
+        hierarchy = []
+        for raw_layer in raw_hierarchy:
+            layer = []
+            for item in raw_layer:
                 if item.key in reachable:
-                    batch.append(item)
-            if batch:
-                result.append(batch)
-        return result
+                    layer.append(item)
+            if layer:
+                hierarchy.append(layer)
+        return ToposortResult(in_edges, hierarchy, edge_labels)
 
 
 TRes = Union[List[str], List[Image.Image]]
@@ -254,8 +265,8 @@ class APIs:
 
         if caches is None:
             caches = OrderedDict()
-        for batch in workflow.get_dependency_path(target):
-            for item in batch:
+        for layer in workflow.get_dependency_path(target).hierarchy:
+            for item in layer:
                 if item.key in caches:
                     continue
                 node = item.data
