@@ -23,21 +23,26 @@ from cfclient.core import HttpClient
 from cflearn.api.cv.diffusion import ControlNetHints
 
 
+class InjectionPack(BaseModel):
+    index: int
+    field: str
+
+
 class WorkNode(BaseModel):
     key: str = Field(
         ...,
         description="Key of the node, should be identical within the same workflow",
     )
     endpoint: str = Field(..., description="Algorithm endpoint of the node")
-    injections: Dict[Tuple[str, int], str] = Field(
+    injections: Dict[str, InjectionPack] = Field(
         ...,
         description=(
-            "Injection map, maps 'key' & 'index' from other `WorkNode` to "
-            "'property' of the algorithm's field. In runtime, we'll collect "
+            "Injection map, maps 'key' from other `WorkNode` (A) to 'index' of A's results  & "
+            "'field' of the algorithm's field. In runtime, we'll collect "
             "the (list of) results from the depedencies (other `WorkNode`) and "
             "inject the specific result (based on 'index') to the algorithm's field.\n"
             "> If external caches is provided, the 'key' could be the key of the external cache.\n"
-            "> Hierarchy injection is also supported, you just need to set 'property' to:\n"
+            "> Hierarchy injection is also supported, you just need to set 'field' to:\n"
             ">> `a.b.c` to inject the result to data['a']['b']['c']\n"
             ">> `a.0.b` to inject the first result to data['a'][0]['b']\n"
         ),
@@ -63,10 +68,10 @@ class Workflow(Bundle[WorkNode]):
         out_degrees = {item.key: 0 for item in self}
         edge_labels: Dict[Tuple[str, str], str] = {}
         for item in self:
-            for (dep, _), field in item.data.injections.items():
+            for dep, pack in item.data.injections.items():
                 in_edges[dep].add(item.key)
                 out_degrees[item.key] += 1
-                edge_labels[(item.key, dep)] = field
+                edge_labels[(item.key, dep)] = pack.field
 
         ready = [k for k, v in out_degrees.items() if v == 0]
         result = []
@@ -91,7 +96,7 @@ class Workflow(Bundle[WorkNode]):
             if key in reachable:
                 return
             reachable.add(key)
-            for dep_key, _ in self.get(key).data.injections:
+            for dep_key in self.get(key).data.injections:
                 dfs(dep_key)
 
         reachable = set()
@@ -272,11 +277,11 @@ class APIs:
                 node = item.data
                 node_kw = {}
                 node_data = shallow_copy_dict(node.data)
-                for (k, i), data_key in node.injections.items():
-                    ki_cache = caches[k][i]
-                    _inject(data_key, ki_cache, node_data)
+                for k, k_pack in node.injections.items():
+                    ki_cache = caches[k][k_pack.index]
+                    _inject(k_pack.field, ki_cache, node_data)
                     if isinstance(ki_cache, Image.Image):
-                        node_kw[data_key] = ki_cache
+                        node_kw[k_pack.field] = ki_cache
                 endpoint = node.endpoint
                 method_fn = getattr(self, endpoint2method[endpoint])
                 if endpoint == CONTROL_HINT_ENDPOINT:
@@ -296,6 +301,7 @@ class APIs:
 
 
 __all__ = [
+    "InjectionPack",
     "WorkNode",
     "Workflow",
     "CONTROL_HINT_ENDPOINT",
