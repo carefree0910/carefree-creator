@@ -112,6 +112,16 @@ class Workflow(Bundle[WorkNode]):
                 hierarchy.append(layer)
         return ToposortResult(in_edges, hierarchy, edge_labels)
 
+    def to_json(self) -> List[Dict[str, Any]]:
+        return [node.data.dict() for node in self]
+
+    @classmethod
+    def from_json(cls, data: List[Dict[str, Any]]) -> "Workflow":
+        workflow = cls()
+        for json in data:
+            workflow.push(WorkNode(**json))
+        return workflow
+
 
 TRes = Union[List[str], List[Image.Image]]
 CONTROL_HINT_ENDPOINT = "$control_hint"
