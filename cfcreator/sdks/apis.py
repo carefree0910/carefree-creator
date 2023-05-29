@@ -224,6 +224,7 @@ class APIs:
         workflow: Workflow,
         target: str,
         caches: Optional[OrderedDict] = None,
+        **kwargs: Any,
     ) -> Dict[str, TRes]:
         def _inject(k: str, ki_cache: TRes, current_node_data: dict) -> None:
             k_split = k.split(".")
@@ -275,7 +276,7 @@ class APIs:
                 if item.key in caches:
                     continue
                 node = item.data
-                node_kw = {}
+                node_kw = shallow_copy_dict(kwargs)
                 node_data = shallow_copy_dict(node.data)
                 for k, k_pack in node.injections.items():
                     ki_cache = caches[k][k_pack.index]
