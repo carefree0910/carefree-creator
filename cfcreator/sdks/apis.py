@@ -1,6 +1,12 @@
 # `apis` sdk is used to prgrammatically call the algorithms.
 
 
+import io
+
+import networkx as nx
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
 from cfcreator import *
 from cfclient.models import *
 from PIL import Image
@@ -111,6 +117,84 @@ class Workflow(Bundle[WorkNode]):
             if layer:
                 hierarchy.append(layer)
         return ToposortResult(in_edges, hierarchy, edge_labels)
+
+    def render(
+        self,
+        *,
+        target: Optional[str] = None,
+        fig_w_ratio: int = 4,
+        fig_h_ratio: int = 3,
+        dpi: int = 200,
+        node_size: int = 2000,
+        node_shape: str = "s",
+        node_color: str = "lightblue",
+        layout: str = "multipartite_layout",
+    ) -> Image.Image:
+        # setup graph
+        G = nx.DiGraph()
+        if target is None:
+            target = self.last.key
+        in_edges, hierarchy, edge_labels = self.get_dependency_path(target)
+        # setup plt
+        fig_w = max(fig_w_ratio * len(hierarchy), 8)
+        fig_h = fig_h_ratio * max(map(len, hierarchy))
+        plt.figure(figsize=(fig_w, fig_h), dpi=dpi)
+        box = plt.gca().get_position()
+        plt.gca().set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        # map key to indices
+        key2idx = {}
+        for layer in hierarchy:
+            for node in layer:
+                key2idx[node.key] = len(key2idx)
+        # add nodes
+        for i, layer in enumerate(hierarchy):
+            for node in layer:
+                G.add_node(key2idx[node.key], subset=f"layer_{i}")
+        # add edges
+        for dep, links in in_edges.items():
+            for link in links:
+                label = edge_labels[(link, dep)]
+                G.add_edge(key2idx[dep], key2idx[link], label=label)
+        # calculate positions
+        layout_fn = getattr(nx, layout, None)
+        if layout_fn is None:
+            raise ValueError(f"unknown layout: {layout}")
+        pos = layout_fn(G)
+        # draw the nodes
+        nodes_styles = dict(
+            node_size=node_size,
+            node_shape=node_shape,
+            node_color=node_color,
+        )
+        nx.draw_networkx_nodes(G, pos, **nodes_styles)
+        node_labels_styles = dict(
+            font_size=18,
+        )
+        nx.draw_networkx_labels(G, pos, **node_labels_styles)
+        # draw the edges
+        nx_edge_labels = nx.get_edge_attributes(G, "label")
+        nx.draw_networkx_edges(
+            G,
+            pos,
+            arrows=True,
+            arrowstyle="-|>",
+            arrowsize=16,
+            node_size=nodes_styles["node_size"],
+            node_shape=nodes_styles["node_shape"],
+        )
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=nx_edge_labels)
+        # draw captions
+        patches = [
+            mpatches.Patch(color=node_color, label=f"{idx}: {key}")
+            for key, idx in key2idx.items()
+        ]
+        plt.legend(handles=patches, bbox_to_anchor=(1, 0.5), loc="center left")
+        # render
+        plt.axis("off")
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+        return Image.open(buf)
 
     def to_json(self) -> List[Dict[str, Any]]:
         return [node.data.dict() for node in self]

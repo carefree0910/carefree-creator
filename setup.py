@@ -18,6 +18,8 @@ setup(
         "fastapi>=0.95.1",
         "carefree-client>=0.1.10",
         "carefree-learn[cv_full]>=0.4.5",
+        "networkx",
+        "matplotlib",
     ],
     extras_require={
         "kafka": [
