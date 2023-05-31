@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from cftool.cv import to_uint8
 from cftool.cv import np_to_bytes
 from cftool.cv import ImageProcessor
+from cftool.geometry import Matrix2D
 from cfclient.models import ImageModel
 
 from .common import IAlgorithm
@@ -30,8 +31,18 @@ def affine(
     w: int,
     h: int,
 ) -> np.ndarray:
-    matrix = np.array([[a, c, e], [b, d, f]], np.float32)
-    return cv2.warpAffine(array, matrix, [w, h])
+    matrix2d = Matrix2D(a=a, b=b, c=c, d=d, e=e, f=f)
+    properties = matrix2d.decompose()
+    ah, aw = array.shape[:2]
+    array = cv2.resize(
+        array,
+        (max(round(aw * properties.w), 1), max(round(ah * abs(properties.h)), 1)),
+        interpolation=cv2.INTER_AREA,
+    )
+    properties.w = 1
+    properties.h = 1 if properties.h > 0 else -1
+    matrix2d = Matrix2D.from_properties(properties)
+    return cv2.warpAffine(array, matrix2d.matrix, [w, h])
 
 
 class BaseAffineModel(BaseModel):
