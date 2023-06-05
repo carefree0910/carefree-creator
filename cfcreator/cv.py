@@ -3,6 +3,7 @@ import time
 
 import numpy as np
 
+from PIL import Image
 from typing import Any
 from fastapi import Response
 from pydantic import Field
@@ -34,11 +35,10 @@ def affine(
     matrix2d = Matrix2D(a=a, b=b, c=c, d=d, e=e, f=f)
     properties = matrix2d.decompose()
     ah, aw = array.shape[:2]
-    array = cv2.resize(
-        array,
-        (max(round(aw * properties.w), 1), max(round(ah * abs(properties.h)), 1)),
-        interpolation=cv2.INTER_AREA,
-    )
+    nh = max(round(ah * abs(properties.h)), 1)
+    nw = max(round(aw * abs(properties.w)), 1)
+    image = Image.fromarray(array).resize((nw, nh), Image.BILINEAR)
+    array = np.array(image)
     properties.w = 1
     properties.h = 1 if properties.h > 0 else -1
     matrix2d = Matrix2D.from_properties(properties)
