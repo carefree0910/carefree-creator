@@ -1,11 +1,11 @@
 # `apis` sdk is used to prgrammatically call the algorithms.
 
 from cfcreator import *
-from cfclient.models import *
 from PIL import Image
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Type
 from typing import Union
 from typing import Optional
 from pydantic import BaseModel
@@ -13,6 +13,8 @@ from collections import OrderedDict
 from cftool.misc import random_hash
 from cftool.misc import shallow_copy_dict
 from cfclient.core import HttpClient
+from cfclient.models import TextModel
+from cfclient.models import algorithms as registered_algorithms
 from cflearn.api.cv.diffusion import ControlNetHints
 
 
@@ -36,7 +38,12 @@ endpoint2method = {
 class APIs:
     algorithms: Dict[str, IAlgorithm]
 
-    def __init__(self, *, focuses_endpoints: Optional[List[str]] = None) -> None:
+    def __init__(
+        self,
+        *,
+        algorithms: Optional[Dict[str, IAlgorithm]] = None,
+        focuses_endpoints: Optional[List[str]] = None,
+    ) -> None:
         if focuses_endpoints is None:
             focuses = None
         else:
@@ -46,11 +53,14 @@ class APIs:
 
         self._http_client = HttpClient()
         clients = dict(http=self._http_client, triton=None)
-        self.algorithms = {
-            k: v(clients)
-            for k, v in algorithms.items()
-            if focuses is None or k in focuses
-        }
+        if algorithms is not None:
+            self.algorithms = algorithms
+        else:
+            self.algorithms = {
+                k: v(clients)
+                for k, v in registered_algorithms.items()
+                if focuses is None or k in focuses
+            }
         self._http_client.start()
         for v in self.algorithms.values():
             v.initialize()
