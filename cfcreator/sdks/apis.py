@@ -32,6 +32,7 @@ endpoint2method = {
     CONTROL_HINT_ENDPOINT: "get_control_hint",
     new_control_multi_endpoint: "run_multi_controlnet",
     img2img_harmonization_endpoint: "harmonization",
+    paste_pipeline_endpoint: "paste_pipeline",
 }
 
 
@@ -129,6 +130,11 @@ class APIs:
         self, data: Img2ImgHarmonizationModel, **kw: Any
     ) -> List[Image.Image]:
         return await self._run(data, img2img_harmonization_endpoint, **kw)
+
+    async def paste_pipeline(
+        self, data: PastePipelineModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, paste_pipeline_endpoint, **kw)
 
     # workflow
 
