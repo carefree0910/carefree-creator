@@ -199,11 +199,14 @@ class APIs:
                 node = item.data
                 node_kw = shallow_copy_dict(kwargs)
                 node_data = shallow_copy_dict(node.data)
-                for k, k_pack in node.injections.items():
-                    ki_cache = caches[k][k_pack.index]
-                    _inject(k_pack.field, ki_cache, node_data)
-                    if isinstance(ki_cache, Image.Image):
-                        node_kw[k_pack.field] = ki_cache
+                for k, k_packs in node.injections.items():
+                    if not isinstance(k_packs, list):
+                        k_packs = [k_packs]
+                    for k_pack in k_packs:
+                        ki_cache = caches[k][k_pack.index]
+                        _inject(k_pack.field, ki_cache, node_data)
+                        if isinstance(ki_cache, Image.Image):
+                            node_kw[k_pack.field] = ki_cache
                 endpoint = node.endpoint
                 method_fn = getattr(self, endpoint2method[endpoint])
                 if endpoint == CONTROL_HINT_ENDPOINT:

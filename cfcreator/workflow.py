@@ -10,6 +10,7 @@ from typing import Set
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import Union
 from typing import Optional
 from typing import NamedTuple
 from fastapi import Response
@@ -36,7 +37,7 @@ class WorkNode(BaseModel):
         description="Key of the node, should be identical within the same workflow",
     )
     endpoint: str = Field(..., description="Algorithm endpoint of the node")
-    injections: Dict[str, InjectionPack] = Field(
+    injections: Dict[str, Union[InjectionPack, List[InjectionPack]]] = Field(
         ...,
         description=(
             "Injection map, maps 'key' from other `WorkNode` (A) to 'index' of A's results  & "
@@ -70,10 +71,18 @@ class Workflow(Bundle[WorkNode]):
         out_degrees = {item.key: 0 for item in self}
         edge_labels: Dict[Tuple[str, str], str] = {}
         for item in self:
-            for dep, pack in item.data.injections.items():
+            for dep, packs in item.data.injections.items():
                 in_edges[dep].add(item.key)
                 out_degrees[item.key] += 1
-                edge_labels[(item.key, dep)] = pack.field
+                if not isinstance(packs, list):
+                    packs = [packs]
+                for pack in packs:
+                    label_key = (item.key, dep)
+                    existing_label = edge_labels.get(label_key)
+                    if existing_label is None:
+                        edge_labels[label_key] = pack.field
+                    else:
+                        edge_labels[label_key] = f"{existing_label}, {pack.field}"
 
         ready = [k for k, v in out_degrees.items() if v == 0]
         result = []
