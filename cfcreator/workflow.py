@@ -238,10 +238,12 @@ class WorkflowAlgorithm(IAlgorithm):
 
     def initialize(self) -> None:
         from cfcreator.sdks.apis import APIs
+        from cfcreator.sdks.apis import ALL_LATENCIES_KEY
 
         if self.algorithms is None:
             raise ValueError("`algorithms` should be provided for `WorkflowAlgorithm`.")
         self.apis = APIs(algorithms=self.algorithms)
+        self.latencies_key = ALL_LATENCIES_KEY
 
     async def run(self, data: WorkflowModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
@@ -266,6 +268,7 @@ class WorkflowAlgorithm(IAlgorithm):
                 "get_workflow": t1 - t0,
                 "inference": t2 - t1,
                 "postprocess": time.time() - t2,
+                "inference_details": results[self.latencies_key],
             }
         )
         if content is None:

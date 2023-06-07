@@ -20,6 +20,7 @@ from cflearn.api.cv.diffusion import ControlNetHints
 
 TRes = Union[List[str], List[Image.Image]]
 CONTROL_HINT_ENDPOINT = "$control_hint"
+ALL_LATENCIES_KEY = "$all_latencies"
 endpoint2method = {
     txt2img_sd_endpoint: "txt2img",
     img2img_sd_endpoint: "img2img",
@@ -188,6 +189,7 @@ class APIs:
                     f"but got '{type(v0)}'"
                 )
 
+        all_latencies = {}
         if caches is None:
             caches = OrderedDict()
         else:
@@ -212,10 +214,14 @@ class APIs:
                 if endpoint == CONTROL_HINT_ENDPOINT:
                     node_data.update(node_kw)
                     item_res = await method_fn(**node_data)
+                    endpoint = control_hint2hint_endpoints[node_data["hint_type"]]
                 else:
                     data_model = self.get_data_model(endpoint, node_data)
                     item_res = await method_fn(data_model, **node_kw)
+                latencies = self.algorithms[endpoint2algorithm(endpoint)].last_latencies
                 caches[item.key] = item_res
+                all_latencies[item.key] = latencies
+        caches[ALL_LATENCIES_KEY] = all_latencies
         return caches
 
     # misc
@@ -230,6 +236,7 @@ __all__ = [
     "WorkNode",
     "Workflow",
     "CONTROL_HINT_ENDPOINT",
+    "ALL_LATENCIES_KEY",
     "APIs",
     "HighresModel",
     "Img2TxtModel",
