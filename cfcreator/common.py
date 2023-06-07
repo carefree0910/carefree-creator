@@ -101,7 +101,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
             m.prepare_annotator(hint)
     else:
         print("> prepare ControlNet weights")
-        m.prepare_control_defaults()
+        m.prepare_all_controls()
         print("> prepare ControlNet Annotators")
         m.prepare_annotators()
         print("> warmup ControlNet")
