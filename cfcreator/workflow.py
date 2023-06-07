@@ -232,7 +232,7 @@ class WorkflowAlgorithm(IAlgorithm):
     model_class = WorkflowModel
 
     algorithms: Optional[Dict[str, IAlgorithm]] = None
-    latest_workflow: Optional[Workflow] = None
+    last_workflow: Optional[Workflow] = None
 
     endpoint = workflow_endpoint
 
@@ -249,7 +249,7 @@ class WorkflowAlgorithm(IAlgorithm):
         workflow = Workflow()
         for node in data.nodes:
             workflow.push(node)
-        self.latest_workflow = workflow
+        self.last_workflow = workflow
         t1 = time.time()
         results = await self.apis.execute(workflow, data.target, data.caches)
         t2 = time.time()
