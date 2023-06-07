@@ -9,6 +9,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
+from typing import TypeVar
 from typing import Callable
 from typing import Optional
 from pathlib import Path
@@ -567,14 +568,17 @@ def endpoint2algorithm(endpoint: str) -> str:
     return endpoint[1:].replace("/", ".")
 
 
+TAlgo = TypeVar("TAlgo", bound=Type[AlgorithmBase])
+
+
 class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
     model_class: Type[BaseModel]
     response_model_class: Optional[Type[BaseModel]] = None
     last_latencies: Dict[str, float] = {}
 
     @classmethod
-    def auto_register(cls) -> Callable[[AlgorithmBase], AlgorithmBase]:
-        def _register(cls_: AlgorithmBase) -> AlgorithmBase:
+    def auto_register(cls) -> Callable[[TAlgo], TAlgo]:
+        def _register(cls_: TAlgo) -> TAlgo:
             return cls.register(endpoint2algorithm(cls_.endpoint))(cls_)
 
         return _register
