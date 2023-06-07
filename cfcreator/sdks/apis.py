@@ -61,9 +61,9 @@ class APIs:
                 for k, v in registered_algorithms.items()
                 if focuses is None or k in focuses
             }
+            for v in self.algorithms.values():
+                v.initialize()
         self._http_client.start()
-        for v in self.algorithms.values():
-            v.initialize()
 
     # lifecycle
 
