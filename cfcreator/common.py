@@ -99,7 +99,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     external_folder = os.path.join(user_folder, ".cache", "external")
     if focus == Focus.SYNC:
         print("> prepare ControlNet Annotators")
-        for hint in m.control_defaults:
+        for hint in m.control_mappings:
             m.prepare_annotator(hint)
     else:
         print("> prepare ControlNet weights")
