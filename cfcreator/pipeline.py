@@ -5,30 +5,22 @@ import numpy as np
 from PIL import Image
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Tuple
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
 from cftool.cv import to_rgb
 from cftool.cv import to_uint8
-from cftool.cv import np_to_bytes
 from cfclient.models.core import ImageModel
 
 from .cv import affine
 from .cv import BaseAffineModel
-from .utils import to_canvas
+from .common import get_response
 from .common import IAlgorithm
 from .common import ReturnArraysModel
 
 
 paste_pipeline_endpoint = "/pipeline/paste"
-
-
-def get_response(data: ReturnArraysModel, results: List[np.ndarray]) -> Any:
-    if data.return_arrays:
-        return results
-    return Response(content=np_to_bytes(to_canvas(results)), media_type="image/png")
 
 
 # paste pipeline

@@ -12,6 +12,7 @@ from typing import Type
 from typing import TypeVar
 from typing import Callable
 from typing import Optional
+from fastapi import Response
 from pathlib import Path
 from pydantic import Field
 from pydantic import BaseModel
@@ -40,6 +41,7 @@ from cflearn.api.cv.third_party.prompt import PromptEnhanceAPI
 from .cos import download_with_retry
 from .cos import download_image_with_retry
 from .utils import api_pool
+from .utils import to_canvas
 from .utils import APIs
 from .parameters import verbose
 from .parameters import get_focus
@@ -639,6 +641,12 @@ def get_sd_from(api_key: APIs, data: SDParameters, **kw: Any) -> ControlledDiffu
     sd.disable_control()
     load_sd_lora_with(sd, data)
     return sd
+
+
+def get_response(data: ReturnArraysModel, results: List[np.ndarray]) -> Any:
+    if data.return_arrays:
+        return results
+    return Response(content=np_to_bytes(to_canvas(results)), media_type="image/png")
 
 
 __all__ = [
