@@ -259,15 +259,17 @@ class WorkflowAlgorithm(IAlgorithm):
         if isinstance(target_result[0], str):
             raise ValueError("The target node should return images.")
         arrays = list(map(np.array, target_result))
-        self.log_times(
-            {
-                "get_workflow": t1 - t0,
-                "inference": t2 - t1,
-                "postprocess": time.time() - t2,
-            }
-        )
+        t3 = time.time()
+        res = get_response(data, arrays)
+        latencies = {
+            "get_workflow": t1 - t0,
+            "inference": t2 - t1,
+            "postprocess": t3 - t2,
+            "get_response": time.time() - t3,
+        }
+        self.log_times(latencies)
         self.last_latencies["inference_details"] = results[self.latencies_key]
-        return get_response(data, arrays)
+        return res
 
 
 __all__ = [

@@ -119,11 +119,15 @@ class PastePipeline(IAlgorithm):
             data.force_rgb,
         )
         latencies["download"] = t1 - t0
-        self.log_times(latencies)
+        t2 = time.time()
         if not data.return_mask:
-            return get_response(data, [results["merged"]])
-        mask = to_uint8(results["mask"])[..., 0]
-        return get_response(data, [results["merged"], mask])
+            res = get_response(data, [results["merged"]])
+        else:
+            mask = to_uint8(results["mask"])[..., 0]
+            res = get_response(data, [results["merged"], mask])
+        latencies["get_response"] = time.time() - t2
+        self.log_times(latencies)
+        return res
 
 
 __all__ = [
