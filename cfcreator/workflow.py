@@ -268,9 +268,9 @@ class WorkflowAlgorithm(IAlgorithm):
                 "get_workflow": t1 - t0,
                 "inference": t2 - t1,
                 "postprocess": time.time() - t2,
-                "inference_details": results[self.latencies_key],
             }
         )
+        self.last_latencies["inference_details"] = results[self.latencies_key]
         if content is None:
             return arrays
         return Response(content=content, media_type="image/png")

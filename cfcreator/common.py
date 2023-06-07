@@ -17,6 +17,7 @@ from pydantic import Field
 from pydantic import BaseModel
 from functools import partial
 from cftool.cv import np_to_bytes
+from cftool.misc import shallow_copy_dict
 from cflearn.zoo import DLZoo
 from cflearn.parameters import OPT
 from cfclient.models import TextModel
@@ -584,8 +585,11 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         return _register
 
     def log_times(self, latencies: Dict[str, float]) -> None:
+        from cfcreator.sdks.apis import ALL_LATENCIES_KEY
+
+        self.last_latencies = shallow_copy_dict(latencies)
+        latencies.pop(ALL_LATENCIES_KEY, None)
         super().log_times(latencies)
-        self.last_latencies = latencies
 
     async def download_with_retry(self, url: str) -> bytes:
         return await download_with_retry(self.http_client.session, url)
