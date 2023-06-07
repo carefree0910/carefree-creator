@@ -283,7 +283,7 @@ env_opt_json = os.environ.get(OPT_ENV_KEY)
 if env_opt_json is not None:
     OPT.update(json.loads(env_opt_json))
 focus = get_focus()
-registered_algorithms = set()
+registered_algorithms = {}
 api_pool.update_limit()
 
 
@@ -291,7 +291,7 @@ def register_endpoint(endpoint: str) -> None:
     name = endpoint[1:].replace("/", "_")
     algorithm_name = endpoint2algorithm(endpoint)
     algorithm: IAlgorithm = all_algorithms[algorithm_name]
-    registered_algorithms.add(algorithm_name)
+    registered_algorithms[algorithm_name] = algorithm
     data_model = algorithm.model_class
     if algorithm.response_model_class is None:
         response_model = Response
@@ -325,9 +325,8 @@ for endpoint in get_endpoints(focus):
 async def startup() -> None:
     http_client.start()
     OPT["use_cos"] = False
-    for k, v in all_algorithms.items():
-        if k in registered_algorithms:
-            v.initialize()
+    for v in registered_algorithms.values():
+        v.initialize()
     _inject_custom_tokens(constants["token_root"])
     print("> Server is Ready!")
 
