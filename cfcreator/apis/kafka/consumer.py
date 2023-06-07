@@ -175,6 +175,8 @@ async def consume() -> None:
     # initialize
     http_client.start()
     for v in loaded_algorithms.values():
+        if isinstance(v, WorkflowAlgorithm):
+            v.algorithms = loaded_algorithms
         v.initialize()
     print("> Algorithms are Loaded!")
     kafka_consumer = KafkaConsumer(
@@ -221,7 +223,11 @@ async def consume() -> None:
                 res: Union[Response, Any] = await run_algorithm(algorithm, model)
                 latencies = algorithm.last_latencies
                 t1 = time.time()
-                if task.startswith("control") or task.startswith("pipeline"):
+                if (
+                    isinstance(algorithm, WorkflowAlgorithm)
+                    or task.startswith("control")
+                    or task.startswith("pipeline")
+                ):
                     procedure = "run_algorithm -> upload_temp_image"
                     url_results = [upload_temp_image(cos_client, arr) for arr in res]
                     urls = [rs.cdn for rs in url_results]
@@ -248,7 +254,16 @@ async def consume() -> None:
                                 reasons.append(audit.reason)
                     t3 = time.time()
                     procedure = "audit_image -> redis"
-                    if task.startswith("control"):
+                    if isinstance(algorithm, WorkflowAlgorithm):
+                        result = dict(
+                            uid=uid,
+                            response=dict(
+                                urls=urls,
+                                reasons=reasons,
+                                workflow=algorithm.latest_workflow,
+                            ),
+                        )
+                    elif task.startswith("control"):
                         if isinstance(model, ControlMultiModel):
                             keys = set(get_bundle_key(b) for b in model.controls)
                             num_cond = len(keys)

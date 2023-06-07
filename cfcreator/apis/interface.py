@@ -326,6 +326,8 @@ async def startup() -> None:
     http_client.start()
     OPT["use_cos"] = False
     for v in registered_algorithms.values():
+        if isinstance(v, WorkflowAlgorithm):
+            v.algorithms = registered_algorithms
         v.initialize()
     _inject_custom_tokens(constants["token_root"])
     print("> Server is Ready!")

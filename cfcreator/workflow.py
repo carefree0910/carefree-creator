@@ -1,5 +1,7 @@
 import io
+import time
 
+import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -16,6 +18,7 @@ from typing import NamedTuple
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from cftool.cv import np_to_bytes
 from cftool.data_structures import Item
 from cftool.data_structures import Bundle
 
@@ -212,9 +215,70 @@ class Workflow(Bundle[WorkNode]):
         return workflow
 
 
+# endpoint
+
+
+workflow_endpoint = "/workflow"
+
+
+class WorkflowModel(ReturnArraysModel):
+    nodes: List[WorkNode] = Field(..., description="The nodes in the workflow.")
+    target: str = Field(..., description="The target node.")
+    caches: Optional[Dict[str, Any]] = Field(None, description="The preset caches.")
+
+
+@IAlgorithm.auto_register()
+class WorkflowAlgorithm(IAlgorithm):
+    model_class = WorkflowModel
+
+    algorithms: Optional[Dict[str, IAlgorithm]] = None
+    latest_workflow: Optional[Workflow] = None
+
+    endpoint = workflow_endpoint
+
+    def initialize(self) -> None:
+        from cfcreator.sdks.apis import APIs
+
+        if self.algorithms is None:
+            raise ValueError("`algorithms` should be provided for `WorkflowAlgorithm`.")
+        self.apis = APIs(algorithms=self.algorithms)
+
+    async def run(self, data: WorkflowModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        workflow = Workflow()
+        for node in data.nodes:
+            workflow.push(node)
+        self.latest_workflow = workflow
+        t1 = time.time()
+        results = await self.apis.execute(workflow, data.target, data.caches)
+        t2 = time.time()
+        target_result = results[data.target]
+        if isinstance(target_result[0], str):
+            raise ValueError("The target node should return images.")
+        arrays = list(map(np.array, target_result))
+        if data.return_arrays:
+            content = None
+        else:
+            content = np_to_bytes(arrays[0])
+        self.log_times(
+            {
+                "get_workflow": t1 - t0,
+                "inference": t2 - t1,
+                "postprocess": time.time() - t2,
+            }
+        )
+        if content is None:
+            return arrays
+        return Response(content=content, media_type="image/png")
+
+
 __all__ = [
     "InjectionPack",
     "WorkNode",
     "ToposortResult",
     "Workflow",
+    "workflow_endpoint",
+    "WorkflowModel",
+    "WorkflowAlgorithm",
 ]

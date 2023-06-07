@@ -11,6 +11,7 @@ from .pipeline import *
 from .parameters import Focus
 from .legacy.control import *
 from .legacy.control_multi import *
+from .workflow import *
 
 
 endpoint_to_focuses = {
@@ -59,6 +60,8 @@ endpoint_to_focuses = {
     control_mlsd_hint_endpoint: [Focus.ALL, Focus.SYNC, Focus.CONTROL],
     # pipeline
     paste_pipeline_endpoint: [Focus.ALL, Focus.SYNC, Focus.PIPELINE],
+    # workflow
+    workflow_endpoint: [Focus.ALL, Focus.SYNC],
 }
 
 
