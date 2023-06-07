@@ -148,9 +148,6 @@ async def apply_control(
     # activate corresponding ControlNet
     t0 = time.time()
     hint_types = sorted(set(bundle.type for bundle in controls))
-    if len(hint_types) > api.num_pool:
-        msg = f"maximum number of control is {api.num_pool}, but got {len(hint_types)}"
-        raise ValueError(msg)
     base_md = api.sd_weights.get(BaseSDTag) if common.no_switch else None
     api.switch_control(*hint_types, base_md=base_md)
     t1 = time.time()

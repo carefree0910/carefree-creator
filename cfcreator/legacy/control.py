@@ -99,9 +99,6 @@ def apply_control(
     t0 = time.time()
     if not isinstance(hint_types, list):
         hint_types = [hint_types]
-    if len(hint_types) > api.num_pool:
-        msg = f"maximum number of control is {api.num_pool}, but got {len(hint_types)}"
-        raise ValueError(msg)
     base_md = api.sd_weights.get(BaseSDTag) if common_data.no_switch else None
     api.switch_control(*hint_types, base_md=base_md)
     t1 = time.time()
