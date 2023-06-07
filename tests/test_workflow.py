@@ -15,9 +15,9 @@ workflow.push(
     WorkNode(
         key="img2img_0",
         endpoint=img2img_sd_endpoint,
-        injections={
-            ("txt2img_0", 0): "url",
-        },
+        injections=dict(
+            txt2img_0=dict(index=0, field="url"),
+        ),
         data=dict(
             text="A lovely little girl.",
             seed="345",
@@ -30,10 +30,10 @@ workflow.push(
     WorkNode(
         key="controlnet_0",
         endpoint=new_control_multi_endpoint,
-        injections={
-            ("txt2img_0", 0): "controls.0.data.hint_url",
-            ("img2img_0", 0): "controls.1.data.hint_url",
-        },
+        injections=dict(
+            txt2img_0=dict(index=0, field="controls.0.data.hint_url"),
+            img2img_0=dict(index=0, field="controls.1.data.hint_url"),
+        ),
         data=dict(
             prompt="A lovely little girl.",
             seed="567",
