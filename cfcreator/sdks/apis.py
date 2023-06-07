@@ -126,7 +126,7 @@ class APIs:
         self,
         workflow: Workflow,
         target: str,
-        caches: Optional[OrderedDict] = None,
+        caches: Optional[Union[OrderedDict, Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> Dict[str, TRes]:
         def _inject(k: str, ki_cache: TRes, current_node_data: dict) -> None:
@@ -174,6 +174,8 @@ class APIs:
 
         if caches is None:
             caches = OrderedDict()
+        else:
+            caches = OrderedDict(caches)
         for layer in workflow.get_dependency_path(target).hierarchy:
             for item in layer:
                 if item.key in caches:
