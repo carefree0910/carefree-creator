@@ -18,10 +18,10 @@ from typing import NamedTuple
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
-from cftool.cv import np_to_bytes
 from cftool.data_structures import Item
 from cftool.data_structures import Bundle
 
+from .common import get_response
 from .common import IAlgorithm
 from .common import ReturnArraysModel
 
@@ -259,10 +259,6 @@ class WorkflowAlgorithm(IAlgorithm):
         if isinstance(target_result[0], str):
             raise ValueError("The target node should return images.")
         arrays = list(map(np.array, target_result))
-        if data.return_arrays:
-            content = None
-        else:
-            content = np_to_bytes(arrays[0])
         self.log_times(
             {
                 "get_workflow": t1 - t0,
@@ -271,9 +267,7 @@ class WorkflowAlgorithm(IAlgorithm):
             }
         )
         self.last_latencies["inference_details"] = results[self.latencies_key]
-        if content is None:
-            return arrays
-        return Response(content=content, media_type="image/png")
+        return get_response(data, arrays)
 
 
 __all__ = [
