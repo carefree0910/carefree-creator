@@ -260,7 +260,7 @@ async def consume() -> None:
                             response=dict(
                                 urls=urls,
                                 reasons=reasons,
-                                workflow=algorithm.last_workflow,
+                                workflow=algorithm.last_workflow.to_json(),
                             ),
                         )
                     elif task.startswith("control"):
