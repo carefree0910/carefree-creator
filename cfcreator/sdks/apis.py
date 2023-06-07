@@ -1,5 +1,7 @@
 # `apis` sdk is used to prgrammatically call the algorithms.
 
+import time
+
 from cfcreator import *
 from PIL import Image
 from typing import Any
@@ -220,16 +222,23 @@ class APIs:
                             node_kw[k_pack.field] = ki_cache
                 endpoint = node.endpoint
                 method_fn = getattr(self, endpoint2method[endpoint])
-                if endpoint == CONTROL_HINT_ENDPOINT:
+                t = time.time()
+                if endpoint == UPLOAD_ENDPOINT:
+                    data_model = ImageModel(**node_data)
+                    item_res = await method_fn(data_model, **node_kw)
+                elif endpoint == CONTROL_HINT_ENDPOINT:
                     node_data.update(node_kw)
                     item_res = await method_fn(**node_data)
                     endpoint = control_hint2hint_endpoints[node_data["hint_type"]]
                 else:
                     data_model = self.get_data_model(endpoint, node_data)
                     item_res = await method_fn(data_model, **node_kw)
-                latencies = self.algorithms[endpoint2algorithm(endpoint)].last_latencies
+                if endpoint == UPLOAD_ENDPOINT:
+                    ls = dict(download=time.time() - t)
+                else:
+                    ls = self.algorithms[endpoint2algorithm(endpoint)].last_latencies
                 caches[item.key] = item_res
-                all_latencies[item.key] = latencies
+                all_latencies[item.key] = ls
         caches[ALL_LATENCIES_KEY] = all_latencies
         return caches
 
