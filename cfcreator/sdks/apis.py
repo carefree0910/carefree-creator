@@ -30,10 +30,10 @@ endpoint2method = {
     txt2img_sd_inpainting_endpoint: "sd_inpainting",
     txt2img_sd_outpainting_endpoint: "sd_outpainting",
     img2txt_caption_endpoint: "image_captioning",
-    CONTROL_HINT_ENDPOINT: "get_control_hint",
     new_control_multi_endpoint: "run_multi_controlnet",
     img2img_harmonization_endpoint: "harmonization",
     paste_pipeline_endpoint: "paste_pipeline",
+    CONTROL_HINT_ENDPOINT: "get_control_hint",
 }
 
 
@@ -115,13 +115,6 @@ class APIs:
         result: TextModel = await self.algorithms[task].run(data, **kw)
         return [result.text]
 
-    async def get_control_hint(
-        self, hint_type: ControlNetHints, **kw: Any
-    ) -> List[Image.Image]:
-        data = control_hint2hint_data_models[hint_type](**kw)
-        endpoint = control_hint2hint_endpoints[hint_type]
-        return await self._run(data, endpoint, **kw)
-
     async def run_multi_controlnet(
         self, data: ControlMultiModel, **kw: Any
     ) -> List[Image.Image]:
@@ -136,6 +129,15 @@ class APIs:
         self, data: PastePipelineModel, **kw: Any
     ) -> List[Image.Image]:
         return await self._run(data, paste_pipeline_endpoint, **kw)
+
+    # special
+
+    async def get_control_hint(
+        self, hint_type: ControlNetHints, **kw: Any
+    ) -> List[Image.Image]:
+        data = control_hint2hint_data_models[hint_type](**kw)
+        endpoint = control_hint2hint_endpoints[hint_type]
+        return await self._run(data, endpoint, **kw)
 
     # workflow
 
