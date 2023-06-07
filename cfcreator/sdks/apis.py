@@ -5,7 +5,6 @@ from PIL import Image
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Type
 from typing import Union
 from typing import Optional
 from pydantic import BaseModel
@@ -13,12 +12,15 @@ from collections import OrderedDict
 from cftool.misc import random_hash
 from cftool.misc import shallow_copy_dict
 from cfclient.core import HttpClient
+from cfclient.utils import download_image_with_retry
 from cfclient.models import TextModel
+from cfclient.models import ImageModel
 from cfclient.models import algorithms as registered_algorithms
 from cflearn.api.cv.diffusion import ControlNetHints
 
 
 TRes = Union[List[str], List[Image.Image]]
+UPLOAD_ENDPOINT = "$upload"
 CONTROL_HINT_ENDPOINT = "$control_hint"
 ALL_LATENCIES_KEY = "$all_latencies"
 endpoint2method = {
@@ -33,6 +35,7 @@ endpoint2method = {
     new_control_multi_endpoint: "run_multi_controlnet",
     img2img_harmonization_endpoint: "harmonization",
     paste_pipeline_endpoint: "paste_pipeline",
+    UPLOAD_ENDPOINT: "get_image",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
 }
 
@@ -131,6 +134,10 @@ class APIs:
         return await self._run(data, paste_pipeline_endpoint, **kw)
 
     # special
+
+    async def get_image(self, data: ImageModel, **kw: Any) -> List[Image.Image]:
+        image = await download_image_with_retry(self._http_client.session, data.url)
+        return [image]
 
     async def get_control_hint(
         self, hint_type: ControlNetHints, **kw: Any
