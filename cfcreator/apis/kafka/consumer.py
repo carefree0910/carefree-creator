@@ -281,7 +281,10 @@ async def consume() -> None:
                             ),
                         )
                     elif task == "pipeline.paste":
-                        result = dict(uid=uid, response=dict(url=urls[0]))
+                        result = dict(
+                            uid=uid,
+                            response=dict(url=urls[0], reason=reasons[0]),
+                        )
                     else:
                         raise ValueError(f"unrecognized task '{task}' occurred")
                 elif algorithm.response_model_class is not None:
