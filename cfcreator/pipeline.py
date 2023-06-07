@@ -83,6 +83,7 @@ The `cdn` / `cos` url of the background's image.
 """,
     )
     force_rgb: bool = Field(False, description="Whether to force the output to be RGB.")
+    return_mask: bool = Field(False, description="Whether to return the mask.")
 
 
 class PastePipelineModel(
@@ -127,7 +128,10 @@ class PastePipeline(IAlgorithm):
         )
         latencies["download"] = t1 - t0
         self.log_times(latencies)
-        return get_response(data, [results["merged"]])
+        if not data.return_mask:
+            return get_response(data, [results["merged"]])
+        mask = to_uint8(results["mask"])[..., 0]
+        return get_response(data, [results["merged"], mask])
 
 
 __all__ = [
