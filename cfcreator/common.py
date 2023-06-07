@@ -88,29 +88,17 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, version, lazy=True)
     m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     focus = get_focus()
-    m.sd_weights.limit = pool_limit()
-    m.current_sd_version = version
-    print("> registering base sd")
-    m.prepare_sd([version])
-    m.sd_weights.register(BaseSDTag, _base_sd_path())
-    # when focus is SYNC, `init_sd` is called because we need to expose `control_hint`
-    # endpoints. However, `sd` itself will never be used, so we can skip some stuffs
-    user_folder = os.path.expanduser("~")
-    external_folder = os.path.join(user_folder, ".cache", "external")
-    if focus == Focus.SYNC:
-        print("> prepare ControlNet Annotators")
-        for hint in m.control_mappings:
-            m.prepare_annotator(hint)
-    else:
-        print("> prepare ControlNet weights")
-        m.prepare_all_controls()
-        print("> prepare ControlNet Annotators")
-        m.prepare_annotators()
-        print("> warmup ControlNet")
-        m.switch_control(*m.available_control_hints)
-    # lora stuffs
-    _load_lora(m, external_folder)
-    # return
+    if focus != Focus.SYNC:
+        m.sd_weights.limit = pool_limit()
+        m.current_sd_version = version
+        print("> registering base sd")
+        m.prepare_sd([version])
+        m.sd_weights.register(BaseSDTag, _base_sd_path())
+        user_folder = os.path.expanduser("~")
+        external_folder = os.path.join(user_folder, ".cache", "external")
+        _load_lora(m, external_folder)
+    print("> prepare ControlNet Annotators")
+    m.prepare_annotators()
     return m
 
 
