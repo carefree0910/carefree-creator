@@ -142,12 +142,12 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
     def load(self, *, no_change: bool = False, **kwargs: Any) -> IAPI:
         super().load()
-        if not no_change and self.need_change_device:
+        if not no_change and self.need_change_device and torch.cuda.is_available():
             self._item.to("cuda:0", use_half=True, **self.annotator_kwargs)
         return self._item
 
     def cleanup(self) -> None:
-        if self.need_change_device:
+        if self.need_change_device and torch.cuda.is_available():
             self._item.to("cpu", use_half=False, **self.annotator_kwargs)
             torch.cuda.empty_cache()
 
