@@ -84,6 +84,7 @@ def apply_control(
         detect_resolution = {}
         for hint_type, h_data in data.items():
             detect_resolution[hint_type] = getattr(h_data, "detect_resolution", None)
+    t_sd = time.time()
     api = get_sd_from(api_key, common_data, no_change=True)
     need_change_device = api_pool.need_change_device(api_key)
     api.enable_control()
@@ -205,7 +206,8 @@ def apply_control(
     for i in range(common_data.num_samples):
         results.append(resize_to_original(outs[i]))
     latencies = dict(
-        switch=t1 - t0,
+        get_model=t0 - t_sd,
+        switch_control=t1 - t0,
         get_hint=t2 - t1 - change_annotator_device_time,
         change_annotator_device=change_annotator_device_time,
         inference=t3 - t2 - change_diffusion_device_time,

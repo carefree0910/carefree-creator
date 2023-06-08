@@ -86,6 +86,7 @@ async def apply_control(
     normalized_inpainting_mask: Optional[np.ndarray] = None,
     **kwargs: Any,
 ) -> apply_response:
+    t_sd = time.time()
     api_key = APIs.SD_INPAINTING if common.use_inpainting else APIs.SD
     api = get_sd_from(api_key, common, no_change=True)
     need_change_device = api_pool.need_change_device(api_key)
@@ -270,7 +271,8 @@ async def apply_control(
     for i in range(common.num_samples):
         results.append(resize_to_original(outs[i]))
     latencies = dict(
-        switch=t1 - t0,
+        get_model=t0 - t_sd,
+        switch_control=t1 - t0,
         get_hint=t2 - t1 - change_annotator_device_time,
         change_annotator_device=change_annotator_device_time,
         inference=t3 - t2 - change_diffusion_device_time,
