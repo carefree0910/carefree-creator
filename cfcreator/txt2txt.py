@@ -76,5 +76,6 @@ class Txt2TxtPromptEnhance(IAlgorithm):
 
 __all__ = [
     "txt2txt_prompt_enhance_endpoint",
+    "PromptEnhanceModel",
     "Txt2TxtPromptEnhance",
 ]
