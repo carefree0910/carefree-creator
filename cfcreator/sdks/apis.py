@@ -142,9 +142,9 @@ class APIs:
         return [image]
 
     async def get_control_hint(
-        self, hint_type: ControlNetHints, **kw: Any
+        self, hint_type: ControlNetHints, data: Dict[str, Any], **kw: Any
     ) -> List[Image.Image]:
-        data = control_hint2hint_data_models[hint_type](**kw)
+        data = control_hint2hint_data_models[hint_type](**data)
         endpoint = control_hint2hint_endpoints[hint_type]
         return await self._run(data, endpoint, **kw)
 
@@ -227,9 +227,9 @@ class APIs:
                     data_model = ImageModel(**node_data)
                     item_res = await method_fn(data_model, **node_kw)
                 elif endpoint == CONTROL_HINT_ENDPOINT:
-                    node_data.update(node_kw)
-                    item_res = await method_fn(**node_data)
-                    endpoint = control_hint2hint_endpoints[node_data["hint_type"]]
+                    hint_type = node_data.pop("hint_type")
+                    item_res = await method_fn(hint_type, node_data, **node_kw)
+                    endpoint = control_hint2hint_endpoints[hint_type]
                 else:
                     data_model = self.get_data_model(endpoint, node_data)
                     item_res = await method_fn(data_model, **node_kw)
