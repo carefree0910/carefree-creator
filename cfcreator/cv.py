@@ -14,7 +14,9 @@ from cftool.cv import ImageProcessor
 from cftool.geometry import Matrix2D
 from cfclient.models import ImageModel
 
+from .common import get_response
 from .common import IAlgorithm
+from .common import ReturnArraysModel
 
 
 cv_affine_endpoint = "/cv/affine"
@@ -54,7 +56,7 @@ class BaseAffineModel(BaseModel):
     f: float = Field(..., description="`f` of the affine matrix")
 
 
-class AffineModel(BaseAffineModel, ImageModel):
+class AffineModel(ReturnArraysModel, BaseAffineModel, ImageModel):
     w: int = Field(..., description="width of the output image")
     h: int = Field(..., description="width of the output image")
 
@@ -85,15 +87,15 @@ class Affine(IAlgorithm):
             data.h,
         )
         t2 = time.time()
-        content = np_to_bytes(output)
+        res = get_response(data, [output])
         self.log_times(
             {
                 "download": t1 - t0,
                 "preprocess": t2 - t1,
-                "to_bytes": time.time() - t2,
+                "get_response": time.time() - t2,
             }
         )
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 class HistogramMatchModel(ImageModel):
