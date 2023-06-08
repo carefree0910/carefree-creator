@@ -37,6 +37,7 @@ endpoint2method = {
     new_control_multi_endpoint: "run_multi_controlnet",
     img2img_harmonization_endpoint: "harmonization",
     paste_pipeline_endpoint: "paste_pipeline",
+    cv_affine_endpoint: "affine",
     UPLOAD_ENDPOINT: "get_image",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
 }
@@ -134,6 +135,9 @@ class APIs:
         self, data: PastePipelineModel, **kw: Any
     ) -> List[Image.Image]:
         return await self._run(data, paste_pipeline_endpoint, **kw)
+
+    async def affine(self, data: AffineModel, **kw: Any) -> List[Image.Image]:
+        return await self._run(data, cv_affine_endpoint, **kw)
 
     # special
 
