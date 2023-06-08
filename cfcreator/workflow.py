@@ -161,6 +161,8 @@ class Workflow(Bundle[WorkNode]):
         # add edges
         for dep, links in in_edges.items():
             for link in links:
+                if dep not in key2idx or link not in key2idx:
+                    continue
                 label = edge_labels[(link, dep)]
                 G.add_edge(key2idx[dep], key2idx[link], label=label)
         # calculate positions
