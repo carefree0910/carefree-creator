@@ -140,8 +140,10 @@ class APIs:
     async def affine(self, data: AffineModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_affine_endpoint, **kw)
 
-    async def prompt_enhance(self, data: Txt2TxtPromptEnhance, **kw: Any) -> List[str]:
-        return await self._run(data, txt2txt_prompt_enhance_endpoint, **kw)
+    async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
+        task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)
+        result: PromptEnhanceResponse = await self.algorithms[task].run(data, **kw)
+        return result.prompts
 
     # special
 
