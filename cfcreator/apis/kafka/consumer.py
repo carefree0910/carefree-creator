@@ -13,8 +13,10 @@ import numpy as np
 from kafka import KafkaConsumer
 from typing import Any
 from typing import Dict
+from typing import Tuple
 from typing import Union
 from fastapi import Response
+from pydantic import BaseModel
 from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
 
@@ -163,6 +165,32 @@ def simplify(params: Dict[str, Any]) -> Dict[str, Any]:
     return params
 
 
+# return (urls, reasons)
+def audit_urls(
+    model: BaseModel,
+    url_results: List[UploadImageResponse],
+) -> Tuple[List[str], List[str]]:
+    urls = [rs.cdn for rs in url_results]
+    if (
+        not isinstance(model, (ControlNetModel, LegacyControlNetModel))
+        or not model.use_audit
+    ):
+        reasons = [""] * len(url_results)
+    else:
+        reasons = []
+        for i, rs in enumerate(url_results):
+            try:
+                audit = audit_image(cos_client, image_mod_client, rs.path)
+            except:
+                audit = AuditResponse(safe=False, reason="unknown")
+            if audit.safe:
+                reasons.append("")
+            else:
+                urls[i] = ""
+                reasons.append(audit.reason)
+    return urls, reasons
+
+
 # kafka & redis
 async def consume() -> None:
     OPT["verbose"] = False
@@ -230,28 +258,9 @@ async def consume() -> None:
                 ):
                     procedure = "run_algorithm -> upload_temp_image"
                     url_results = [upload_temp_image(cos_client, arr) for arr in res]
-                    urls = [rs.cdn for rs in url_results]
                     t2 = time.time()
                     procedure = "upload_temp_image -> audit_image"
-                    if (
-                        not isinstance(model, (ControlNetModel, LegacyControlNetModel))
-                        or not model.use_audit
-                    ):
-                        reasons = [""] * len(urls)
-                    else:
-                        reasons = []
-                        for i, rs in enumerate(url_results):
-                            try:
-                                audit = audit_image(
-                                    cos_client, image_mod_client, rs.path
-                                )
-                            except:
-                                audit = AuditResponse(safe=False, reason="unknown")
-                            if audit.safe:
-                                reasons.append("")
-                            else:
-                                urls[i] = ""
-                                reasons.append(audit.reason)
+                    urls, reasons = audit_urls(model, url_results)
                     t3 = time.time()
                     procedure = "audit_image -> redis"
                     if isinstance(algorithm, WorkflowAlgorithm):
