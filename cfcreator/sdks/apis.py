@@ -142,7 +142,7 @@ class APIs:
 
     async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)
-        result: PromptEnhanceResponse = await self.algorithms[task].run(data, **kw)
+        result: PromptEnhanceResponse = await self.algorithms[task].run(data)
         return result.prompts
 
     # special
