@@ -69,7 +69,8 @@ class APIs:
             self.algorithms = {
                 k: v(clients)
                 for k, v in registered_algorithms.items()
-                if focuses is None or k in focuses
+                if not isinstance(v, WorkflowAlgorithm)
+                and (focuses is None or k in focuses)
             }
             for v in self.algorithms.values():
                 v.initialize()
