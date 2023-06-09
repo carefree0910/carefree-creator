@@ -253,6 +253,36 @@ async def consume() -> None:
                 t1 = time.time()
                 if (
                     isinstance(algorithm, WorkflowAlgorithm)
+                    and params.get("intermediate") is not None
+                ):
+                    intermediate = {}
+                    response = dict(
+                        workflow=algorithm.last_workflow.to_json(),
+                        intermediate=intermediate,
+                    )
+                    result = dict(uid=uid, response=response)
+                    all_results = {}
+                    for k, v in res.items():
+                        procedure = f"[{k}] run_algorithm -> upload_temp_image"
+                        all_results[k] = [
+                            upload_temp_image(cos_client, arr) for arr in v
+                        ]
+                    t2 = time.time()
+                    for k, k_results in all_results.items():
+                        procedure = f"[{k}] upload_temp_image -> audit_image"
+                        k_urls, k_reasons = audit_urls(model, k_results)
+                        if k != WORKFLOW_TARGET_RESPONSE_KEY:
+                            intermediate[k] = dict(urls=k_urls, reasons=k_reasons)
+                        else:
+                            response["urls"] = k_urls
+                            response["reasons"] = k_reasons
+                    t3 = time.time()
+                    procedure = "audit_image -> redis"
+                elif (
+                    (
+                        isinstance(algorithm, WorkflowAlgorithm)
+                        and params.get("intermediate") is None
+                    )
                     or task.startswith("control")
                     or task.startswith("pipeline")
                 ):
