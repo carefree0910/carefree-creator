@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from collections import OrderedDict
 from cftool.misc import random_hash
 from cftool.misc import shallow_copy_dict
+from cftool.data_structures import Workflow
 from cfclient.core import HttpClient
 from cfclient.utils import download_image_with_retry
 from cfclient.models import TextModel
