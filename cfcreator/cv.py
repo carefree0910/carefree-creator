@@ -118,7 +118,7 @@ class Resize(IAlgorithm):
         self.log_times(
             {
                 "download": t1 - t0,
-                "preprocess": t2 - t1,
+                "process": t2 - t1,
                 "get_response": time.time() - t2,
             }
         )
@@ -168,7 +168,7 @@ class Affine(IAlgorithm):
         self.log_times(
             {
                 "download": t1 - t0,
-                "preprocess": t2 - t1,
+                "process": t2 - t1,
                 "get_response": time.time() - t2,
             }
         )
