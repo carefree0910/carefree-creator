@@ -162,31 +162,32 @@ async def apply_control(
         i_type = bundle.type
         i_data = bundle.data
         i_hint_image = image_array_d[get_hint_url_key(i_data.hint_url)]
-        i_bypass_annotator = i_data.bypass_annotator
+        i_annotator = api.annotators.get(i_type)
+        i_bypass_annotator = i_data.bypass_annotator or i_annotator is None
         key = get_bundle_key(bundle)
         all_keys.append(key)
         i_value = all_key_values.get(key)
         if i_value is not None:
             continue
-        if detect_resolution is not None and not i_bypass_annotator:
-            i_hint_image = resize_image(i_hint_image, detect_resolution)
         device = api.device
         use_half = api.use_half
-        ht = time.time()
-        if need_change_device:
-            device = "cuda:0"
-            use_half = True
-            api.annotators[i_type].to(device, use_half=True)
-        all_annotator_change_device_times.append(time.time() - ht)
         if i_bypass_annotator:
             i_o_hint_arr = i_hint_image
         else:
+            if detect_resolution is not None:
+                i_hint_image = resize_image(i_hint_image, detect_resolution)
+            ht = time.time()
+            if need_change_device:
+                device = "cuda:0"
+                use_half = True
+                i_annotator.to(device, use_half=True)
+            all_annotator_change_device_times.append(time.time() - ht)
             i_o_hint_arr = api.get_hint_of(i_type, i_hint_image, **i_data.dict())
-        ht = time.time()
-        if need_change_device:
-            api.annotators[i_type].to("cpu", use_half=False)
-            torch.cuda.empty_cache()
-        all_annotator_change_device_times.append(time.time() - ht)
+            ht = time.time()
+            if need_change_device:
+                i_annotator.to("cpu", use_half=False)
+                torch.cuda.empty_cache()
+            all_annotator_change_device_times.append(time.time() - ht)
         i_hint_array = cv2.resize(i_o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
         i_hint = torch.from_numpy(i_hint_array)[None].permute(0, 3, 1, 2)
         if use_half:
