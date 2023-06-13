@@ -89,6 +89,7 @@ async def apply_control(
     t_sd = time.time()
     api_key = APIs.SD_INPAINTING if common.use_inpainting else APIs.SD
     api = get_sd_from(api_key, common, no_change=True)
+    t_sd = time.time() - t_sd
     need_change_device = api_pool.need_change_device(api_key)
     api.enable_control()
     # download images
@@ -271,7 +272,8 @@ async def apply_control(
     for i in range(common.num_samples):
         results.append(resize_to_original(outs[i]))
     latencies = dict(
-        get_model=t0 - t_sd,
+        get_model=t_sd,
+        download_images=t0 - t_sd,
         switch_control=t1 - t0,
         get_hint=t2 - t1 - change_annotator_device_time,
         change_annotator_device=change_annotator_device_time,
