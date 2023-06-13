@@ -29,7 +29,7 @@ def resize(image: Image.Image, w: int, h: int) -> Image.Image:
 
 
 def affine(
-    array: np.ndarray,
+    image: Image.Image,
     a: float,
     b: float,
     c: float,
@@ -41,11 +41,10 @@ def affine(
 ) -> np.ndarray:
     matrix2d = Matrix2D(a=a, b=b, c=c, d=d, e=e, f=f)
     properties = matrix2d.decompose()
-    ah, aw = array.shape[:2]
-    nh = max(round(ah * abs(properties.h)), 1)
-    nw = max(round(aw * abs(properties.w)), 1)
-    image = resize(Image.fromarray(array), nw, nh)
-    array = np.array(image)
+    w, h = image.size
+    nw = max(round(w * abs(properties.w)), 1)
+    nh = max(round(h * abs(properties.h)), 1)
+    array = np.array(resize(image, nw, nh))
     properties.w = 1
     properties.h = 1 if properties.h > 0 else -1
     matrix2d = Matrix2D.from_properties(properties)
@@ -112,7 +111,7 @@ class Affine(IAlgorithm):
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         output = affine(
-            np.array(image),
+            image,
             data.a,
             data.b,
             data.c,

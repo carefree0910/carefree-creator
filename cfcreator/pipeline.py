@@ -42,7 +42,7 @@ def paste(
         original_fg = original_fg.convert("RGBA")
     original_w, original_h = original_bg.size
     affined_fg_array = affine(
-        np.array(original_fg),
+        original_fg,
         a,
         b,
         c,
