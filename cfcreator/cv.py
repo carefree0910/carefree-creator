@@ -19,8 +19,13 @@ from .common import IAlgorithm
 from .common import ReturnArraysModel
 
 
+cv_resize_endpoint = "/cv/resize"
 cv_affine_endpoint = "/cv/affine"
 cv_histogram_match_endpoint = "/cv/hist_match"
+
+
+def resize(image: Image.Image, w: int, h: int) -> Image.Image:
+    return image.resize((w, h), Image.BILINEAR)
 
 
 def affine(
@@ -39,12 +44,44 @@ def affine(
     ah, aw = array.shape[:2]
     nh = max(round(ah * abs(properties.h)), 1)
     nw = max(round(aw * abs(properties.w)), 1)
-    image = Image.fromarray(array).resize((nw, nh), Image.BILINEAR)
+    image = resize(Image.fromarray(array), nw, nh)
     array = np.array(image)
     properties.w = 1
     properties.h = 1 if properties.h > 0 else -1
     matrix2d = Matrix2D.from_properties(properties)
     return cv2.warpAffine(array, matrix2d.matrix, [w, h])
+
+
+class ResizeModel(ReturnArraysModel, ImageModel):
+    w: int = Field(..., description="width of the output image")
+    h: int = Field(..., description="width of the output image")
+
+
+@IAlgorithm.auto_register()
+class Resize(IAlgorithm):
+    model_class = ResizeModel
+
+    endpoint = cv_affine_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: ResizeModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        resized = np.array(resize(image, data.w, data.h))
+        t2 = time.time()
+        res = get_response(data, [resized])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "preprocess": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
 
 
 class BaseAffineModel(BaseModel):
@@ -56,9 +93,8 @@ class BaseAffineModel(BaseModel):
     f: float = Field(..., description="`f` of the affine matrix")
 
 
-class AffineModel(ReturnArraysModel, BaseAffineModel, ImageModel):
-    w: int = Field(..., description="width of the output image")
-    h: int = Field(..., description="width of the output image")
+class AffineModel(ResizeModel, BaseAffineModel):
+    pass
 
 
 @IAlgorithm.auto_register()
@@ -162,11 +198,14 @@ class HistogramMatch(IAlgorithm):
 
 
 __all__ = [
+    "cv_resize_endpoint",
     "cv_affine_endpoint",
     "cv_histogram_match_endpoint",
+    "ResizeModel",
     "BaseAffineModel",
     "AffineModel",
     "HistogramMatchModel",
+    "Resize",
     "Affine",
     "HistogramMatch",
 ]

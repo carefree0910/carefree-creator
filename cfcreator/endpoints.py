@@ -41,6 +41,7 @@ endpoint_to_focuses = {
     # img2txt
     img2txt_caption_endpoint: [Focus.ALL, Focus.SYNC],
     # cv
+    cv_resize_endpoint: [Focus.ALL, Focus.SYNC],
     cv_affine_endpoint: [Focus.ALL, Focus.SYNC],
     cv_histogram_match_endpoint: [Focus.ALL, Focus.SYNC],
     # ControlNet
