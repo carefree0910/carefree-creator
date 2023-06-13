@@ -5,6 +5,7 @@ import numpy as np
 
 from PIL import Image
 from typing import Any
+from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
@@ -19,9 +20,15 @@ from .common import IAlgorithm
 from .common import ReturnArraysModel
 
 
+cv_erode_endpoint = "/cv/erode"
 cv_resize_endpoint = "/cv/resize"
 cv_affine_endpoint = "/cv/affine"
 cv_histogram_match_endpoint = "/cv/hist_match"
+
+
+def erode(array: np.ndarray, n_iter: int, kernel_size: int) -> np.ndarray:
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    return cv2.erode(array, kernel, iterations=n_iter)
 
 
 def resize(image: Image.Image, w: int, h: int) -> Image.Image:
@@ -49,6 +56,41 @@ def affine(
     properties.h = 1 if properties.h > 0 else -1
     matrix2d = Matrix2D.from_properties(properties)
     return cv2.warpAffine(array, matrix2d.matrix, [w, h])
+
+
+class ErodeModel(ReturnArraysModel, ImageModel):
+    n_iter: int = Field(1, description="number of iterations")
+    kernel_size: int = Field(3, description="size of the kernel")
+
+
+@IAlgorithm.auto_register()
+class Erode(IAlgorithm):
+    model_class = ErodeModel
+
+    endpoint = cv_erode_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: ErodeModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        array = np.array(image)
+        alpha = array[..., -1]
+        eroded_alpha = erode(alpha, data.n_iter, data.kernel_size)
+        array[..., -1] = eroded_alpha
+        t2 = time.time()
+        res = get_response(data, [array])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
 
 
 class ResizeModel(ReturnArraysModel, ImageModel):
@@ -197,13 +239,16 @@ class HistogramMatch(IAlgorithm):
 
 
 __all__ = [
+    "cv_erode_endpoint",
     "cv_resize_endpoint",
     "cv_affine_endpoint",
     "cv_histogram_match_endpoint",
+    "ErodeModel",
     "ResizeModel",
     "BaseAffineModel",
     "AffineModel",
     "HistogramMatchModel",
+    "Erode",
     "Resize",
     "Affine",
     "HistogramMatch",

@@ -38,8 +38,9 @@ endpoint2method = {
     new_control_multi_endpoint: "run_multi_controlnet",
     img2img_harmonization_endpoint: "harmonization",
     paste_pipeline_endpoint: "paste_pipeline",
-    cv_affine_endpoint: "affine",
+    cv_erode_endpoint: "erode",
     cv_resize_endpoint: "resize",
+    cv_affine_endpoint: "affine",
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     UPLOAD_ENDPOINT: "get_image",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
@@ -140,11 +141,14 @@ class APIs:
     ) -> List[Image.Image]:
         return await self._run(data, paste_pipeline_endpoint, **kw)
 
-    async def affine(self, data: AffineModel, **kw: Any) -> List[Image.Image]:
-        return await self._run(data, cv_affine_endpoint, **kw)
+    async def erode(self, data: ErodeModel, **kw: Any) -> List[Image.Image]:
+        return await self._run(data, cv_erode_endpoint, **kw)
 
     async def resize(self, data: ResizeModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_resize_endpoint, **kw)
+
+    async def affine(self, data: AffineModel, **kw: Any) -> List[Image.Image]:
+        return await self._run(data, cv_affine_endpoint, **kw)
 
     async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)
