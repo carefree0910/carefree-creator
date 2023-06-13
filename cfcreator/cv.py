@@ -41,9 +41,9 @@ def affine(
 ) -> np.ndarray:
     matrix2d = Matrix2D(a=a, b=b, c=c, d=d, e=e, f=f)
     properties = matrix2d.decompose()
-    w, h = image.size
-    nw = max(round(w * abs(properties.w)), 1)
-    nh = max(round(h * abs(properties.h)), 1)
+    iw, ih = image.size
+    nw = max(round(iw * abs(properties.w)), 1)
+    nh = max(round(ih * abs(properties.h)), 1)
     array = np.array(resize(image, nw, nh))
     properties.w = 1
     properties.h = 1 if properties.h > 0 else -1
