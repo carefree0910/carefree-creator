@@ -60,7 +60,7 @@ class ResizeModel(ReturnArraysModel, ImageModel):
 class Resize(IAlgorithm):
     model_class = ResizeModel
 
-    endpoint = cv_affine_endpoint
+    endpoint = cv_resize_endpoint
 
     def initialize(self) -> None:
         pass
