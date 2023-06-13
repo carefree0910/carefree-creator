@@ -1,6 +1,7 @@
 import time
 
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Union
 from fastapi import Response
@@ -13,6 +14,7 @@ from .common import register_sd
 from .common import register_sd_inpainting
 from .common import IAlgorithm
 from .common import ControlNetModel
+from .common import ControlStrengthModel
 from .control import apply_control
 from .control import ControlNetHints
 from .control import ControlMLSDModel
@@ -44,7 +46,16 @@ class DepthBundle(BaseModel):
     data: ControlDepthModel
 
 
-TBundle = Union[MLSDBundle, PoseBundle, CannyBundle, DepthBundle]
+class ControlExternalModel(ControlStrengthModel, ControlNetModel):
+    pass
+
+
+class ExternalBundle(BaseModel):
+    type: str
+    data: ControlExternalModel
+
+
+TBundle = Union[MLSDBundle, PoseBundle, CannyBundle, DepthBundle, ExternalBundle]
 
 
 class ControlMultiModel(ControlNetModel):
