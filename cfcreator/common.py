@@ -67,24 +67,6 @@ def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
     return init_fn("cuda:0", use_half=True)
 
 
-def _load_lora(m: ControlledDiffusionAPI, external_folder: str) -> None:
-    print("> loading lora")
-    num_lora = 0
-    lora_folder = os.path.join(external_folder, "lora")
-    os.makedirs(lora_folder, exist_ok=True)
-    for lora_file in os.listdir(lora_folder):
-        try:
-            lora_name = os.path.splitext(lora_file)[0]
-            lora_path = os.path.join(lora_folder, lora_file)
-            print(f">> loading {lora_name}")
-            m.load_sd_lora(lora_name, path=lora_path)
-            num_lora += 1
-        except:
-            print(f">>>> Failed to load!")
-            continue
-    print(f"> {num_lora} lora loaded")
-
-
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     version = SDVersions.v1_5
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, version, lazy=True)
@@ -96,13 +78,8 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
         print("> registering base sd")
         m.prepare_sd([version])
         m.sd_weights.register(BaseSDTag, _base_sd_path())
-        print("> prepare ControlNet weights")
-        m.prepare_all_controls()
         print("> warmup ControlNet")
         m.switch_control(*m.available_control_hints)
-        user_folder = os.path.expanduser("~")
-        external_folder = os.path.join(user_folder, ".cache", "external")
-        _load_lora(m, external_folder)
     print("> prepare ControlNet Annotators")
     m.prepare_annotators()
     return m
@@ -119,10 +96,6 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     inpainting_path = download_model("ldm.sd_inpainting", root=root)
     api.sd_weights.register(SDInpaintingVersions.v1_5, inpainting_path)
     api.current_sd_version = SDInpaintingVersions.v1_5
-    # lora stuffs
-    user_folder = os.path.expanduser("~")
-    external_folder = os.path.join(user_folder, ".cache", "external")
-    _load_lora(api, external_folder)
     # inject properties from sd
     register_sd()
     sd: ControlledDiffusionAPI = api_pool.get(APIs.SD, no_change=True)
@@ -512,6 +485,27 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         if manager.injected:
             m.cleanup_sd_lora()
         if data.lora_scales is not None:
+            user_folder = os.path.expanduser("~")
+            external_folder = os.path.join(user_folder, ".cache", "external")
+            lora_folder = os.path.join(external_folder, "lora")
+            for key in data.lora_scales:
+                if model.lora_manager.has(key):
+                    continue
+                if not os.path.isdir(lora_folder):
+                    raise ValueError(
+                        f"'{key}' does not exist in current loaded lora "
+                        f"and '{lora_folder}' does not exist either."
+                    )
+                for lora_file in os.listdir(lora_folder):
+                    lora_name = os.path.splitext(lora_file)[0]
+                    if key != lora_name:
+                        continue
+                    try:
+                        print(f">> loading {key}")
+                        lora_path = os.path.join(lora_folder, lora_file)
+                        m.load_sd_lora(lora_name, path=lora_path)
+                    except Exception as err:
+                        raise ValueError(f"failed to load {key}: {err}")
             m.inject_sd_lora(*list(data.lora_scales))
             m.set_sd_lora_scales(data.lora_scales)
     # return
