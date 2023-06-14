@@ -72,13 +72,16 @@ class APIs:
         if lazy_load is not None:
             OPT["lazy_load"] = lazy_load
 
+        self._is_new_http_client = False
         if clients is None:
+            self._is_new_http_client = True
             self._http_client = HttpClient()
             clients = dict(http=self._http_client, triton=None)
         else:
             self._http_client = clients.get("http")
             if self._http_client is None:
                 print_warning(f"cannot find `http` client in {clients}, creating one")
+                self._is_new_http_client = True
                 self._http_client = HttpClient()
                 clients["http"] = self._http_client
         if algorithms is not None:
@@ -93,12 +96,14 @@ class APIs:
                 if isinstance(v, IWrapperAlgorithm):
                     v.algorithms = self.algorithms
                 v.initialize()
-        self._http_client.start()
+        if self._is_new_http_client:
+            self._http_client.start()
 
     # lifecycle
 
     async def destroy(self) -> None:
-        await self._http_client.stop()
+        if self._is_new_http_client:
+            await self._http_client.stop()
 
     # algorithms
 
