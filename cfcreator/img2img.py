@@ -151,7 +151,7 @@ class _Img2ImgSRModel(BaseModel):
 
 
 class Img2ImgSRModel(ReturnArraysModel, CallbackModel, _Img2ImgSRModel, Img2ImgModel):
-    pass
+    max_wh: int = Field(832, description="The maximum resolution.")
 
 
 def apply_sr(
@@ -268,6 +268,7 @@ The `cdn` / `cos` url of the user's mask.
 > If empty string is provided, then we will use an empty mask, which means we will simply perform an image-to-image transform.  
 """,
     )
+    max_wh: int = Field(832, description="The maximum resolution.")
 
 
 @IAlgorithm.auto_register()
