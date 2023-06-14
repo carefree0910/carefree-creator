@@ -8,6 +8,7 @@ from typing import Any
 from typing import Dict
 from typing import Callable
 from typing import Optional
+from cftool.misc import get_err_msg
 from cfclient.utils import get
 from cfclient.utils import post
 from cfcreator.common import endpoint2algorithm
@@ -42,7 +43,12 @@ async def poll(
     url = f"{host}/status/{uid}"
     async with get_http_session() as session:
         while True:
-            res = json.loads(await get(url, session))
+            try:
+                res = json.loads(await get(url, session))
+            except Exception as err:
+                print(f"error occurred when polling: {get_err_msg(err)}")
+                time.sleep(1)
+                continue
             if callback is not None:
                 callback(res)
             if res["status"] == Status.PENDING:
