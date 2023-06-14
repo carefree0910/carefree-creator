@@ -74,10 +74,11 @@ class APIs:
             self.algorithms = {
                 k: v(clients)
                 for k, v in registered_algorithms.items()
-                if not issubclass(v, IWrapperAlgorithm)
-                and (focuses is None or k in focuses)
+                if focuses is None or k in focuses
             }
             for v in self.algorithms.values():
+                if isinstance(v, IWrapperAlgorithm):
+                    v.algorithms = self.algorithms
                 v.initialize()
         if self._http_client is not None:
             self._http_client.start()
