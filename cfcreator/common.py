@@ -200,7 +200,7 @@ class CallbackModel(BaseModel):
 
 
 class MaxWHModel(BaseModel):
-    max_wh: int = Field(832, description="The maximum resolution.")
+    max_wh: int = Field(1024, description="The maximum resolution.")
 
 
 class VariationModel(BaseModel):
