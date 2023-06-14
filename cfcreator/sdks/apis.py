@@ -12,6 +12,7 @@ from typing import Optional
 from pydantic import BaseModel
 from collections import OrderedDict
 from cftool.misc import random_hash
+from cftool.misc import print_warning
 from cftool.misc import shallow_copy_dict
 from cftool.data_structures import Workflow
 from cfclient.core import HttpClient
@@ -77,6 +78,7 @@ class APIs:
         else:
             self._http_client = clients.get("http")
             if self._http_client is None:
+                print_warning(f"cannot find `http` client in {clients}, creating one")
                 self._http_client = HttpClient()
                 clients["http"] = self._http_client
         if algorithms is not None:
