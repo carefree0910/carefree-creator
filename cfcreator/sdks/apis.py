@@ -53,6 +53,7 @@ class APIs:
     def __init__(
         self,
         *,
+        clients: Optional[dict] = None,
         algorithms: Optional[Dict[str, IAlgorithm]] = None,
         focuses_endpoints: Optional[List[str]] = None,
     ) -> None:
@@ -63,8 +64,10 @@ class APIs:
         OPT["verbose"] = focuses is not None
         OPT["lazy_load"] = True
 
-        self._http_client = HttpClient()
-        clients = dict(http=self._http_client, triton=None)
+        self._http_client = None
+        if clients is None:
+            self._http_client = HttpClient()
+            clients = dict(http=self._http_client, triton=None)
         if algorithms is not None:
             self.algorithms = algorithms
         else:
@@ -76,12 +79,14 @@ class APIs:
             }
             for v in self.algorithms.values():
                 v.initialize()
-        self._http_client.start()
+        if self._http_client is not None:
+            self._http_client.start()
 
     # lifecycle
 
     async def destroy(self) -> None:
-        await self._http_client.stop()
+        if self._http_client is not None:
+            await self._http_client.stop()
 
     # algorithms
 
