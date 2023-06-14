@@ -35,8 +35,6 @@ class WorkflowModel(ReturnArraysModel):
 class WorkflowAlgorithm(IWrapperAlgorithm):
     model_class = WorkflowModel
 
-    last_workflow: Optional[Workflow] = None
-
     endpoint = workflow_endpoint
 
     async def run(self, data: WorkflowModel, *args: Any, **kwargs: Any) -> Response:
@@ -45,7 +43,6 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
         workflow = Workflow()
         for node in data.nodes:
             workflow.push(node)
-        self.last_workflow = workflow
         t1 = time.time()
         results = await self.apis.execute(workflow, data.target, data.caches)
         t2 = time.time()

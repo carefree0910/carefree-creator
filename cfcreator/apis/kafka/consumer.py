@@ -270,10 +270,7 @@ async def consume() -> None:
                     and params.get("intermediate") is not None
                 ):
                     intermediate = {}
-                    response = dict(
-                        workflow=algorithm.last_workflow.to_json(),
-                        intermediate=intermediate,
-                    )
+                    response = dict(intermediate=intermediate)
                     result = dict(uid=uid, response=response)
                     all_results = {}
                     for k, v in res.items():
@@ -310,11 +307,7 @@ async def consume() -> None:
                     if isinstance(algorithm, WorkflowAlgorithm):
                         result = dict(
                             uid=uid,
-                            response=dict(
-                                urls=urls,
-                                reasons=reasons,
-                                workflow=algorithm.last_workflow.to_json(),
-                            ),
+                            response=dict(urls=urls, reasons=reasons),
                         )
                     elif task.startswith("control"):
                         if isinstance(model, ControlMultiModel):
