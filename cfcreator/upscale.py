@@ -5,7 +5,9 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 from typing import Any
+from typing import List
 from typing import Tuple
+from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from cftool.misc import random_hash
@@ -15,6 +17,7 @@ from .common import Txt2ImgModel
 from .common import InpaintingMode
 from .common import IWrapperAlgorithm
 from .common import ReturnArraysModel
+from .control_multi import TBundle
 from .control_multi import ControlMultiModel
 
 
@@ -27,6 +30,8 @@ class UpscaleTileModel(ReturnArraysModel, Txt2ImgModel):
     upscale_factor: int = Field(2, description="upscale factor")
     fidelity: float = Field(0.45, description="fidelity of each tile")
     highres_steps: int = Field(36, description="num_steps for upscaling")
+    strength: float = Field(1.0, description="strength of the tile control")
+    controls: Optional[List[TBundle]] = Field(None, description="Extra controls")
 
 
 def resize(image: Image.Image, size: Tuple[int, int]) -> Image.Image:
@@ -60,7 +65,10 @@ class UpscaleTile(IWrapperAlgorithm):
             controls=[
                 dict(
                     type="control_v11f1e_sd15_tile",
-                    data=dict(hint_url=random_hash()),
+                    data=dict(
+                        hint_url=random_hash(),
+                        control_strength=data.strength,
+                    ),
                 )
             ],
             keep_original=False,
@@ -70,6 +78,8 @@ class UpscaleTile(IWrapperAlgorithm):
             reference_fidelity=data.fidelity,
             inpainting_mask_padding=data.padding,
         )
+        if data.controls is not None:
+            controlnet_data.controls += data.controls
         t2 = time.time()
         for j in range(data.upscale_factor):
             jy = j % data.upscale_factor * h_grid
