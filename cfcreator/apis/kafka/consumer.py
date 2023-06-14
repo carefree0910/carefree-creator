@@ -206,7 +206,7 @@ async def consume() -> None:
     # initialize
     http_client.start()
     for v in loaded_algorithms.values():
-        if isinstance(v, WorkflowAlgorithm):
+        if isinstance(v, IWrapperAlgorithm):
             v.algorithms = loaded_algorithms
         v.initialize()
     print("> Algorithms are Loaded!")
@@ -255,7 +255,7 @@ async def consume() -> None:
                 latencies = algorithm.last_latencies
                 t1 = time.time()
                 if (
-                    isinstance(algorithm, WorkflowAlgorithm)
+                    isinstance(algorithm, IWrapperAlgorithm)
                     and params.get("intermediate") is not None
                 ):
                     intermediate = {}
@@ -283,7 +283,7 @@ async def consume() -> None:
                     procedure = "audit_image -> redis"
                 elif (
                     (
-                        isinstance(algorithm, WorkflowAlgorithm)
+                        isinstance(algorithm, IWrapperAlgorithm)
                         and params.get("intermediate") is None
                     )
                     or task.startswith("control")
@@ -296,7 +296,7 @@ async def consume() -> None:
                     urls, reasons = audit_urls(model, url_results)
                     t3 = time.time()
                     procedure = "audit_image -> redis"
-                    if isinstance(algorithm, WorkflowAlgorithm):
+                    if isinstance(algorithm, IWrapperAlgorithm):
                         result = dict(
                             uid=uid,
                             response=dict(

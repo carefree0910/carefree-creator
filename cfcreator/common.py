@@ -597,6 +597,19 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         return await self.download_image_with_retry(getattr(data, key))
 
 
+class IWrapperAlgorithm(IAlgorithm):
+    algorithms: Optional[Dict[str, IAlgorithm]] = None
+
+    def initialize(self) -> None:
+        from cfcreator.sdks.apis import APIs
+        from cfcreator.sdks.apis import ALL_LATENCIES_KEY
+
+        if self.algorithms is None:
+            raise ValueError("`algorithms` should be provided for `IWrapperAlgorithm`.")
+        self.apis = APIs(algorithms=self.algorithms)
+        self.latencies_key = ALL_LATENCIES_KEY
+
+
 # kafka
 
 
@@ -660,4 +673,5 @@ __all__ = [
     "GetPromptResponse",
     "Status",
     "IAlgorithm",
+    "IWrapperAlgorithm",
 ]

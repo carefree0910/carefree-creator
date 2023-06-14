@@ -13,7 +13,7 @@ from cftool.data_structures import WorkNode
 from cftool.data_structures import Workflow
 
 from .common import get_response
-from .common import IAlgorithm
+from .common import IWrapperAlgorithm
 from .common import ReturnArraysModel
 
 
@@ -31,23 +31,13 @@ class WorkflowModel(ReturnArraysModel):
     caches: Optional[Dict[str, Any]] = Field(None, description="The preset caches.")
 
 
-@IAlgorithm.auto_register()
-class WorkflowAlgorithm(IAlgorithm):
+@IWrapperAlgorithm.auto_register()
+class WorkflowAlgorithm(IWrapperAlgorithm):
     model_class = WorkflowModel
 
-    algorithms: Optional[Dict[str, IAlgorithm]] = None
     last_workflow: Optional[Workflow] = None
 
     endpoint = workflow_endpoint
-
-    def initialize(self) -> None:
-        from cfcreator.sdks.apis import APIs
-        from cfcreator.sdks.apis import ALL_LATENCIES_KEY
-
-        if self.algorithms is None:
-            raise ValueError("`algorithms` should be provided for `WorkflowAlgorithm`.")
-        self.apis = APIs(algorithms=self.algorithms)
-        self.latencies_key = ALL_LATENCIES_KEY
 
     async def run(self, data: WorkflowModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
