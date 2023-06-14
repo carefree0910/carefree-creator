@@ -79,7 +79,7 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
         m.prepare_sd([version])
         m.sd_weights.register(BaseSDTag, _base_sd_path())
         print("> warmup ControlNet")
-        m.switch_control(*m.available_control_hints)
+        m.switch_control(*m.preset_control_hints)
     print("> prepare ControlNet Annotators")
     m.prepare_annotators()
     return m
@@ -101,7 +101,7 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     sd: ControlledDiffusionAPI = api_pool.get(APIs.SD, no_change=True)
     api.annotators = sd.annotators
     api.controlnet_weights = sd.controlnet_weights
-    api.switch_control(*api.available_control_hints)
+    api.switch_control(*api.preset_control_hints)
     return api
 
 
