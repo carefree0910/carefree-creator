@@ -255,7 +255,7 @@ async def consume() -> None:
                 latencies = algorithm.last_latencies
                 t1 = time.time()
                 if (
-                    isinstance(algorithm, IWrapperAlgorithm)
+                    isinstance(algorithm, WorkflowAlgorithm)
                     and params.get("intermediate") is not None
                 ):
                     intermediate = {}
@@ -283,7 +283,7 @@ async def consume() -> None:
                     procedure = "audit_image -> redis"
                 elif (
                     (
-                        isinstance(algorithm, IWrapperAlgorithm)
+                        isinstance(algorithm, WorkflowAlgorithm)
                         and params.get("intermediate") is None
                     )
                     or task.startswith("control")
@@ -296,7 +296,7 @@ async def consume() -> None:
                     urls, reasons = audit_urls(model, url_results)
                     t3 = time.time()
                     procedure = "audit_image -> redis"
-                    if isinstance(algorithm, IWrapperAlgorithm):
+                    if isinstance(algorithm, WorkflowAlgorithm):
                         result = dict(
                             uid=uid,
                             response=dict(
