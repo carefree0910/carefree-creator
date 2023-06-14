@@ -121,7 +121,10 @@ async def post_callback(
     interval: int = 3,
 ) -> None:
     if not url:
+        print(">>>>> no callback is required")
         return
+
+    print(f">>>>> post callback to {url}")
 
     async def fn() -> None:
         cb_data = dict(uid=uid, success=success, data=data)
