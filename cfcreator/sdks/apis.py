@@ -57,12 +57,16 @@ class APIs:
         clients: Optional[dict] = None,
         algorithms: Optional[Dict[str, IAlgorithm]] = None,
         focuses_endpoints: Optional[List[str]] = None,
+        verbose: Optional[Union[str, bool]] = "auto",
     ) -> None:
         if focuses_endpoints is None:
             focuses = None
         else:
             focuses = list(map(endpoint2algorithm, focuses_endpoints))
-        OPT["verbose"] = focuses is not None
+        if verbose is not None:
+            if verbose == "auto":
+                verbose = focuses is not None
+            OPT["verbose"] = verbose
         OPT["lazy_load"] = True
 
         if clients is None:
