@@ -65,10 +65,14 @@ class APIs:
         OPT["verbose"] = focuses is not None
         OPT["lazy_load"] = True
 
-        self._http_client = None
         if clients is None:
             self._http_client = HttpClient()
             clients = dict(http=self._http_client, triton=None)
+        else:
+            self._http_client = clients.get("http")
+            if self._http_client is None:
+                self._http_client = HttpClient()
+                clients["http"] = self._http_client
         if algorithms is not None:
             self.algorithms = algorithms
         else:
@@ -81,14 +85,12 @@ class APIs:
                 if isinstance(v, IWrapperAlgorithm):
                     v.algorithms = self.algorithms
                 v.initialize()
-        if self._http_client is not None:
-            self._http_client.start()
+        self._http_client.start()
 
     # lifecycle
 
     async def destroy(self) -> None:
-        if self._http_client is not None:
-            await self._http_client.stop()
+        await self._http_client.stop()
 
     # algorithms
 
