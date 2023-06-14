@@ -149,23 +149,34 @@ async def post_callback(
         )
 
 
-def simplify(params: Dict[str, Any]) -> Dict[str, Any]:
-    params = shallow_copy_dict(params)
-    custom_embeddings = params.get("custom_embeddings")
-    if custom_embeddings is not None and isinstance(custom_embeddings, dict):
-        simplified_embeddings = {}
-        for k, v in custom_embeddings.items():
-            try:
-                v_array = np.atleast_2d(v)
-                if v_array.shape[1] <= 6:
-                    simplified_embeddings[k] = v
-                else:
-                    v_array = np.concatenate([v_array[:, :3], v_array[:, -3:]], axis=1)
-                    simplified_embeddings[k] = v_array.tolist()
-            except Exception as err:
-                simplified_embeddings[k] = get_err_msg(err)
-        params["custom_embeddings"] = simplified_embeddings
-    return params
+def simplify(params: Any) -> Any:
+    def _core(p: Any) -> Any:
+        if isinstance(p, list):
+            return [_core(v) for v in p]
+        if not isinstance(p, dict):
+            return p
+        p = shallow_copy_dict(p)
+        for k, v in p.items():
+            if k == "custom_embeddings":
+                if v is None or not isinstance(v, dict):
+                    continue
+                simplified_embeddings = {}
+                for vk, vv in v.items():
+                    try:
+                        vva = np.atleast_2d(vv)
+                        if vva.shape[1] <= 6:
+                            simplified_embeddings[vk] = vv
+                        else:
+                            vva = np.concatenate([vva[:, :3], vva[:, -3:]], axis=1)
+                            simplified_embeddings[vk] = vva.tolist()
+                    except Exception as err:
+                        simplified_embeddings[vk] = get_err_msg(err)
+                p[k] = simplified_embeddings
+            elif isinstance(p, (list, dict)):
+                p[k] = _core(v)
+        return p
+
+    return _core(params)
 
 
 # return (urls, reasons)
