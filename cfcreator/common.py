@@ -606,7 +606,12 @@ class IWrapperAlgorithm(IAlgorithm):
 
         if self.algorithms is None:
             raise ValueError("`algorithms` should be provided for `IWrapperAlgorithm`.")
-        self.apis = APIs(clients=self.clients, algorithms=self.algorithms, verbose=None)
+        self.apis = APIs(
+            clients=self.clients,
+            algorithms=self.algorithms,
+            verbose=None,
+            lazy_load=None,
+        )
         self.latencies_key = ALL_LATENCIES_KEY
 
 

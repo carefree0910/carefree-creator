@@ -58,6 +58,7 @@ class APIs:
         algorithms: Optional[Dict[str, IAlgorithm]] = None,
         focuses_endpoints: Optional[List[str]] = None,
         verbose: Optional[Union[str, bool]] = "auto",
+        lazy_load: Optional[bool] = True,
     ) -> None:
         if focuses_endpoints is None:
             focuses = None
@@ -67,7 +68,8 @@ class APIs:
             if verbose == "auto":
                 verbose = focuses is not None
             OPT["verbose"] = verbose
-        OPT["lazy_load"] = True
+        if lazy_load is not None:
+            OPT["lazy_load"] = lazy_load
 
         if clients is None:
             self._http_client = HttpClient()
