@@ -1,0 +1,104 @@
+import time
+
+import numpy as np
+
+from PIL import Image
+from PIL import ImageDraw
+from typing import Any
+from typing import Tuple
+from fastapi import Response
+from pydantic import Field
+from cftool.misc import random_hash
+
+from .common import get_response
+from .common import Txt2ImgModel
+from .common import InpaintingMode
+from .common import IWrapperAlgorithm
+from .common import ReturnArraysModel
+from .control_multi import ControlMultiModel
+
+
+upscale_tile_endpoint = "/upscale/tile"
+
+
+class UpscaleTileModel(ReturnArraysModel, Txt2ImgModel):
+    url: str = Field(..., description="url of the initial image")
+    padding: int = Field(32, description="padding for each tile")
+    upscale_factor: int = Field(2, description="upscale factor")
+    fidelity: float = Field(0.45, description="fidelity of each tile")
+    highres_steps: int = Field(36, description="num_steps for upscaling")
+
+
+def resize(image: Image.Image, size: Tuple[int, int]) -> Image.Image:
+    return image.resize(size, Image.LANCZOS)
+
+
+@IWrapperAlgorithm.auto_register()
+class UpscaleTile(IWrapperAlgorithm):
+    model_class = UpscaleTileModel
+
+    endpoint = upscale_tile_endpoint
+
+    async def run(self, data: UpscaleTileModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        canvas = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        w_grid, h_grid = canvas.size
+        w, h = w_grid * data.upscale_factor, h_grid * data.upscale_factor
+        canvas = resize(canvas, (w, h))
+        all_black = Image.new("RGB", (w, h), color=(0, 0, 0))
+        all_black_draw = ImageDraw.Draw(all_black)
+        controlnet_data = ControlMultiModel(
+            url=random_hash(),
+            mask_url=random_hash(),
+            prompt=data.text,
+            base_model=data.version,
+            seed=data.seed,
+            sampler=data.sampler,
+            inpainting_mode=InpaintingMode.MASKED,
+            controls=[
+                dict(
+                    type="control_v11f1e_sd15_tile",
+                    data=dict(hint_url=random_hash()),
+                )
+            ],
+            keep_original=False,
+            # params
+            num_steps=data.highres_steps,
+            use_reference=True,
+            reference_fidelity=data.fidelity,
+            inpainting_mask_padding=data.padding,
+        )
+        t2 = time.time()
+        for j in range(data.upscale_factor):
+            jy = j % data.upscale_factor * h_grid
+            for i in range(data.upscale_factor):
+                ix = i % data.upscale_factor * w_grid
+                lt_rb = ix, jy, ix + w_grid, jy + h_grid
+                all_black_draw.rectangle(lt_rb, fill=(255, 255, 255))
+                kw = {
+                    "url": canvas,
+                    "mask_url": all_black,
+                    "controls.0.data.hint_url": canvas,
+                }
+                images = await self.apis.run_multi_controlnet(controlnet_data, **kw)
+                canvas = images[-1]
+                all_black_draw.rectangle(lt_rb, fill=(0, 0, 0))
+        t3 = time.time()
+        res = get_response(data, [np.array(canvas)])
+        latencies = {
+            "download": t1 - t0,
+            "preprocess": t2 - t1,
+            "inference": t3 - t2,
+            "get_response": time.time() - t3,
+        }
+        self.log_times(latencies)
+        return res
+
+
+__all__ = [
+    "upscale_tile_endpoint",
+    "UpscaleTileModel",
+    "UpscaleTile",
+]

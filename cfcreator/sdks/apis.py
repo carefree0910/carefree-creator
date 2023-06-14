@@ -42,6 +42,7 @@ endpoint2method = {
     cv_resize_endpoint: "resize",
     cv_affine_endpoint: "affine",
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
+    upscale_tile_endpoint: "upscale_tile",
     UPLOAD_ENDPOINT: "get_image",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
 }
@@ -160,6 +161,11 @@ class APIs:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)
         result: PromptEnhanceResponse = await self.algorithms[task].run(data)
         return result.prompts
+
+    async def upscale_tile(
+        self, data: UpscaleTileModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, upscale_tile_endpoint, **kw)
 
     # special
 
