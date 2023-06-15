@@ -14,7 +14,9 @@ from cftool.cv import to_uint8
 from cfclient.models.core import ImageModel
 
 from .cv import affine
+from .cv import Resampling
 from .cv import BaseAffineModel
+from .cv import ResamplingModel
 from .common import get_response
 from .common import IAlgorithm
 from .common import ReturnArraysModel
@@ -36,6 +38,7 @@ def paste(
     e: float,
     f: float,
     force_rgb: bool,
+    resampling: Resampling,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
     t0 = time.time()
     if original_fg.mode != "RGBA":
@@ -51,6 +54,7 @@ def paste(
         f,
         original_w,
         original_h,
+        resampling,
     )
     t1 = time.time()
     affined_fg_array = affined_fg_array.astype(np.float32) / 255.0
@@ -80,6 +84,7 @@ The `cdn` / `cos` url of the background's image.
 
 class PastePipelineModel(
     ReturnArraysModel,
+    ResamplingModel,
     BaseAffineModel,
     _PastePipelineModel,
     ImageModel,
@@ -117,6 +122,7 @@ class PastePipeline(IAlgorithm):
             data.e,
             data.f,
             data.force_rgb,
+            data.resampling,
         )
         latencies["download"] = t1 - t0
         t2 = time.time()

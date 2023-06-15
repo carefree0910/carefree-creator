@@ -4,8 +4,8 @@ import time
 import numpy as np
 
 from PIL import Image
+from enum import Enum
 from typing import Any
-from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
@@ -31,8 +31,33 @@ def erode(array: np.ndarray, n_iter: int, kernel_size: int) -> np.ndarray:
     return cv2.erode(array, kernel, iterations=n_iter)
 
 
-def resize(image: Image.Image, w: int, h: int) -> Image.Image:
-    return image.resize((w, h), Image.BILINEAR)
+class Resampling(str, Enum):
+    NEAREST = "nearest"
+    BOX = "box"
+    BILINEAR = "bilinear"
+    HAMMING = "hamming"
+    BICUBIC = "bicubic"
+    LANCZOS = "lanczos"
+
+
+class ResamplingModel(BaseModel):
+    resampling: Resampling = Field(Resampling.BILINEAR, description="resampling method")
+
+
+def resize(image: Image.Image, w: int, h: int, resampling: Resampling) -> Image.Image:
+    if resampling == Resampling.NEAREST:
+        r = Image.NEAREST
+    elif resampling == Resampling.BOX:
+        r = Image.BOX
+    elif resampling == Resampling.BILINEAR:
+        r = Image.BILINEAR
+    elif resampling == Resampling.HAMMING:
+        r = Image.HAMMING
+    elif resampling == Resampling.BICUBIC:
+        r = Image.BICUBIC
+    else:
+        r = Image.LANCZOS
+    return image.resize((w, h), r)
 
 
 def affine(
@@ -45,13 +70,14 @@ def affine(
     f: float,
     w: int,
     h: int,
+    resampling: Resampling,
 ) -> np.ndarray:
     matrix2d = Matrix2D(a=a, b=b, c=c, d=d, e=e, f=f)
     properties = matrix2d.decompose()
     iw, ih = image.size
     nw = max(round(iw * abs(properties.w)), 1)
     nh = max(round(ih * abs(properties.h)), 1)
-    array = np.array(resize(image, nw, nh))
+    array = np.array(resize(image, nw, nh, resampling))
     properties.w = 1
     properties.h = 1 if properties.h > 0 else -1
     matrix2d = Matrix2D.from_properties(properties)
@@ -93,7 +119,7 @@ class Erode(IAlgorithm):
         return res
 
 
-class ResizeModel(ReturnArraysModel, ImageModel):
+class ResizeModel(ReturnArraysModel, ResamplingModel, ImageModel):
     w: int = Field(..., description="width of the output image")
     h: int = Field(..., description="width of the output image")
 
@@ -112,7 +138,7 @@ class Resize(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
-        resized = np.array(resize(image, data.w, data.h))
+        resized = np.array(resize(image, data.w, data.h, data.resampling))
         t2 = time.time()
         res = get_response(data, [resized])
         self.log_times(
@@ -162,6 +188,7 @@ class Affine(IAlgorithm):
             data.f,
             data.w,
             data.h,
+            data.resampling,
         )
         t2 = time.time()
         res = get_response(data, [output])
