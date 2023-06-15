@@ -92,6 +92,7 @@ class APIs(str, Enum):
     SD_INPAINTING = "sd_inpainting"
     ESR = "esr"
     ESR_ANIME = "esr_anime"
+    ESR_ULTRASHARP = "esr_ultrasharp"
     INPAINTING = "inpainting"
     LAMA = "lama"
     SEMANTIC = "semantic"

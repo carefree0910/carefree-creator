@@ -1,4 +1,5 @@
 import os
+import torch
 
 import numpy as np
 
@@ -125,6 +126,22 @@ def register_esr_anime() -> None:
     api_pool.register(
         APIs.ESR_ANIME,
         lambda init_to_cpu: _get(TranslatorAPI.from_esr_anime, init_to_cpu),
+    )
+
+
+def register_esr_ultrasharp() -> None:
+    def _init(*args: Any, **kw: Any) -> TranslatorAPI:
+        m = TranslatorAPI.from_esr(*args, **kw)
+        sr_folder = os.path.join(OPT.external_dir, "sr")
+        model_path = os.path.join(sr_folder, "4x-UltraSharp.ckpt")
+        if not os.path.isfile(model_path):
+            raise ValueError(f"cannot find {model_path}")
+        m.m.load_state_dict(torch.load(model_path))
+        return m
+
+    api_pool.register(
+        APIs.ESR_ULTRASHARP,
+        lambda init_to_cpu: _get(_init, init_to_cpu),
     )
 
 

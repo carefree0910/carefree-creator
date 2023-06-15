@@ -141,11 +141,16 @@ class Img2ImgSD(IAlgorithm):
 # super resolution (Real-ESRGAN)
 
 
+class SRVersion(str, Enum):
+    ULTRASHARP = "ultrasharp"
+
+
 class _Img2ImgSRModel(BaseModel):
     is_anime: bool = Field(
         False,
         description="Whether the input image is an anime image or not.",
     )
+    version: Optional[SRVersion] = Field(None, description="The explicit version.")
     target_w: int = Field(0, description="The target width. 0 means as-is.")
     target_h: int = Field(0, description="The target height. 0 means as-is.")
 
@@ -203,7 +208,13 @@ class Img2ImgSR(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
-        api_key = APIs.ESR_ANIME if data.is_anime else APIs.ESR
+        if data.version is None:
+            api_key = APIs.ESR_ANIME if data.is_anime else APIs.ESR
+        else:
+            if data.version == SRVersion.ULTRASHARP:
+                api_key = APIs.ESR_ULTRASHARP
+            else:
+                raise ValueError(f"Unknown version: {data.version}")
         m = api_pool.get(api_key)
         t2 = time.time()
         img_arr, latencies = apply_sr(
