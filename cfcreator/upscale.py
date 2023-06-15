@@ -27,7 +27,7 @@ upscale_tile_endpoint = "/upscale/tile"
 class UpscaleTileModel(ReturnArraysModel, Txt2ImgModel):
     url: str = Field(..., description="url of the initial image")
     padding: int = Field(32, description="padding for each tile")
-    upscale_factor: int = Field(2, description="upscale factor")
+    upscale_factor: int = Field(2, ge=1, description="upscale factor")
     fidelity: float = Field(0.45, description="fidelity of each tile")
     highres_steps: int = Field(36, description="num_steps for upscaling")
     strength: float = Field(1.0, description="strength of the tile control")
@@ -50,8 +50,11 @@ class UpscaleTile(IWrapperAlgorithm):
         canvas = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
         w_grid, h_grid = canvas.size
-        w, h = w_grid * data.upscale_factor, h_grid * data.upscale_factor
-        canvas = resize(canvas, (w, h))
+        if data.upscale_factor == 1:
+            w, h = w_grid, h_grid
+        else:
+            w, h = w_grid * data.upscale_factor, h_grid * data.upscale_factor
+            canvas = resize(canvas, (w, h))
         all_black = Image.new("RGB", (w, h), color=(0, 0, 0))
         all_black_draw = ImageDraw.Draw(all_black)
         controlnet_data = ControlMultiModel(
