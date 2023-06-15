@@ -11,6 +11,7 @@ from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from cftool.misc import random_hash
+from cftool.misc import shallow_copy_dict
 from cflearn.api.cv.diffusion import TPair
 
 from .common import get_response
@@ -61,6 +62,9 @@ class UpscaleTile(IWrapperAlgorithm):
         factor = data.upscale_factor
         w, h = w_grid * factor, h_grid * factor
         canvas = resize(canvas, (w, h))
+        for k, v in kwargs.items():
+            if k != "url" and isinstance(v, Image.Image):
+                kwargs[k] = resize(v, (w, h))
         all_black = Image.new("RGB", (w, h), color=(0, 0, 0))
         all_black_draw = ImageDraw.Draw(all_black)
         controlnet_data = ControlMultiModel(
@@ -97,11 +101,14 @@ class UpscaleTile(IWrapperAlgorithm):
                 ix = i % factor * w_grid
                 lt_rb = ix, jy, ix + w_grid, jy + h_grid
                 all_black_draw.rectangle(lt_rb, fill=(255, 255, 255))
-                kw = {
-                    "url": canvas,
-                    "mask_url": all_black,
-                    "controls.0.data.hint_url": canvas,
-                }
+                kw = shallow_copy_dict(kwargs)
+                kw.update(
+                    {
+                        "url": canvas,
+                        "mask_url": all_black,
+                        "controls.0.data.hint_url": canvas,
+                    }
+                )
                 images = await self.apis.run_multi_controlnet(controlnet_data, **kw)
                 canvas = images[-1]
                 all_black_draw.rectangle(lt_rb, fill=(0, 0, 0))
