@@ -94,6 +94,7 @@ class UpscaleTile(IWrapperAlgorithm):
         )
         if data.controls is not None:
             controlnet_data.controls = data.controls + controlnet_data.controls
+        n_controls = len(controlnet_data.controls)
         t2 = time.time()
         for j in range(factor):
             jy = j % factor * h_grid
@@ -106,7 +107,7 @@ class UpscaleTile(IWrapperAlgorithm):
                     {
                         "url": canvas,
                         "mask_url": all_black,
-                        "controls.0.data.hint_url": canvas,
+                        f"controls.{n_controls - 1}.data.hint_url": canvas,
                     }
                 )
                 images = await self.apis.run_multi_controlnet(controlnet_data, **kw)
