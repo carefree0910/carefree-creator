@@ -29,6 +29,7 @@ from cflearn.api.cv import DiffusionAPI
 from cflearn.api.cv import TranslatorAPI
 from cflearn.api.cv import ImageHarmonizationAPI
 from cflearn.api.cv import ControlledDiffusionAPI
+from cflearn.api.cv.diffusion import TPair
 from cflearn.api.cv.diffusion import InpaintingMode
 from cflearn.api.cv.diffusion import InpaintingSettings
 from cflearn.misc.toolkit import download_model
@@ -377,6 +378,10 @@ the latent of the background is the only information for us to inpaint.
         32,
         description="Binary threshold of the inpainting mask under MASKED mode. If `None`, then no thresholding.",
     )
+    inpainting_target_wh: TPair = Field(
+        None,
+        description="Target width and height of the images under MASKED mode.",
+    )
 
 
 class HighresModel(BaseModel):
@@ -535,6 +540,7 @@ def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str
             data.inpainting_mask_blur,
             data.inpainting_mask_padding,
             data.inpainting_mask_binary_threshold,
+            data.inpainting_target_wh,
         ),
     )
 

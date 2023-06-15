@@ -62,6 +62,7 @@ class UpscaleTile(IWrapperAlgorithm):
             seed=data.seed,
             sampler=data.sampler,
             inpainting_mode=InpaintingMode.MASKED,
+            inpainting_target_wh=(w_grid, h_grid),
             controls=[
                 dict(
                     type="control_v11f1e_sd15_tile",
