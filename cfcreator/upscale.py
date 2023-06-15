@@ -93,7 +93,7 @@ class UpscaleTile(IWrapperAlgorithm):
             inpainting_mask_padding=data.padding,
         )
         if data.controls is not None:
-            controlnet_data.controls += data.controls
+            controlnet_data.controls = data.controls + controlnet_data.controls
         t2 = time.time()
         for j in range(factor):
             jy = j % factor * h_grid
