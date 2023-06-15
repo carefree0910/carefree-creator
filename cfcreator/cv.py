@@ -87,6 +87,7 @@ def affine(
 class ErodeModel(ReturnArraysModel, ImageModel):
     n_iter: int = Field(1, description="number of iterations")
     kernel_size: int = Field(3, description="size of the kernel")
+    threshold: int = Field(0, description="threshold of the alpha channel")
 
 
 @IAlgorithm.auto_register()
@@ -103,8 +104,9 @@ class Erode(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
-        array = np.array(image)
+        array = np.array(image.convert("RGBA"))
         alpha = array[..., -1]
+        alpha = cv2.threshold(alpha, data.threshold, 255, cv2.THRESH_BINARY)[1]
         eroded_alpha = erode(alpha, data.n_iter, data.kernel_size)
         array[..., -1] = eroded_alpha
         t2 = time.time()
