@@ -243,7 +243,17 @@ async def apply_control(
             inpainting_mask = Image.fromarray(image_array_d[common.mask_url])
             inpainting_mask = inpainting_mask.convert("L")
         image = Image.fromarray(image_array_d[common.url])
+        if common.inpainting_target_wh is not None:
+            it_wh = common.inpainting_target_wh
+            if isinstance(it_wh, int):
+                it_wh = it_wh, it_wh
+            it_w, it_h = restrict_wh(*it_wh, common.max_wh)
+            it_w = get_suitable_size(it_w, 64)
+            it_h = get_suitable_size(it_h, 64)
+            common.inpainting_target_wh = it_w, it_h
         kw.update(handle_diffusion_inpainting_model(common))
+        image = image.resize((w, h))
+        inpainting_mask = inpainting_mask.resize((w, h))
         outs = api.txt2img_inpainting(cond, image, inpainting_mask, **kw)
     elif common.url is None:
         kw["size"] = w, h
