@@ -30,7 +30,7 @@ class UpscaleTileModel(ReturnArraysModel, Txt2ImgModel):
     url: str = Field(..., description="url of the initial image")
     padding: int = Field(32, description="padding for each tile")
     grid_wh: TPair = Field(None, description="explicit specify the grid size")
-    upscale_factor: int = Field(2, ge=1, description="upscale factor")
+    upscale_factor: TPair = Field(2, ge=1, description="upscale factor")
     fidelity: float = Field(0.45, description="fidelity of each tile")
     highres_steps: int = Field(36, description="num_steps for upscaling")
     strength: float = Field(1.0, description="strength of the tile control")
@@ -60,7 +60,10 @@ class UpscaleTile(IWrapperAlgorithm):
                 grid_wh = grid_wh, grid_wh
             w_grid, h_grid = grid_wh
         factor = data.upscale_factor
-        w, h = w_grid * factor, h_grid * factor
+        if isinstance(factor, int):
+            factor = factor, factor
+        w_factor, h_factor = factor
+        w, h = w_grid * w_factor, h_grid * h_factor
         canvas = resize(canvas, (w, h))
         for k, v in kwargs.items():
             if k != "url" and isinstance(v, Image.Image):
@@ -96,10 +99,10 @@ class UpscaleTile(IWrapperAlgorithm):
             controlnet_data.controls = data.controls + controlnet_data.controls
         n_controls = len(controlnet_data.controls)
         t2 = time.time()
-        for j in range(factor):
-            jy = j % factor * h_grid
-            for i in range(factor):
-                ix = i % factor * w_grid
+        for j in range(h_factor):
+            jy = j % h_factor * h_grid
+            for i in range(w_factor):
+                ix = i % w_factor * w_grid
                 lt_rb = ix, jy, ix + w_grid, jy + h_grid
                 all_black_draw.rectangle(lt_rb, fill=(255, 255, 255))
                 kw = shallow_copy_dict(kwargs)
