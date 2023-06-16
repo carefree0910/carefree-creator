@@ -354,7 +354,7 @@ class ReturnArraysModel(BaseModel):
     )
 
 
-class CommonSDInpaintingModel(ReturnArraysModel):
+class CommonSDInpaintingModel(ReturnArraysModel, MaxWHModel):
     keep_original: bool = Field(
         False,
         description="Whether strictly keep the original image identical in the output image.",
@@ -471,12 +471,7 @@ The annotator type of the hint.
         return self.base_model
 
 
-class ControlNetModel(
-    CommonSDInpaintingModel,
-    DiffusionModel,
-    MaxWHModel,
-    _ControlNetModel,
-):
+class ControlNetModel(CommonSDInpaintingModel, DiffusionModel, _ControlNetModel):
     pass
 
 
@@ -558,6 +553,9 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
 
 def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str, Any]:
     return dict(
+        anchor=64,
+        max_wh=data.max_wh,
+        keep_original=data.keep_original,
         use_raw_inpainting=data.use_raw_inpainting,
         use_background_guidance=data.use_background_guidance,
         use_reference=data.use_reference,

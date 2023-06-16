@@ -137,15 +137,7 @@ class Txt2ImgSDInpainting(IAlgorithm):
         mask_arr = np.array(mask)
         mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
         mask = Image.fromarray(mask_arr)
-        img_arr = m.txt2img_inpainting(
-            data.text,
-            image,
-            mask,
-            anchor=64,
-            max_wh=data.max_wh,
-            keep_original=data.keep_original,
-            **kwargs,
-        ).numpy()[0]
+        img_arr = m.txt2img_inpainting(data.text, image, mask, **kwargs).numpy()[0]
         if data.return_arrays:
             content = None
         else:
@@ -189,14 +181,7 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         t2 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
         kwargs.update(handle_diffusion_inpainting_model(data))
-        img_arr = m.outpainting(
-            data.text,
-            image,
-            anchor=64,
-            max_wh=data.max_wh,
-            keep_original=data.keep_original,
-            **kwargs,
-        ).numpy()[0]
+        img_arr = m.outpainting(data.text, image, **kwargs).numpy()[0]
         if data.return_arrays:
             content = None
         else:
