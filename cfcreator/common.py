@@ -56,6 +56,7 @@ class SDInpaintingVersions(str, Enum):
 
 
 BaseSDTag = "_base_sd"
+NUM_CONTROL_POOL = 1
 
 
 def _base_sd_path() -> str:
@@ -71,7 +72,8 @@ def _get(init_fn: Callable, init_to_cpu: bool) -> Any:
 
 def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     version = SDVersions.v1_5
-    init_fn = partial(ControlledDiffusionAPI.from_sd_version, version, lazy=True)
+    kw = dict(num_pool=NUM_CONTROL_POOL, lazy=True)
+    init_fn = partial(ControlledDiffusionAPI.from_sd_version, version, **kw)
     m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     focus = get_focus()
     if focus != Focus.SYNC:
@@ -88,7 +90,8 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
 
 
 def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
-    init_fn = partial(ControlledDiffusionAPI.from_sd_inpainting, lazy=True)
+    kw = dict(num_pool=NUM_CONTROL_POOL, lazy=True)
+    init_fn = partial(ControlledDiffusionAPI.from_sd_inpainting, **kw)
     api: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     # manually maintain sd_weights
     ## original weights
