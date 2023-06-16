@@ -163,7 +163,9 @@ async def apply_control(
         i_type = bundle.type
         i_data = bundle.data
         i_hint_image = image_array_d[get_hint_url_key(i_data.hint_url)]
-        i_annotator = api.annotators.get(i_type)
+        i_t_annotator = i_data.hint_annotator or i_type
+        api.prepare_annotator(i_t_annotator)
+        i_annotator = api.annotators.get(i_t_annotator)
         i_bypass_annotator = i_data.bypass_annotator or i_annotator is None
         key = get_bundle_key(bundle)
         all_keys.append(key)
@@ -183,7 +185,7 @@ async def apply_control(
                 use_half = True
                 i_annotator.to(device, use_half=True)
             all_annotator_change_device_times.append(time.time() - ht)
-            i_o_hint_arr = api.get_hint_of(i_type, i_hint_image, **i_data.dict())
+            i_o_hint_arr = api.get_hint_of(i_t_annotator, i_hint_image, **i_data.dict())
             ht = time.time()
             if need_change_device:
                 i_annotator.to("cpu", use_half=False)
@@ -201,7 +203,6 @@ async def apply_control(
     num_scales = api.m.num_control_scales
     all_scales = []
     for bundle in controls:
-        i_type = bundle.type
         i_data = bundle.data
         all_scales.append(
             [

@@ -46,16 +46,16 @@ class DepthBundle(BaseModel):
     data: ControlDepthModel
 
 
-class ControlExternalModel(ControlStrengthModel, ControlNetModel):
+class UniversalControlModel(ControlStrengthModel, ControlNetModel):
     pass
 
 
-class ExternalBundle(BaseModel):
+class UniversalBundle(BaseModel):
     type: str
-    data: ControlExternalModel
+    data: UniversalControlModel
 
 
-TBundle = Union[MLSDBundle, PoseBundle, CannyBundle, DepthBundle, ExternalBundle]
+TBundle = Union[MLSDBundle, PoseBundle, CannyBundle, DepthBundle, UniversalBundle]
 
 
 class ControlMultiModel(ControlNetModel):

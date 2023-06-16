@@ -433,6 +433,13 @@ The `cdn` / `cos` url of the user's hint image.
 > `cos` url from `qcloud` is preferred.
 """,
     )
+    hint_annotator: Optional[str] = Field(
+        None,
+        description="""
+The annotator type of the hint.
+> If not specified, will use the control type as the annotator's type.
+""",
+    )
     hint_start: Optional[float] = Field(None, description="start ratio of the control")
     prompt: str = Field("", description="Prompt.")
     fidelity: float = Field(
