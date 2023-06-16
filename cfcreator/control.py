@@ -96,16 +96,13 @@ async def apply_control(
     # download images
     urls = set()
     is_hint = {}
-    is_global = {}
     url_to_image = {}
     if common.url is not None:
         urls.add(common.url)
         url_to_image[common.url] = kwargs.get("url")
-        is_global[common.url] = True
     if common.mask_url is not None:
         urls.add(common.mask_url)
         url_to_image[common.mask_url] = kwargs.get("mask_url")
-        is_global[common.mask_url] = True
     for i, bundle in enumerate(controls):
         if not bundle.data.hint_url:
             raise ValueError("hint url should be provided in `controls`")
@@ -129,11 +126,13 @@ async def apply_control(
     ## construct a lookup table
     image_array_d: Dict[str, np.ndarray] = {}
     for url, image in zip(sorted_urls, images):
-        i_is_global = is_global.get(url, False)
-        i_is_hint = is_hint.get(url, False)
-        if i_is_global:
+        if url == common.mask_url:
+            image_array_d[url] = np.array(image)
+        if url == common.url:
+            if url == common.mask_url:
+                raise ValueError("`url` and `mask_url` should be different")
             image_array_d[url] = np.array(to_rgb(image))
-        if i_is_hint:
+        if is_hint.get(url, False):
             image_array_d[get_hint_url_key(url)] = np.array(to_contrast_rgb(image))
     # gather detect resolution
     detect_resolutions = []
@@ -242,7 +241,6 @@ async def apply_control(
                     "should be provided to perform ControlNet inpainting"
                 )
             inpainting_mask = Image.fromarray(image_array_d[common.mask_url])
-            inpainting_mask = inpainting_mask.convert("L")
         image = Image.fromarray(image_array_d[common.url])
         if common.inpainting_target_wh is not None:
             it_wh = common.inpainting_target_wh
