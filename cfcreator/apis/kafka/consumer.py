@@ -186,8 +186,8 @@ def audit_urls(
 ) -> Tuple[List[str], List[str]]:
     urls = [rs.cdn for rs in url_results]
     if (
-        not isinstance(model, (ControlNetModel, LegacyControlNetModel))
-        or not model.use_audit
+        isinstance(model, (ControlNetModel, LegacyControlNetModel))
+        and not model.use_audit
     ):
         reasons = [""] * len(url_results)
     else:
