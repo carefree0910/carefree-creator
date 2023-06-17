@@ -252,6 +252,7 @@ class APIs:
             caches = OrderedDict()
         else:
             caches = OrderedDict(caches)
+            workflow = workflow.copy().inject_caches(caches)
         for layer in workflow.get_dependency_path(target).hierarchy:
             for item in layer:
                 if item.key in caches:
