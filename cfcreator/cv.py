@@ -23,6 +23,7 @@ from .common import ReturnArraysModel
 cv_erode_endpoint = "/cv/erode"
 cv_resize_endpoint = "/cv/resize"
 cv_affine_endpoint = "/cv/affine"
+cv_get_mask_endpoint = "/cv/get_mask"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
 
@@ -204,6 +205,40 @@ class Affine(IAlgorithm):
         return res
 
 
+class CVImageModel(ReturnArraysModel, ImageModel):
+    pass
+
+
+@IAlgorithm.auto_register()
+class GetMask(IAlgorithm):
+    model_class = CVImageModel
+
+    endpoint = cv_get_mask_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: CVImageModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        if image.mode == "RGBA":
+            mask = np.array(image)[..., -1]
+        else:
+            mask = np.array(image.convert("L"))
+        t2 = time.time()
+        res = get_response(data, [mask])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
+
+
 class HistogramMatchModel(ImageModel):
     bg_url: str = Field(..., description="The `cdn` / `cos` url of the background.")
     use_hsv: bool = Field(False, description="Whether use the HSV space to match.")
@@ -271,14 +306,17 @@ __all__ = [
     "cv_erode_endpoint",
     "cv_resize_endpoint",
     "cv_affine_endpoint",
+    "cv_get_mask_endpoint",
     "cv_histogram_match_endpoint",
     "ErodeModel",
     "ResizeModel",
     "BaseAffineModel",
     "AffineModel",
+    "CVImageModel",
     "HistogramMatchModel",
     "Erode",
     "Resize",
     "Affine",
+    "GetMask",
     "HistogramMatch",
 ]

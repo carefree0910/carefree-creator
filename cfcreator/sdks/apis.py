@@ -42,6 +42,7 @@ endpoint2method = {
     cv_erode_endpoint: "erode",
     cv_resize_endpoint: "resize",
     cv_affine_endpoint: "affine",
+    cv_get_mask_endpoint: "get_mask",
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     upscale_tile_endpoint: "upscale_tile",
     UPLOAD_ENDPOINT: "get_image",
@@ -171,6 +172,9 @@ class APIs:
 
     async def affine(self, data: AffineModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_affine_endpoint, **kw)
+
+    async def get_mask(self, data: CVImageModel, **kw: Any) -> List[Image.Image]:
+        return await self._run(data, cv_get_mask_endpoint, **kw)
 
     async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)
