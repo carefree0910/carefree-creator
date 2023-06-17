@@ -237,7 +237,7 @@ def switch_root(data: SwitchCheckpointRootModel) -> SwitchCheckpointRootResponse
 # inject custom tokens
 
 
-custom_embeddings: tensor_dict_type = {}
+custom_embeddings: Dict[str, List[List[float]]] = {}
 
 
 def _inject_custom_tokens(root: str) -> tensor_dict_type:
