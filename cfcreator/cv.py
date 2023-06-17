@@ -24,6 +24,7 @@ cv_erode_endpoint = "/cv/erode"
 cv_resize_endpoint = "/cv/resize"
 cv_affine_endpoint = "/cv/affine"
 cv_get_mask_endpoint = "/cv/get_mask"
+cv_inverse_endpoint = "/cv/inverse"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
 
@@ -239,6 +240,34 @@ class GetMask(IAlgorithm):
         return res
 
 
+@IAlgorithm.auto_register()
+class Inverse(IAlgorithm):
+    model_class = CVImageModel
+
+    endpoint = cv_inverse_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: CVImageModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        array = np.array(image)
+        inversed = 255 - array
+        t2 = time.time()
+        res = get_response(data, [inversed])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
+
+
 class HistogramMatchModel(ImageModel):
     bg_url: str = Field(..., description="The `cdn` / `cos` url of the background.")
     use_hsv: bool = Field(False, description="Whether use the HSV space to match.")
@@ -307,6 +336,7 @@ __all__ = [
     "cv_resize_endpoint",
     "cv_affine_endpoint",
     "cv_get_mask_endpoint",
+    "cv_inverse_endpoint",
     "cv_histogram_match_endpoint",
     "ErodeModel",
     "ResizeModel",
@@ -318,5 +348,6 @@ __all__ = [
     "Resize",
     "Affine",
     "GetMask",
+    "Inverse",
     "HistogramMatch",
 ]
