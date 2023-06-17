@@ -162,6 +162,8 @@ def simplify(params: Any) -> Any:
                     continue
                 simplified_embeddings = {}
                 for vk, vv in v.items():
+                    if vv is None:
+                        continue
                     try:
                         vva = np.atleast_2d(vv)
                         if vva.shape[1] <= 6:

@@ -332,7 +332,7 @@ Number of CLIP layers that we want to skip.
 > If it is set to `-1`, then `clip_skip` = 1 if `is_anime` else 0.
 """,
     )
-    custom_embeddings: Dict[str, List[List[float]]] = Field(
+    custom_embeddings: Dict[str, Optional[List[List[float]]]] = Field(
         {},
         description="Custom embeddings, often used in textual inversion.",
     )
