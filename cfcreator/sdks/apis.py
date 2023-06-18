@@ -25,6 +25,7 @@ from cflearn.api.cv.diffusion import ControlNetHints
 
 TRes = Union[List[str], List[Image.Image]]
 UPLOAD_ENDPOINT = "$upload"
+ADD_TEXT_ENDPOINT = "$add_text"
 CONTROL_HINT_ENDPOINT = "$control_hint"
 ALL_LATENCIES_KEY = "$all_latencies"
 endpoint2method = {
@@ -47,6 +48,7 @@ endpoint2method = {
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     upscale_tile_endpoint: "upscale_tile",
     UPLOAD_ENDPOINT: "get_image",
+    ADD_TEXT_ENDPOINT: "add_text",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
 }
 
@@ -196,6 +198,9 @@ class APIs:
         image = await download_image_with_retry(self._http_client.session, data.url)
         return [image]
 
+    async def add_text(self, data: TextModel, **kw: Any) -> List[str]:
+        return [data.text]
+
     async def get_control_hint(
         self, hint_type: ControlNetHints, data: Dict[str, Any], **kw: Any
     ) -> List[Image.Image]:
@@ -282,6 +287,9 @@ class APIs:
                 if endpoint == UPLOAD_ENDPOINT:
                     data_model = ImageModel(**node_data)
                     item_res = await method_fn(data_model, **node_kw)
+                elif endpoint == ADD_TEXT_ENDPOINT:
+                    data_model = TextModel(**node_data)
+                    item_res = await method_fn(data_model, **node_kw)
                 elif endpoint == CONTROL_HINT_ENDPOINT:
                     hint_type = node_data.pop("hint_type")
                     item_res = await method_fn(hint_type, node_data, **node_kw)
@@ -289,7 +297,7 @@ class APIs:
                 else:
                     data_model = self.get_data_model(endpoint, node_data)
                     item_res = await method_fn(data_model, **node_kw)
-                if endpoint == UPLOAD_ENDPOINT:
+                if endpoint == UPLOAD_ENDPOINT or endpoint == ADD_TEXT_ENDPOINT:
                     ls = dict(download=time.time() - t)
                 else:
                     ls = self.algorithms[endpoint2algorithm(endpoint)].last_latencies
@@ -307,6 +315,7 @@ class APIs:
 
 __all__ = [
     "UPLOAD_ENDPOINT",
+    "ADD_TEXT_ENDPOINT",
     "CONTROL_HINT_ENDPOINT",
     "ALL_LATENCIES_KEY",
     "APIs",
