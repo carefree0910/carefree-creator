@@ -19,13 +19,13 @@ from .control import _PoseModel
 from .control import _CannyModel
 from .control import _DepthModel
 from .control import ControlNetHints
-from .control import ControlNetModelPlaceholder
+from .control import ControlNetBundleCommonData
 
 
 new_control_multi_endpoint = "/control_new/multi"
 
 
-class MLSDBundleData(_MLSDModel, ControlNetModelPlaceholder):
+class MLSDBundleData(_MLSDModel, ControlNetBundleCommonData):
     pass
 
 
@@ -34,7 +34,7 @@ class MLSDBundle(BaseModel):
     data: MLSDBundleData
 
 
-class PoseBundleData(_PoseModel, ControlNetModelPlaceholder):
+class PoseBundleData(_PoseModel, ControlNetBundleCommonData):
     pass
 
 
@@ -43,7 +43,7 @@ class PoseBundle(BaseModel):
     data: PoseBundleData
 
 
-class CannyBundleData(_CannyModel, ControlNetModelPlaceholder):
+class CannyBundleData(_CannyModel, ControlNetBundleCommonData):
     pass
 
 
@@ -52,7 +52,7 @@ class CannyBundle(BaseModel):
     data: CannyBundleData
 
 
-class DepthBundleData(_DepthModel, ControlNetModelPlaceholder):
+class DepthBundleData(_DepthModel, ControlNetBundleCommonData):
     pass
 
 
@@ -61,7 +61,7 @@ class DepthBundle(BaseModel):
     data: DepthBundleData
 
 
-class UniversalControlModel(ControlNetModelPlaceholder):
+class UniversalControlModel(ControlNetBundleCommonData):
     pass
 
 

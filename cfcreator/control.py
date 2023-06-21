@@ -61,13 +61,13 @@ images_type = Tuple[np.ndarray, np.ndarray]
 apply_response = Tuple[List[np.ndarray], Dict[str, float]]
 
 
-class ControlNetModelPlaceholder(ControlStrengthModel, _ControlNetCoreModel):
+class ControlNetBundleCommonData(ControlStrengthModel, _ControlNetCoreModel):
     pass
 
 
 class ControlNetBundle(BaseModel):
     type: Union[str, ControlNetHints]
-    data: ControlNetModelPlaceholder
+    data: ControlNetBundleCommonData
 
 
 TKey = Tuple[str, str, bool]
