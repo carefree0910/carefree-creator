@@ -1,7 +1,6 @@
 import time
 
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Union
 from fastapi import Response
@@ -14,39 +13,55 @@ from .common import register_sd
 from .common import register_sd_inpainting
 from .common import IAlgorithm
 from .common import ControlNetModel
-from .common import ControlStrengthModel
 from .control import apply_control
+from .control import _MLSDModel
+from .control import _PoseModel
+from .control import _CannyModel
+from .control import _DepthModel
 from .control import ControlNetHints
-from .control import ControlMLSDModel
-from .control import ControlPoseModel
-from .control import ControlCannyModel
-from .control import ControlDepthModel
+from .control import ControlNetModelPlaceholder
 
 
 new_control_multi_endpoint = "/control_new/multi"
 
 
+class MLSDBundleData(_MLSDModel, ControlNetModelPlaceholder):
+    pass
+
+
 class MLSDBundle(BaseModel):
     type: ControlNetHints = Field(ControlNetHints.MLSD, const=True)
-    data: ControlMLSDModel
+    data: MLSDBundleData
+
+
+class PoseBundleData(_PoseModel, ControlNetModelPlaceholder):
+    pass
 
 
 class PoseBundle(BaseModel):
     type: ControlNetHints = Field(ControlNetHints.POSE, const=True)
-    data: ControlPoseModel
+    data: PoseBundleData
+
+
+class CannyBundleData(_CannyModel, ControlNetModelPlaceholder):
+    pass
 
 
 class CannyBundle(BaseModel):
     type: ControlNetHints = Field(ControlNetHints.CANNY, const=True)
-    data: ControlCannyModel
+    data: CannyBundleData
+
+
+class DepthBundleData(_DepthModel, ControlNetModelPlaceholder):
+    pass
 
 
 class DepthBundle(BaseModel):
     type: ControlNetHints = Field(ControlNetHints.DEPTH, const=True)
-    data: ControlDepthModel
+    data: DepthBundleData
 
 
-class UniversalControlModel(ControlStrengthModel, ControlNetModel):
+class UniversalControlModel(ControlNetModelPlaceholder):
     pass
 
 
