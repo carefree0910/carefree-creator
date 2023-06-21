@@ -43,6 +43,7 @@ from .common import IAlgorithm
 from .common import ControlNetModel
 from .common import ReturnArraysModel
 from .common import ControlStrengthModel
+from .common import _ControlNetCoreModel
 
 
 root = os.path.dirname(__file__)
@@ -60,7 +61,7 @@ images_type = Tuple[np.ndarray, np.ndarray]
 apply_response = Tuple[List[np.ndarray], Dict[str, float]]
 
 
-class ControlNetModelPlaceholder(ControlStrengthModel, ControlNetModel):
+class ControlNetModelPlaceholder(ControlStrengthModel, _ControlNetCoreModel):
     pass
 
 
