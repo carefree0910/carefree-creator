@@ -461,7 +461,7 @@ class ControlPoseHintModel(_PoseModel, ReturnArraysModel, ImageModel):
     pass
 
 
-# ControlNet (canny2image)
+# ControlNet (mlsd2image)
 
 
 class _MLSDModel(LargeDetectResolutionModel):
