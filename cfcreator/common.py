@@ -426,8 +426,7 @@ class ControlStrengthModel(BaseModel):
     control_strength: float = Field(1.0, description="The strength of the control.")
 
 
-class _ControlNetModel(BaseModel):
-    url: Optional[str] = Field(None, description="specify this to do img2img")
+class _ControlNetCoreModel(BaseModel):
     hint_url: str = Field(
         "",
         description="""
@@ -444,6 +443,15 @@ The annotator type of the hint.
 """,
     )
     hint_start: Optional[float] = Field(None, description="start ratio of the control")
+    bypass_annotator: bool = Field(False, description="Bypass the annotator.")
+    no_switch: bool = Field(
+        False,
+        description="Whether not to switch the ControlNet weights even when the base model has switched.",
+    )
+
+
+class _ControlNetModel(_ControlNetCoreModel):
+    url: Optional[str] = Field(None, description="specify this to do img2img")
     prompt: str = Field("", description="Prompt.")
     fidelity: float = Field(
         0.05,
@@ -452,17 +460,12 @@ The annotator type of the hint.
         description="The fidelity of the input image, only take effects when `url` is not `None`.",
     )
     num_samples: int = Field(1, ge=1, le=4, description="Number of samples.")
-    bypass_annotator: bool = Field(False, description="Bypass the annotator.")
     base_model: str = Field(
         SDVersions.v1_5,
         description="The base model.",
     )
     guess_mode: bool = Field(False, description="Guess mode.")
     use_audit: bool = Field(False, description="Whether audit the outputs.")
-    no_switch: bool = Field(
-        False,
-        description="Whether not to switch the ControlNet weights even when the base model has switched.",
-    )
     mask_url: Optional[str] = Field(None, description="specify this to do inpainting")
     use_inpainting: bool = Field(False, description="Whether use inpainting model.")
 
