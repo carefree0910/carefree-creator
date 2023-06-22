@@ -6,15 +6,20 @@ import numpy as np
 from PIL import Image
 from enum import Enum
 from typing import Any
+from typing import Tuple
+from typing import Union
+from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from cftool.cv import to_rgb
 from cftool.cv import to_uint8
 from cftool.cv import np_to_bytes
 from cftool.cv import ImageProcessor
 from cftool.geometry import Matrix2D
 from cfclient.models import ImageModel
 
+from .utils import get_contrast_bg
 from .common import get_response
 from .common import IAlgorithm
 from .common import ReturnArraysModel
@@ -25,6 +30,7 @@ cv_resize_endpoint = "/cv/resize"
 cv_affine_endpoint = "/cv/affine"
 cv_get_mask_endpoint = "/cv/get_mask"
 cv_inverse_endpoint = "/cv/inverse"
+cv_fill_bg_endpoint = "/cv/fill_bg"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
 
@@ -268,6 +274,48 @@ class Inverse(IAlgorithm):
         return res
 
 
+class FillBGModel(CVImageModel):
+    bg: Optional[Union[int, Tuple[int, int, int]]] = Field(
+        None,
+        description="""
+Target background color.
+> If not specified, `get_contrast_bg` will be used to calculate the `bg`.
+""",
+    )
+
+
+@IAlgorithm.auto_register()
+class FillBG(IAlgorithm):
+    model_class = FillBGModel
+
+    endpoint = cv_fill_bg_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: FillBGModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        bg = data.bg
+        if bg is None:
+            bg = get_contrast_bg(image)
+        if isinstance(bg, int):
+            bg = bg, bg, bg
+        image = to_rgb(image, bg)
+        t2 = time.time()
+        res = get_response(data, [np.array(image)])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
+
+
 class HistogramMatchModel(ImageModel):
     bg_url: str = Field(..., description="The `cdn` / `cos` url of the background.")
     use_hsv: bool = Field(False, description="Whether use the HSV space to match.")
@@ -337,17 +385,20 @@ __all__ = [
     "cv_affine_endpoint",
     "cv_get_mask_endpoint",
     "cv_inverse_endpoint",
+    "cv_fill_bg_endpoint",
     "cv_histogram_match_endpoint",
     "ErodeModel",
     "ResizeModel",
     "BaseAffineModel",
     "AffineModel",
     "CVImageModel",
+    "FillBGModel",
     "HistogramMatchModel",
     "Erode",
     "Resize",
     "Affine",
     "GetMask",
     "Inverse",
+    "FillBG",
     "HistogramMatch",
 ]
