@@ -85,7 +85,6 @@ async def apply_control(
     self: IAlgorithm,
     common: ControlNetModel,
     controls: List[ControlNetBundle],
-    normalized_inpainting_mask: Optional[np.ndarray] = None,
     **kwargs: Any,
 ) -> apply_response:
     t_sd = time.time()
@@ -233,15 +232,9 @@ async def apply_control(
     if common.mask_url is not None or is_sd_inpainting:
         if common.url is None:
             raise ValueError("`url` should be provided to inpainting")
-        if normalized_inpainting_mask is not None:
-            inpainting_mask = Image.fromarray(to_uint8(normalized_inpainting_mask))
-        else:
-            if common.mask_url is None:
-                raise ValueError(
-                    "either `mask_url` or `normalized_input_mask` "
-                    "should be provided to perform ControlNet inpainting"
-                )
-            inpainting_mask = Image.fromarray(image_array_d[common.mask_url])
+        if common.mask_url is None:
+            raise ValueError("`mask_url` should be provided to inpainting")
+        inpainting_mask = Image.fromarray(image_array_d[common.mask_url])
         image = Image.fromarray(image_array_d[common.url])
         if common.inpainting_target_wh is not None:
             it_wh = common.inpainting_target_wh
