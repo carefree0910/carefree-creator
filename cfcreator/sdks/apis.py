@@ -46,6 +46,7 @@ endpoint2method = {
     cv_get_mask_endpoint: "get_mask",
     cv_inverse_endpoint: "inverse",
     cv_fill_bg_endpoint: "fill_bg",
+    cv_get_size_endpoint: "get_size",
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     upscale_tile_endpoint: "upscale_tile",
     UPLOAD_ENDPOINT: "get_image",
@@ -185,6 +186,10 @@ class APIs:
 
     async def fill_bg(self, data: FillBGModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_fill_bg_endpoint, **kw)
+
+    async def get_size(self, data: ImageModel, **kw: Any) -> List[int]:
+        task = endpoint2algorithm(cv_get_size_endpoint)
+        return await self.algorithms[task].run(data, **kw)
 
     async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)

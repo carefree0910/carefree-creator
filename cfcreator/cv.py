@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 from enum import Enum
 from typing import Any
+from typing import List
 from typing import Tuple
 from typing import Union
 from typing import Optional
@@ -31,6 +32,7 @@ cv_affine_endpoint = "/cv/affine"
 cv_get_mask_endpoint = "/cv/get_mask"
 cv_inverse_endpoint = "/cv/inverse"
 cv_fill_bg_endpoint = "/cv/fill_bg"
+cv_get_size_endpoint = "/cv/get_size"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
 
@@ -316,6 +318,30 @@ class FillBG(IAlgorithm):
         return res
 
 
+@IAlgorithm.auto_register()
+class GetSize(IAlgorithm):
+    model_class = ImageModel
+
+    endpoint = cv_get_size_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: ImageModel, *args: Any, **kwargs: Any) -> List[int]:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        w, h = image.size
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": time.time() - t1,
+            }
+        )
+        return [w, h]
+
+
 class HistogramMatchModel(ImageModel):
     bg_url: str = Field(..., description="The `cdn` / `cos` url of the background.")
     use_hsv: bool = Field(False, description="Whether use the HSV space to match.")
@@ -386,6 +412,7 @@ __all__ = [
     "cv_get_mask_endpoint",
     "cv_inverse_endpoint",
     "cv_fill_bg_endpoint",
+    "cv_get_size_endpoint",
     "cv_histogram_match_endpoint",
     "ErodeModel",
     "ResizeModel",
@@ -400,5 +427,6 @@ __all__ = [
     "GetMask",
     "Inverse",
     "FillBG",
+    "GetSize",
     "HistogramMatch",
 ]
