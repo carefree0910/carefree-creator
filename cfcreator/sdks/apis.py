@@ -23,7 +23,7 @@ from cfclient.models import algorithms as registered_algorithms
 from cflearn.api.cv.diffusion import ControlNetHints
 
 
-TRes = Union[List[str], List[Image.Image]]
+TRes = Union[List[Union[str, int, float]], List[Image.Image]]
 UPLOAD_ENDPOINT = "$upload"
 ADD_TEXT_ENDPOINT = "$add_text"
 CONTROL_HINT_ENDPOINT = "$control_hint"
@@ -232,7 +232,7 @@ class APIs:
             v0 = current_node_data.get(k0)
             if isinstance(v0, dict):
                 _inject(".".join(k_split[1:]), ki_cache, v0)
-            elif isinstance(v0, str) or v0 is None:
+            elif isinstance(v0, (str, int, float)) or v0 is None:
                 if len(k_split) == 1:
                     if isinstance(ki_cache, Image.Image):
                         # we assign random_hash here to make mapping possible
@@ -241,7 +241,7 @@ class APIs:
                         current_node_data[k0] = ki_cache
                 else:
                     raise ValueError(
-                        f"field under '{k0}' is already a vanilla string, "
+                        f"field under '{k0}' is already a vanilla value, "
                         f"but further keys are given: '{k_split[1:]}'"
                     )
             elif isinstance(v0, list):
@@ -265,7 +265,8 @@ class APIs:
                     )
             else:
                 raise ValueError(
-                    f"field under '{k0}' should be one of (BaseModel, str, list), "
+                    f"field under '{k0}' should be one of "
+                    "(BaseModel, str, int, float, list), "
                     f"but got '{type(v0)}'"
                 )
 
