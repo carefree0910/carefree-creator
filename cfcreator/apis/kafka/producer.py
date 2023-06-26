@@ -239,6 +239,7 @@ async def push(data: ProducerModel, response: Response) -> ProducerResponse:
 
 class InterruptModel(BaseModel):
     uid_list: List[str]
+    force_interrupt: bool = False
 
 
 class InterruptSingleResponse(BaseModel):
@@ -261,7 +262,7 @@ async def interrupt(data: InterruptModel, response: Response) -> InterruptRespon
             continue
         existing = json.loads(existing)
         existing_status = existing.get("status")
-        if existing_status != Status.PENDING:
+        if not data.force_interrupt and existing_status != Status.PENDING:
             results.append(
                 InterruptSingleResponse(
                     success=False,
