@@ -274,7 +274,7 @@ async def interrupt(data: InterruptModel, response: Response) -> InterruptRespon
             json.dumps(dict(status=Status.INTERRUPTED, data=existing.get("data"))),
         )
         results.append(InterruptSingleResponse(success=True, reason=""))
-    return results
+    return InterruptResponse(results=results)
 
 
 class ServerStatusResponse(BaseModel):
