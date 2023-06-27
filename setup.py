@@ -16,7 +16,7 @@ setup(
     install_requires=[
         "click>=8.1.3",
         "fastapi>=0.95.1",
-        "carefree-toolkit>=0.3.6.5",
+        "carefree-toolkit>=0.3.6.6",
         "carefree-client>=0.1.10",
         "carefree-learn[cv_full]>=0.4.5",
         "networkx",
