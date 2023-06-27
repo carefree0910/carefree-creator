@@ -12,7 +12,7 @@ from fastapi import Response
 from pydantic import Field
 from cftool.misc import random_hash
 from cftool.misc import shallow_copy_dict
-from cflearn.api.cv.diffusion import TPair
+from cftool.types import TNumberPair
 
 from .common import get_response
 from .common import Txt2ImgModel
@@ -29,8 +29,8 @@ upscale_tile_endpoint = "/upscale/tile"
 class UpscaleTileModel(ReturnArraysModel, Txt2ImgModel):
     url: str = Field(..., description="url of the initial image")
     padding: int = Field(32, description="padding for each tile")
-    grid_wh: TPair = Field(None, description="explicit specify the grid size")
-    upscale_factor: TPair = Field(2, ge=1, description="upscale factor")
+    grid_wh: TNumberPair = Field(None, description="explicit specify the grid size")
+    upscale_factor: TNumberPair = Field(2, ge=1, description="upscale factor")
     fidelity: float = Field(0.45, description="fidelity of each tile")
     highres_steps: int = Field(36, description="num_steps for upscaling")
     strength: float = Field(1.0, description="strength of the tile control")
