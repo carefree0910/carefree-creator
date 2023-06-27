@@ -32,6 +32,7 @@ from .common import register_semantic
 from .common import register_esr_anime
 from .common import register_inpainting
 from .common import get_sd_from
+from .common import get_response
 from .common import handle_diffusion_model
 from .common import get_bytes_from_diffusion
 from .common import get_bytes_from_translator
@@ -386,7 +387,7 @@ class Img2ImgInpainting(IAlgorithm):
 # semantic2img (LDM)
 
 
-class Img2ImgSemantic2ImgModel(Img2ImgDiffusionModel):
+class Img2ImgSemantic2ImgModel(ReturnArraysModel, Img2ImgDiffusionModel):
     color2label: Dict[str, int] = Field(
         ...,
         description="""
@@ -480,8 +481,10 @@ class Img2ImgSemantic2Img(IAlgorithm):
             seed=data.seed,
             **kwargs,
         ).numpy()[0]
-        content = get_bytes_from_diffusion(img_arr)
         t5 = time.time()
+        final = to_uint8(get_normalized_arr_from_diffusion(img_arr))
+        res = get_response(data, [final])
+        t6 = time.time()
         api_pool.cleanup(APIs.SEMANTIC)
         self.log_times(
             {
@@ -490,10 +493,11 @@ class Img2ImgSemantic2Img(IAlgorithm):
                 "interpolation": t3 - t2,
                 "get_model": t4 - t3,
                 "inference": t5 - t4,
-                "cleanup": time.time() - t5,
+                "get_response": t6 - t5,
+                "cleanup": time.time() - t6,
             }
         )
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 # image harmonization (hrnet)

@@ -32,16 +32,18 @@ FOR_EACH_ENDPOINT = "$for_each"
 ALL_LATENCIES_KEY = "$all_latencies"
 endpoint2method = {
     txt2img_sd_endpoint: "txt2img",
+    txt2img_sd_inpainting_endpoint: "sd_inpainting",
+    txt2img_sd_outpainting_endpoint: "sd_outpainting",
     img2img_sd_endpoint: "img2img",
     img2img_sr_endpoint: "sr",
     img2img_sod_endpoint: "sod",
     img2img_inpainting_endpoint: "inpainting",
-    txt2img_sd_inpainting_endpoint: "sd_inpainting",
-    txt2img_sd_outpainting_endpoint: "sd_outpainting",
-    img2txt_caption_endpoint: "image_captioning",
-    new_control_multi_endpoint: "run_multi_controlnet",
+    img2img_semantic2img_endpoint: "semantic2img",
     img2img_harmonization_endpoint: "harmonization",
-    paste_pipeline_endpoint: "paste_pipeline",
+    img2txt_caption_endpoint: "image_captioning",
+    txt2txt_prompt_enhance_endpoint: "prompt_enhance",
+    new_control_multi_endpoint: "run_multi_controlnet",
+    upscale_tile_endpoint: "upscale_tile",
     cv_erode_endpoint: "erode",
     cv_resize_endpoint: "resize",
     cv_affine_endpoint: "affine",
@@ -51,10 +53,9 @@ endpoint2method = {
     cv_get_size_endpoint: "get_size",
     cv_modify_box_endpoint: "modify_box",
     cv_crop_image_endpoint: "crop_image",
-    txt2txt_prompt_enhance_endpoint: "prompt_enhance",
-    upscale_tile_endpoint: "upscale_tile",
     facexlib_parse_endpoint: "facexlib_parse",
     facexlib_detect_endpoint: "facexlib_detect",
+    paste_pipeline_endpoint: "paste_pipeline",
     UPLOAD_ENDPOINT: "get_image",
     ADD_TEXT_ENDPOINT: "add_text",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
@@ -152,6 +153,11 @@ class APIs:
         self, data: Img2ImgInpaintingModel, **kw: Any
     ) -> List[Image.Image]:
         return await self._run(data, img2img_inpainting_endpoint, **kw)
+
+    async def semantic2img(
+        self, data: Img2ImgSemantic2ImgModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, img2img_semantic2img_endpoint, **kw)
 
     async def sd_inpainting(
         self, data: Txt2ImgSDInpaintingModel, **kw: Any
