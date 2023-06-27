@@ -33,6 +33,7 @@ cv_get_mask_endpoint = "/cv/get_mask"
 cv_inverse_endpoint = "/cv/inverse"
 cv_fill_bg_endpoint = "/cv/fill_bg"
 cv_get_size_endpoint = "/cv/get_size"
+cv_modify_box_endpoint = "/cv/modify_box"
 cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
@@ -350,6 +351,49 @@ class LTRBModel(BaseModel):
     )
 
 
+class ModifyBoxModel(LTRBModel):
+    w: int = Field(..., description="The width of the image.")
+    h: int = Field(..., description="The height of the image.")
+    padding: int = Field(..., description="The padding size.")
+    force_square: bool = Field(False, description="Force the box to be a square.")
+
+
+@IAlgorithm.auto_register()
+class ModifyBox(IAlgorithm):
+    model_class = ModifyBoxModel
+
+    endpoint = cv_modify_box_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(
+        self, data: ModifyBoxModel, *args: Any, **kwargs: Any
+    ) -> List[List[int]]:
+        self.log_endpoint(data)
+        t0 = time.time()
+        w = data.w
+        h = data.h
+        padding = data.padding
+        l, t, r, b = data.lt_rb
+        l = max(0, l - padding)
+        t = max(0, t - padding)
+        r = min(w, r + padding)
+        b = min(h, b + padding)
+        if data.force_square:
+            box_w = r - l
+            box_h = b - t
+            diff = abs(box_w - box_h)
+            if box_w > box_h:
+                t = max(0, t - diff // 2)
+                b = min(h, t + box_w)
+            else:
+                l = max(0, l - diff // 2)
+                r = min(w, l + box_h)
+        self.log_times({"process": time.time() - t0})
+        return [[l, t, r, b]]
+
+
 class CropImageModel(CVImageModel, LTRBModel):
     pass
 
@@ -453,6 +497,7 @@ __all__ = [
     "cv_inverse_endpoint",
     "cv_fill_bg_endpoint",
     "cv_get_size_endpoint",
+    "cv_modify_box_endpoint",
     "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
     "ErodeModel",
@@ -462,6 +507,7 @@ __all__ = [
     "CVImageModel",
     "FillBGModel",
     "LTRBModel",
+    "ModifyBoxModel",
     "CropImageModel",
     "HistogramMatchModel",
     "Erode",
@@ -471,6 +517,7 @@ __all__ = [
     "Inverse",
     "FillBG",
     "GetSize",
+    "ModifyBox",
     "CropImage",
     "HistogramMatch",
 ]
