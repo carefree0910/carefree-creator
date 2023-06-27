@@ -116,11 +116,16 @@ class Erode(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
+        w, h = image.size
         array = np.array(image.convert("RGBA"))
         alpha = array[..., -1]
-        alpha = cv2.threshold(alpha, data.threshold, 255, cv2.THRESH_BINARY)[1]
-        eroded_alpha = erode(alpha, data.n_iter, data.kernel_size)
-        array[..., -1] = eroded_alpha
+        binarized = cv2.threshold(alpha, data.threshold, 255, cv2.THRESH_BINARY)[1]
+        eroded_alpha = erode(binarized, data.n_iter, data.kernel_size)
+        merged_alpha = np.minimum(alpha, eroded_alpha)
+        array[..., -1] = merged_alpha
+        rgb = array[..., :3].reshape([-1, 3])
+        rgb[(merged_alpha == 0).ravel()] = 0
+        array[..., :3] = rgb.reshape([h, w, 3])
         t2 = time.time()
         res = get_response(data, [array])
         self.log_times(
