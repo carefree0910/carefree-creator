@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from cftool.cv import to_rgb
 from cftool.cv import to_uint8
 from cftool.cv import np_to_bytes
+from cftool.cv import ImageBox
 from cftool.cv import ImageProcessor
 from cftool.geometry import Matrix2D
 from cfclient.models import ImageModel
@@ -380,23 +381,12 @@ class ModifyBox(IAlgorithm):
         w = data.w
         h = data.h
         padding = data.padding
-        l, t, r, b = data.lt_rb
-        l = max(0, l - padding)
-        t = max(0, t - padding)
-        r = min(w, r + padding)
-        b = min(h, b + padding)
+        box = ImageBox(*data.lt_rb)
+        box = box.pad(padding, w=w, h=h)
         if data.force_square:
-            box_w = r - l
-            box_h = b - t
-            diff = abs(box_w - box_h)
-            if box_w > box_h:
-                t = max(0, t - diff // 2)
-                b = min(h, t + box_w)
-            else:
-                l = max(0, l - diff // 2)
-                r = min(w, l + box_h)
+            box = box.to_square()
         self.log_times({"process": time.time() - t0})
-        return [[l, t, r, b]]
+        return [list(box.tuple)]
 
 
 class CropImageModel(CVImageModel, LTRBModel):
