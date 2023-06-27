@@ -264,10 +264,14 @@ class APIs:
                     else:
                         current_node_data[k0] = ki_cache
                 else:
-                    raise ValueError(
-                        f"field under '{k0}' is already a vanilla value, "
-                        f"but further keys are given: '{k_split[1:]}'"
-                    )
+                    if v0 is None:
+                        v0 = current_node_data[k0] = {}
+                        _inject(".".join(k_split[1:]), ki_cache, v0)
+                    else:
+                        raise ValueError(
+                            f"field under '{k0}' is already a vanilla value, "
+                            f"but further keys are given: '{k_split[1:]}'"
+                        )
             elif isinstance(v0, list):
                 try:
                     k1 = int(k_split[1])
@@ -311,7 +315,10 @@ class APIs:
                     if not isinstance(k_packs, list):
                         k_packs = [k_packs]
                     for k_pack in k_packs:
-                        ki_cache = caches[k][k_pack.index]
+                        if k_pack.index is None:
+                            ki_cache = caches[k]
+                        else:
+                            ki_cache = caches[k][k_pack.index]
                         _inject(k_pack.field, ki_cache, node_data)
                         if isinstance(ki_cache, Image.Image):
                             node_kw[k_pack.field] = ki_cache
