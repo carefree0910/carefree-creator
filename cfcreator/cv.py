@@ -33,6 +33,7 @@ cv_get_mask_endpoint = "/cv/get_mask"
 cv_inverse_endpoint = "/cv/inverse"
 cv_fill_bg_endpoint = "/cv/fill_bg"
 cv_get_size_endpoint = "/cv/get_size"
+cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
 
@@ -342,6 +343,45 @@ class GetSize(IAlgorithm):
         return [w, h]
 
 
+class LTRBModel(BaseModel):
+    lt_rb: Tuple[int, int, int, int] = Field(
+        ...,
+        description="The left-top and right-bottom points.",
+    )
+
+
+class CropImageModel(CVImageModel, LTRBModel):
+    pass
+
+
+@IAlgorithm.auto_register()
+class CropImage(IAlgorithm):
+    model_class = CropImageModel
+
+    endpoint = cv_crop_image_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: CropImageModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        l, t, r, b = data.lt_rb
+        image = image.crop((l, t, r, b))
+        t2 = time.time()
+        res = get_response(data, [np.array(image)])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
+
+
 class HistogramMatchModel(ImageModel):
     bg_url: str = Field(..., description="The `cdn` / `cos` url of the background.")
     use_hsv: bool = Field(False, description="Whether use the HSV space to match.")
@@ -413,6 +453,7 @@ __all__ = [
     "cv_inverse_endpoint",
     "cv_fill_bg_endpoint",
     "cv_get_size_endpoint",
+    "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
     "ErodeModel",
     "ResizeModel",
@@ -420,6 +461,8 @@ __all__ = [
     "AffineModel",
     "CVImageModel",
     "FillBGModel",
+    "LTRBModel",
+    "CropImageModel",
     "HistogramMatchModel",
     "Erode",
     "Resize",
@@ -428,5 +471,6 @@ __all__ = [
     "Inverse",
     "FillBG",
     "GetSize",
+    "CropImage",
     "HistogramMatch",
 ]

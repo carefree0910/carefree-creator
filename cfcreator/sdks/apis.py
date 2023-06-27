@@ -47,6 +47,7 @@ endpoint2method = {
     cv_inverse_endpoint: "inverse",
     cv_fill_bg_endpoint: "fill_bg",
     cv_get_size_endpoint: "get_size",
+    cv_crop_image_endpoint: "crop_image",
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     upscale_tile_endpoint: "upscale_tile",
     UPLOAD_ENDPOINT: "get_image",
@@ -190,6 +191,9 @@ class APIs:
     async def get_size(self, data: ImageModel, **kw: Any) -> List[int]:
         task = endpoint2algorithm(cv_get_size_endpoint)
         return await self.algorithms[task].run(data, **kw)
+
+    async def crop_image(self, data: CropImageModel, **kw: Any) -> List[Image.Image]:
+        return await self._run(data, cv_crop_image_endpoint, **kw)
 
     async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)
