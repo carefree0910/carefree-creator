@@ -21,6 +21,7 @@ setup(
         "carefree-learn[cv_full]>=0.4.5",
         "networkx",
         "matplotlib",
+        "facexlib",
     ],
     extras_require={
         "kafka": [

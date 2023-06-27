@@ -12,6 +12,7 @@ from .parameters import Focus
 from .legacy.control import *
 from .legacy.control_multi import *
 from .upscale import *
+from .third_party import *
 from .workflow import *
 
 
@@ -64,6 +65,9 @@ endpoint_to_focuses = {
     paste_pipeline_endpoint: [Focus.ALL, Focus.SYNC, Focus.PIPELINE],
     # upscale
     upscale_tile_endpoint: [Focus.ALL, Focus.CONTROL],
+    # third party
+    facexlib_parse_endpoint: [Focus.ALL],
+    facexlib_detect_endpoint: [Focus.ALL],
     # workflow
     workflow_endpoint: [Focus.ALL, Focus.SYNC],
 }

@@ -51,6 +51,8 @@ endpoint2method = {
     cv_crop_image_endpoint: "crop_image",
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     upscale_tile_endpoint: "upscale_tile",
+    facexlib_parse_endpoint: "facexlib_parse",
+    facexlib_detect_endpoint: "facexlib_detect",
     UPLOAD_ENDPOINT: "get_image",
     ADD_TEXT_ENDPOINT: "add_text",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
@@ -209,6 +211,19 @@ class APIs:
         self, data: UpscaleTileModel, **kw: Any
     ) -> List[Image.Image]:
         return await self._run(data, upscale_tile_endpoint, **kw)
+
+    # third party
+
+    async def facexlib_parse(
+        self, data: FacexlibParseModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, facexlib_parse_endpoint, **kw)
+
+    async def facexlib_detect(
+        self, data: FacexlibDetectModel, **kw: Any
+    ) -> List[List[int]]:
+        task = endpoint2algorithm(facexlib_detect_endpoint)
+        return await self.algorithms[task].run(data, **kw)
 
     # special
 
