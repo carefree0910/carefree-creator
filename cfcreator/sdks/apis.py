@@ -15,6 +15,7 @@ from cftool.misc import random_hash
 from cftool.misc import print_warning
 from cftool.misc import shallow_copy_dict
 from cftool.data_structures import Workflow
+from cftool.data_structures import WorkNode
 from cfclient.core import HttpClient
 from cfclient.utils import download_image_with_retry
 from cfclient.models import TextModel
@@ -27,6 +28,7 @@ TRes = Union[List[Union[str, int, float]], List[Image.Image]]
 UPLOAD_ENDPOINT = "$upload"
 ADD_TEXT_ENDPOINT = "$add_text"
 CONTROL_HINT_ENDPOINT = "$control_hint"
+FOR_EACH_ENDPOINT = "$for_each"
 ALL_LATENCIES_KEY = "$all_latencies"
 endpoint2method = {
     txt2img_sd_endpoint: "txt2img",
@@ -56,7 +58,15 @@ endpoint2method = {
     UPLOAD_ENDPOINT: "get_image",
     ADD_TEXT_ENDPOINT: "add_text",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
+    FOR_EACH_ENDPOINT: "for_each",
 }
+
+
+class ForEachModel(BaseModel):
+    endpoint: str
+    field: str
+    values: List[Any]
+    params: Dict[str, Any]
 
 
 class APIs:
@@ -241,6 +251,37 @@ class APIs:
         endpoint = control_hint2hint_endpoints[hint_type]
         return await self._run(data, endpoint, **kw)
 
+    async def for_each(self, data: ForEachModel, **kw: Any) -> List[Any]:
+        targets = []
+        cache_key = "$cache"
+        target_key = "$target"
+        params_prefix = "params."
+        for value in data.values:
+            i_kw = shallow_copy_dict(kw)
+            for k in list(i_kw):
+                if k.startswith(params_prefix):
+                    nk = k.lstrip(params_prefix)
+                    i_kw[nk] = i_kw.pop(k)
+            i_caches = {cache_key: [value]}
+            i_workflow = Workflow()
+            i_workflow.push(
+                WorkNode(
+                    key=target_key,
+                    endpoint=data.endpoint,
+                    injections={cache_key: {"index": 0, "field": data.field}},
+                    data=shallow_copy_dict(data.params),
+                )
+            )
+            i_results = await self.execute(i_workflow, target_key, i_caches, **i_kw)
+            i_target = i_results[target_key]
+            if len(i_target) != 1:
+                raise ValueError(
+                    f"[{data.endpoint}] there should be only "
+                    f"one target result, got {i_target}"
+                )
+            targets.append(i_target[0])
+        return targets
+
     # workflow
 
     async def execute(
@@ -335,11 +376,16 @@ class APIs:
                     hint_type = node_data.pop("hint_type")
                     item_res = await method_fn(hint_type, node_data, **node_kw)
                     endpoint = control_hint2hint_endpoints[hint_type]
+                elif endpoint == FOR_EACH_ENDPOINT:
+                    data_model = ForEachModel(**node_data)
+                    item_res = await method_fn(data_model, **node_kw)
                 else:
                     data_model = self.get_data_model(endpoint, node_data)
                     item_res = await method_fn(data_model, **node_kw)
                 if endpoint == UPLOAD_ENDPOINT or endpoint == ADD_TEXT_ENDPOINT:
                     ls = dict(download=time.time() - t)
+                elif endpoint == FOR_EACH_ENDPOINT:
+                    ls = dict(loop=time.time() - t)
                 else:
                     ls = self.algorithms[endpoint2algorithm(endpoint)].last_latencies
                 caches[item.key] = item_res
