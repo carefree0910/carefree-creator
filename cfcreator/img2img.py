@@ -34,8 +34,6 @@ from .common import register_inpainting
 from .common import get_sd_from
 from .common import get_response
 from .common import handle_diffusion_model
-from .common import get_bytes_from_diffusion
-from .common import get_bytes_from_translator
 from .common import get_normalized_arr_from_diffusion
 from .common import IAlgorithm
 from .common import ImageModel
@@ -119,11 +117,9 @@ class Img2ImgSD(IAlgorithm):
             anchor=64,
             **kwargs,
         ).numpy()[0]
-        if data.return_arrays:
-            content = None
-        else:
-            content = get_bytes_from_diffusion(img_arr)
         t4 = time.time()
+        res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
+        t5 = time.time()
         api_pool.cleanup(APIs.SD)
         self.log_times(
             {
@@ -131,12 +127,11 @@ class Img2ImgSD(IAlgorithm):
                 "preprocess": t2 - t1,
                 "get_model": t3 - t2,
                 "inference": t4 - t3,
-                "cleanup": time.time() - t4,
+                "get_response": t5 - t4,
+                "cleanup": time.time() - t5,
             }
         )
-        if content is None:
-            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 # super resolution (Real-ESRGAN)
@@ -226,10 +221,7 @@ class Img2ImgSR(IAlgorithm):
             data.target_h,
         )
         t3 = time.time()
-        if data.return_arrays:
-            content = None
-        else:
-            content = get_bytes_from_translator(img_arr, transpose=False)
+        res = get_response(data, [to_uint8(img_arr)])
         t4 = time.time()
         api_pool.cleanup(api_key)
         t5 = time.time()
@@ -237,14 +229,12 @@ class Img2ImgSR(IAlgorithm):
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
-                "get_bytes": t4 - t3,
+                "get_response": t4 - t3,
                 "cleanup": t5 - t4,
             }
         )
         self.log_times(latencies)
-        if content is None:
-            return [to_uint8(img_arr)]
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 # inpainting (LDM, LaMa)
@@ -332,7 +322,7 @@ class Img2ImgInpainting(IAlgorithm):
             ).image
             mask_arr[mask_arr > 0.0] = 1.0
             img_arr = m(image_arr, mask_arr, cfg)
-            content = None if data.return_arrays else np_to_bytes(img_arr)
+            final = to_uint8(img_arr)
         else:
             kwargs.update(handle_diffusion_model(m, data))
             mask_arr = np.array(mask)
@@ -364,11 +354,8 @@ class Img2ImgInpainting(IAlgorithm):
                     refine_fidelity=data.refine_fidelity,
                     **kwargs,
                 ).numpy()[0]
-            if not data.return_arrays:
-                content = get_bytes_from_diffusion(img_arr)
-            else:
-                content = None
-                img_arr = get_normalized_arr_from_diffusion(img_arr)
+            final = to_uint8(get_normalized_arr_from_diffusion(img_arr))
+        res = get_response(data, [final])
         t3 = time.time()
         api_pool.cleanup(api_key)
         self.log_times(
@@ -379,9 +366,7 @@ class Img2ImgInpainting(IAlgorithm):
                 "cleanup": time.time() - t3,
             }
         )
-        if content is None:
-            return [to_uint8(img_arr)]
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 # semantic2img (LDM)
@@ -482,8 +467,7 @@ class Img2ImgSemantic2Img(IAlgorithm):
             **kwargs,
         ).numpy()[0]
         t5 = time.time()
-        final = to_uint8(get_normalized_arr_from_diffusion(img_arr))
-        res = get_response(data, [final])
+        res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
         t6 = time.time()
         api_pool.cleanup(APIs.SEMANTIC)
         self.log_times(

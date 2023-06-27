@@ -17,8 +17,8 @@ from .utils import APIs
 from .common import register_sd
 from .common import register_sd_inpainting
 from .common import get_sd_from
+from .common import get_response
 from .common import handle_diffusion_model
-from .common import get_bytes_from_diffusion
 from .common import get_normalized_arr_from_diffusion
 from .common import handle_diffusion_inpainting_model
 from .common import IAlgorithm
@@ -67,22 +67,19 @@ class Txt2ImgSD(IAlgorithm):
             max_wh=data.max_wh,
             **kwargs,
         ).numpy()[0]
-        if data.return_arrays:
-            content = None
-        else:
-            content = get_bytes_from_diffusion(img_arr)
         t2 = time.time()
+        res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
+        t3 = time.time()
         api_pool.cleanup(APIs.SD)
         self.log_times(
             {
                 "get_model": t1 - t0,
                 "inference": t2 - t1,
-                "cleanup": time.time() - t2,
+                "get_response": t3 - t2,
+                "cleanup": time.time() - t3,
             }
         )
-        if content is None:
-            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 class PaddingModes(str, Enum):
@@ -138,23 +135,20 @@ class Txt2ImgSDInpainting(IAlgorithm):
         mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
         mask = Image.fromarray(mask_arr)
         img_arr = m.txt2img_inpainting(data.text, image, mask, **kwargs).numpy()[0]
-        if data.return_arrays:
-            content = None
-        else:
-            content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
+        res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
+        t4 = time.time()
         api_pool.cleanup(api_key)
         self.log_times(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
                 "inference": t3 - t2,
-                "cleanup": time.time() - t3,
+                "get_response": t4 - t3,
+                "cleanup": time.time() - t4,
             }
         )
-        if content is None:
-            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 @IAlgorithm.auto_register()
@@ -182,23 +176,20 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         kwargs.update(handle_diffusion_model(m, data))
         kwargs.update(handle_diffusion_inpainting_model(data))
         img_arr = m.outpainting(data.text, image, **kwargs).numpy()[0]
-        if data.return_arrays:
-            content = None
-        else:
-            content = get_bytes_from_diffusion(img_arr)
         t3 = time.time()
+        res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
+        t4 = time.time()
         api_pool.cleanup(APIs.SD_INPAINTING)
         self.log_times(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
                 "inference": t3 - t2,
-                "cleanup": time.time() - t3,
+                "get_response": t4 - t3,
+                "cleanup": time.time() - t4,
             }
         )
-        if content is None:
-            return [to_uint8(get_normalized_arr_from_diffusion(img_arr))]
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 __all__ = [

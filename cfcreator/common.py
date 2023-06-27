@@ -197,20 +197,10 @@ def register_prompt_enhance() -> None:
     )
 
 
-def get_bytes_from_translator(img_arr: np.ndarray, *, transpose: bool = True) -> bytes:
-    if transpose:
-        img_arr = img_arr.transpose([1, 2, 0])
-    return np_to_bytes(img_arr)
-
-
 def get_normalized_arr_from_diffusion(img_arr: np.ndarray) -> np.ndarray:
     img_arr = 0.5 * (img_arr + 1.0)
     img_arr = img_arr.transpose([1, 2, 0])
     return img_arr
-
-
-def get_bytes_from_diffusion(img_arr: np.ndarray) -> bytes:
-    return np_to_bytes(get_normalized_arr_from_diffusion(img_arr))
 
 
 # API models
