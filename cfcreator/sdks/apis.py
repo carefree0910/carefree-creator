@@ -16,6 +16,7 @@ from cftool.misc import print_warning
 from cftool.misc import shallow_copy_dict
 from cftool.data_structures import Workflow
 from cftool.data_structures import WorkNode
+from cftool.data_structures import InjectionPack
 from cfclient.core import HttpClient
 from cfclient.utils import download_image_with_retry
 from cfclient.models import TextModel
@@ -69,6 +70,7 @@ class ForEachModel(BaseModel):
     endpoint: str
     loops: Dict[str, List[Any]]
     params: Dict[str, Any]
+    loop_backs: Optional[List[InjectionPack]] = None
 
 
 class APIs:
@@ -271,6 +273,7 @@ class APIs:
     async def for_each(self, data: ForEachModel, **kw: Any) -> List[Any]:
         targets = []
         target_key = "$target"
+        loop_back_key = "$loop_back"
         params_prefix = "params."
         get_cache_key = lambda k: f"$cache_{k}"
         keys = sorted(data.loops)
@@ -279,14 +282,18 @@ class APIs:
         if len(set(lengths)) != 1:
             msg = f"lengths of value_lists should be equal, got {lengths} (keys={keys})"
             raise ValueError(msg)
-        for i_values in zip(*value_lists):
+        base_caches = {}
+        for i, i_values in enumerate(zip(*value_lists)):
             i_kw = shallow_copy_dict(kw)
             for k in list(i_kw):
                 if k.startswith(params_prefix):
                     nk = k.lstrip(params_prefix)
                     i_kw[nk] = i_kw.pop(k)
             i_caches = {get_cache_key(k): [v] for k, v in zip(keys, i_values)}
+            i_caches.update(shallow_copy_dict(base_caches))
             i_injections = {get_cache_key(k): {"index": 0, "field": k} for k in keys}
+            if data.loop_backs is not None and i > 0:
+                i_injections[loop_back_key] = data.loop_backs
             i_workflow = Workflow()
             i_workflow.push(
                 WorkNode(
@@ -299,6 +306,8 @@ class APIs:
             i_results = await self.execute(i_workflow, target_key, i_caches, **i_kw)
             i_target = i_results[target_key]
             targets.append(i_target)
+            if data.loop_backs is not None:
+                base_caches[loop_back_key] = i_target
         return list(map(list, zip(*targets)))
 
     # workflow
