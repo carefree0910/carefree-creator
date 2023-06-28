@@ -358,10 +358,10 @@ class LTRBModel(BaseModel):
 
 
 class ModifyBoxModel(LTRBModel):
-    w: int = Field(..., description="The width of the image.")
-    h: int = Field(..., description="The height of the image.")
-    padding: int = Field(..., description="The padding size.")
-    force_square: bool = Field(False, description="Force the box to be a square.")
+    w: Optional[int] = Field(None, description="The width of the image.")
+    h: Optional[int] = Field(None, description="The height of the image.")
+    padding: int = Field(0, description="The padding size.")
+    to_square: bool = Field(False, description="Turn the box into a square box.")
 
 
 @IAlgorithm.auto_register()
@@ -383,7 +383,7 @@ class ModifyBox(IAlgorithm):
         padding = data.padding
         box = ImageBox(*data.lt_rb)
         box = box.pad(padding, w=w, h=h)
-        if data.force_square:
+        if data.to_square:
             box = box.to_square()
         self.log_times({"process": time.time() - t0})
         return [list(box.tuple)]
