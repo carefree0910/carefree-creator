@@ -66,8 +66,7 @@ endpoint2method = {
 
 class ForEachModel(BaseModel):
     endpoint: str
-    field: str
-    values: List[Any]
+    loops: Dict[str, List[Any]]
     params: Dict[str, Any]
 
 
@@ -265,22 +264,29 @@ class APIs:
 
     async def for_each(self, data: ForEachModel, **kw: Any) -> List[Any]:
         targets = []
-        cache_key = "$cache"
         target_key = "$target"
         params_prefix = "params."
-        for value in data.values:
+        get_cache_key = lambda k: f"$cache_{k}"
+        keys = sorted(data.loops)
+        value_lists = [data.loops[k] for k in keys]
+        lengths = [len(l) for l in value_lists]
+        if len(set(lengths)) != 1:
+            msg = f"lengths of value_lists should be equal, got {lengths} (keys={keys})"
+            raise ValueError(msg)
+        for i_values in zip(*value_lists):
             i_kw = shallow_copy_dict(kw)
             for k in list(i_kw):
                 if k.startswith(params_prefix):
                     nk = k.lstrip(params_prefix)
                     i_kw[nk] = i_kw.pop(k)
-            i_caches = {cache_key: [value]}
+            i_caches = {get_cache_key(k): [v] for k, v in zip(keys, i_values)}
+            i_injections = {get_cache_key(k): {"index": 0, "field": k} for k in keys}
             i_workflow = Workflow()
             i_workflow.push(
                 WorkNode(
                     key=target_key,
                     endpoint=data.endpoint,
-                    injections={cache_key: {"index": 0, "field": data.field}},
+                    injections=i_injections,
                     data=shallow_copy_dict(data.params),
                 )
             )
@@ -303,12 +309,25 @@ class APIs:
         caches: Optional[Union[OrderedDict, Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> Dict[str, TRes]:
-        def _inject(k: str, ki_cache: TRes, current_node_data: dict) -> None:
+        def _inject(
+            k: str,
+            ki_cache: TRes,
+            current_node_data: dict,
+            is_for_each: bool = False,
+        ) -> None:
+            def _set_inject_with_loops_condition() -> None:
+                if is_loops:
+                    v0[next_k_with_loops_condition] = ki_cache
+                else:
+                    _inject(next_k_with_loops_condition, ki_cache, v0)
+
             k_split = k.split(".")
             k0 = k_split[0]
             v0 = current_node_data.get(k0)
+            next_k_with_loops_condition = ".".join(k_split[1:])
+            is_loops = is_for_each and k0 == "loops"
             if isinstance(v0, dict):
-                _inject(".".join(k_split[1:]), ki_cache, v0)
+                _set_inject_with_loops_condition()
             elif isinstance(v0, (str, int, float)) or v0 is None:
                 if len(k_split) == 1:
                     if isinstance(ki_cache, Image.Image):
@@ -319,7 +338,7 @@ class APIs:
                 else:
                     if v0 is None:
                         v0 = current_node_data[k0] = {}
-                        _inject(".".join(k_split[1:]), ki_cache, v0)
+                        _set_inject_with_loops_condition()
                     else:
                         raise ValueError(
                             f"field under '{k0}' is already a vanilla value, "
@@ -364,6 +383,8 @@ class APIs:
                 node = item.data
                 node_kw = shallow_copy_dict(kwargs)
                 node_data = shallow_copy_dict(node.data)
+                endpoint = node.endpoint
+                is_for_each = endpoint == FOR_EACH_ENDPOINT
                 for k, k_packs in node.injections.items():
                     if not isinstance(k_packs, list):
                         k_packs = [k_packs]
@@ -372,10 +393,9 @@ class APIs:
                             ki_cache = caches[k]
                         else:
                             ki_cache = caches[k][k_pack.index]
-                        _inject(k_pack.field, ki_cache, node_data)
+                        _inject(k_pack.field, ki_cache, node_data, is_for_each)
                         if isinstance(ki_cache, Image.Image):
                             node_kw[k_pack.field] = ki_cache
-                endpoint = node.endpoint
                 method_fn = getattr(self, endpoint2method[endpoint])
                 t = time.time()
                 if endpoint == UPLOAD_ENDPOINT:
