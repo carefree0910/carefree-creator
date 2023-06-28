@@ -35,6 +35,7 @@ cv_inverse_endpoint = "/cv/inverse"
 cv_fill_bg_endpoint = "/cv/fill_bg"
 cv_get_size_endpoint = "/cv/get_size"
 cv_modify_box_endpoint = "/cv/modify_box"
+cv_generate_masks_endpoint = "/cv/generate_masks"
 cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
@@ -392,6 +393,47 @@ class ModifyBox(IAlgorithm):
         return [list(box.tuple)]
 
 
+class GenerateMasksModel(ReturnArraysModel):
+    w: int = Field(..., description="The width of the canvas.")
+    h: int = Field(..., description="The height of the canvas.")
+    lt_rb_list: List[Tuple[int, int, int, int]] = Field(..., description="The boxes.")
+    merge: bool = Field(False, description="Whether merge the masks.")
+
+
+@IAlgorithm.auto_register()
+class GenerateMasks(IAlgorithm):
+    model_class = GenerateMasksModel
+
+    endpoint = cv_generate_masks_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(
+        self, data: GenerateMasksModel, *args: Any, **kwargs: Any
+    ) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        canvas = np.zeros((data.h, data.w), dtype=np.uint8)
+        results = []
+        for l, t, r, b in data.lt_rb_list:
+            i_canvas = canvas if data.merge else canvas.copy()
+            i_canvas[t:b, l:r] = 255
+            if not data.merge:
+                results.append(i_canvas)
+        if data.merge:
+            results.append(canvas)
+        t1 = time.time()
+        res = get_response(data, results)
+        self.log_times(
+            {
+                "process": t1 - t0,
+                "get_response": time.time() - t1,
+            }
+        )
+        return res
+
+
 class CropImageModel(CVImageModel, LTRBModel):
     pass
 
@@ -489,6 +531,7 @@ __all__ = [
     "cv_fill_bg_endpoint",
     "cv_get_size_endpoint",
     "cv_modify_box_endpoint",
+    "cv_generate_masks_endpoint",
     "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
     "ErodeModel",
@@ -499,6 +542,7 @@ __all__ = [
     "FillBGModel",
     "LTRBModel",
     "ModifyBoxModel",
+    "GenerateMasksModel",
     "CropImageModel",
     "HistogramMatchModel",
     "Erode",
@@ -509,6 +553,7 @@ __all__ = [
     "FillBG",
     "GetSize",
     "ModifyBox",
+    "GenerateMasks",
     "CropImage",
     "HistogramMatch",
 ]

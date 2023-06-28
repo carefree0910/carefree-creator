@@ -52,6 +52,7 @@ endpoint2method = {
     cv_fill_bg_endpoint: "fill_bg",
     cv_get_size_endpoint: "get_size",
     cv_modify_box_endpoint: "modify_box",
+    cv_generate_masks_endpoint: "generate_masks",
     cv_crop_image_endpoint: "crop_image",
     cv_histogram_match_endpoint: "histogram_match",
     facexlib_parse_endpoint: "facexlib_parse",
@@ -214,6 +215,11 @@ class APIs:
     async def modify_box(self, data: ModifyBoxModel, **kw: Any) -> List[List[int]]:
         task = endpoint2algorithm(cv_modify_box_endpoint)
         return await self.algorithms[task].run(data, **kw)
+
+    async def generate_masks(
+        self, data: GenerateMasksModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, cv_generate_masks_endpoint, **kw)
 
     async def crop_image(self, data: CropImageModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_crop_image_endpoint, **kw)
