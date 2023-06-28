@@ -53,6 +53,7 @@ endpoint2method = {
     cv_get_size_endpoint: "get_size",
     cv_modify_box_endpoint: "modify_box",
     cv_crop_image_endpoint: "crop_image",
+    cv_histogram_match_endpoint: "histogram_match",
     facexlib_parse_endpoint: "facexlib_parse",
     facexlib_detect_endpoint: "facexlib_detect",
     paste_pipeline_endpoint: "paste_pipeline",
@@ -217,6 +218,11 @@ class APIs:
 
     async def crop_image(self, data: CropImageModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_crop_image_endpoint, **kw)
+
+    async def histogram_match(
+        self, data: HistogramMatchModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, cv_histogram_match_endpoint, **kw)
 
     async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)
