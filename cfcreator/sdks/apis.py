@@ -30,6 +30,7 @@ UPLOAD_ENDPOINT = "$upload"
 ADD_TEXT_ENDPOINT = "$add_text"
 CONTROL_HINT_ENDPOINT = "$control_hint"
 FOR_EACH_ENDPOINT = "$for_each"
+PICK_ENDPOINT = "$pick"
 ALL_LATENCIES_KEY = "$all_latencies"
 endpoint2method = {
     txt2img_sd_endpoint: "txt2img",
@@ -63,6 +64,7 @@ endpoint2method = {
     ADD_TEXT_ENDPOINT: "add_text",
     CONTROL_HINT_ENDPOINT: "get_control_hint",
     FOR_EACH_ENDPOINT: "for_each",
+    PICK_ENDPOINT: "pick",
 }
 
 
@@ -71,6 +73,11 @@ class ForEachModel(BaseModel):
     loops: Dict[str, List[Any]]
     params: Dict[str, Any]
     loop_backs: Optional[List[InjectionPack]] = None
+
+
+class PickModel(BaseModel):
+    index: int
+    values: List[Any]
 
 
 class APIs:
@@ -310,6 +317,9 @@ class APIs:
                 base_caches[loop_back_key] = i_target
         return list(map(list, zip(*targets)))
 
+    async def pick(self, data: PickModel, **kw: Any) -> List[Any]:
+        return [data.values[data.index]]
+
     # workflow
 
     async def execute(
@@ -421,6 +431,9 @@ class APIs:
                 elif endpoint == FOR_EACH_ENDPOINT:
                     data_model = ForEachModel(**node_data)
                     item_res = await method_fn(data_model, **node_kw)
+                elif endpoint == PICK_ENDPOINT:
+                    data_model = PickModel(**node_data)
+                    item_res = await method_fn(data_model, **node_kw)
                 else:
                     data_model = self.get_data_model(endpoint, node_data)
                     item_res = await method_fn(data_model, **node_kw)
@@ -428,6 +441,8 @@ class APIs:
                     ls = dict(download=time.time() - t)
                 elif endpoint == FOR_EACH_ENDPOINT:
                     ls = dict(loop=time.time() - t)
+                elif endpoint == PICK_ENDPOINT:
+                    ls = dict(pick=time.time() - t)
                 else:
                     ls = self.algorithms[endpoint2algorithm(endpoint)].last_latencies
                 caches[item.key] = item_res
@@ -447,6 +462,7 @@ __all__ = [
     "ADD_TEXT_ENDPOINT",
     "CONTROL_HINT_ENDPOINT",
     "FOR_EACH_ENDPOINT",
+    "PICK_ENDPOINT",
     "ALL_LATENCIES_KEY",
     "APIs",
     "HighresModel",
