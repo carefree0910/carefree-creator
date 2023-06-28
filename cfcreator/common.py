@@ -1,5 +1,6 @@
 import os
 import torch
+import secrets
 
 import numpy as np
 
@@ -469,7 +470,10 @@ class ControlNetModel(CommonSDInpaintingModel, DiffusionModel, _ControlNetModel)
 
 
 def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:
-    seed = None if data.seed == -1 else data.seed
+    if data.seed >= 0:
+        seed = data.seed
+    else:
+        seed = secrets.randbelow(2**32)
     variation_seed = None
     variation_strength = None
     if data.variation_strength > 0:
@@ -493,10 +497,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         m.set_tome_info(None)
     else:
         if tome_info["seed"] == -1:
-            if seed is None:
-                tome_info.pop("seed")
-            else:
-                tome_info["seed"] = seed
+            tome_info["seed"] = seed
         m.set_tome_info(tome_info)
     # lora
     model = m.m
