@@ -421,7 +421,7 @@ class CropImage(IAlgorithm):
         return res
 
 
-class HistogramMatchModel(ImageModel):
+class HistogramMatchModel(ReturnArraysModel, ImageModel):
     bg_url: str = Field(..., description="The `cdn` / `cos` url of the background.")
     use_hsv: bool = Field(False, description="Whether use the HSV space to match.")
     strength: float = Field(1.0, description="Strength of the matching.")
@@ -465,16 +465,16 @@ class HistogramMatch(IAlgorithm):
         if data.use_hsv:
             adjusted = cv2.cvtColor(adjusted, cv2.COLOR_HSV2RGB)
         t3 = time.time()
-        content = np_to_bytes(adjusted)
+        res = get_response(data, [adjusted])
         self.log_times(
             {
                 "download": t1 - t0,
                 "preprocess": t2 - t1,
                 "calculation": t3 - t2,
-                "to_bytes": time.time() - t3,
+                "get_response": time.time() - t3,
             }
         )
-        return Response(content=content, media_type="image/png")
+        return res
 
 
 __all__ = [
