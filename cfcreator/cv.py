@@ -465,14 +465,7 @@ class HistogramMatch(IAlgorithm):
         if data.use_hsv:
             adjusted = cv2.cvtColor(adjusted, cv2.COLOR_HSV2RGB)
         t3 = time.time()
-
-        from PIL import Image
-
-        Image.fromarray(adjusted).save("adjusted.png")
-
-        content = np_to_bytes(np.zeros([64, 64]))
-        # content = np_to_bytes(adjusted)
-        # content = np_to_bytes(merged)
+        content = np_to_bytes(adjusted)
         self.log_times(
             {
                 "download": t1 - t0,
