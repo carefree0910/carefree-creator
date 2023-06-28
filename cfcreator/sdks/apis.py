@@ -292,13 +292,8 @@ class APIs:
             )
             i_results = await self.execute(i_workflow, target_key, i_caches, **i_kw)
             i_target = i_results[target_key]
-            if len(i_target) != 1:
-                raise ValueError(
-                    f"[{data.endpoint}] there should be only "
-                    f"one target result, got {i_target}"
-                )
-            targets.append(i_target[0])
-        return targets
+            targets.append(i_target)
+        return list(map(list, zip(*targets)))
 
     # workflow
 
