@@ -101,6 +101,7 @@ class ErodeModel(ReturnArraysModel, ImageModel):
     n_iter: int = Field(1, description="number of iterations")
     kernel_size: int = Field(3, description="size of the kernel")
     threshold: int = Field(0, description="threshold of the alpha channel")
+    padding: int = Field(8, description="padding for the image")
 
 
 @IAlgorithm.auto_register()
@@ -120,9 +121,11 @@ class Erode(IAlgorithm):
         w, h = image.size
         array = np.array(image.convert("RGBA"))
         alpha = array[..., -1]
-        binarized = cv2.threshold(alpha, data.threshold, 255, cv2.THRESH_BINARY)[1]
-        eroded_alpha = erode(binarized, data.n_iter, data.kernel_size)
-        merged_alpha = np.minimum(alpha, eroded_alpha)
+        padded = np.pad(alpha, (data.padding, data.padding), constant_values=0)
+        binarized = cv2.threshold(padded, data.threshold, 255, cv2.THRESH_BINARY)[1]
+        eroded = erode(binarized, data.n_iter, data.kernel_size)
+        shrinked = eroded[data.padding : -data.padding, data.padding : -data.padding]
+        merged_alpha = np.minimum(alpha, shrinked)
         array[..., -1] = merged_alpha
         rgb = array[..., :3].reshape([-1, 3])
         rgb[(merged_alpha == 0).ravel()] = 0
