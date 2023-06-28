@@ -431,6 +431,7 @@ __all__ = [
     "UPLOAD_ENDPOINT",
     "ADD_TEXT_ENDPOINT",
     "CONTROL_HINT_ENDPOINT",
+    "FOR_EACH_ENDPOINT",
     "ALL_LATENCIES_KEY",
     "APIs",
     "HighresModel",
