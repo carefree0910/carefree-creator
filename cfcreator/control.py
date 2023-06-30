@@ -212,8 +212,6 @@ async def apply_control(
             else ([i_data.control_strength] * num_scales)
         )
     api.m.control_scales = all_scales
-    if not common.prompt:
-        raise ValueError("prompt should be provided in `common`")
     cond = [common.prompt] * common.num_samples
     kw = shallow_copy_dict(kwargs)
     kw.update(handle_diffusion_model(api, common))
