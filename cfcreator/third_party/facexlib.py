@@ -10,8 +10,6 @@ from typing import Any
 from typing import List
 from fastapi import Response
 from pydantic import Field
-from facexlib.parsing import init_parsing_model
-from facexlib.detection import init_detection_model
 from cflearn.misc.toolkit import eval_context
 from torchvision.transforms.functional import normalize
 
@@ -19,6 +17,13 @@ from .utils import external_folder
 from ..cv import CVImageModel
 from ..common import get_response
 from ..common import IAlgorithm
+
+try:
+    from facexlib.parsing import init_parsing_model
+    from facexlib.detection import init_detection_model
+except:
+    init_parsing_model = None
+    init_detection_model = None
 
 
 ROOT = os.path.join(external_folder, "facexlib")
@@ -50,6 +55,8 @@ class FacexlibParse(IAlgorithm):
     endpoint = facexlib_parse_endpoint
 
     def initialize(self) -> None:
+        if init_parsing_model is None:
+            raise ImportError("`facexlib` should be installed for `FacexlibParse`")
         self.model = init_parsing_model(device="cpu", model_rootpath=ROOT)
 
     async def run(
@@ -134,6 +141,8 @@ class FacexlibDetect(IAlgorithm):
     endpoint = facexlib_detect_endpoint
 
     def initialize(self) -> None:
+        if init_detection_model is None:
+            raise ImportError("`facexlib` should be installed for `FacexlibDetect`")
         self.model = init_detection_model(
             "retinaface_resnet50",
             device="cuda",

@@ -7,6 +7,15 @@ DESCRIPTION = "An AI-powered creator for everyone."
 with open("README.md", encoding="utf-8") as f:
     LONG_DESCRIPTION = f.read()
 
+kafka_requires = [
+    "kafka-python",
+    "redis[hiredis]",
+    "cos-python-sdk-v5",
+]
+third_party_requires = [
+    "facexlib",
+]
+
 setup(
     name=PACKAGE_NAME,
     version=VERSION,
@@ -21,14 +30,10 @@ setup(
         "carefree-learn[cv_full]>=0.4.5",
         "networkx",
         "matplotlib",
-        "facexlib",
     ],
     extras_require={
-        "kafka": [
-            "kafka-python",
-            "redis[hiredis]",
-            "cos-python-sdk-v5",
-        ]
+        "kafka": kafka_requires,
+        "full": kafka_requires + third_party_requires,
     },
     author="carefree0910",
     author_email="syameimaru.saki@gmail.com",
