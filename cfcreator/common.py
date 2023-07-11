@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import secrets
 
@@ -11,6 +12,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
+from typing import Union
 from typing import TypeVar
 from typing import Callable
 from typing import Optional
@@ -323,7 +325,7 @@ Number of CLIP layers that we want to skip.
 > If it is set to `-1`, then `clip_skip` = 1 if `is_anime` else 0.
 """,
     )
-    custom_embeddings: Dict[str, Optional[List[List[float]]]] = Field(
+    custom_embeddings: Dict[str, Union[str, List[List[float]]]] = Field(
         {},
         description="Custom embeddings, often used in textual inversion.",
     )
@@ -529,6 +531,16 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
                         raise ValueError(f"failed to load {key}: {err}")
             m.inject_sd_lora(*list(data.lora_scales))
             m.set_sd_lora_scales(data.lora_scales)
+    # custom embeddings
+    if not data.custom_embeddings:
+        custom_embeddings = None
+    else:
+        custom_embeddings = {}
+        for k, v in data.custom_embeddings.items():
+            if isinstance(v, str):
+                with open(v, "r") as f:
+                    v = json.load(f)
+            custom_embeddings[k] = v
     # return
     return dict(
         seed=seed,
@@ -541,7 +553,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         sampler=data.sampler,
         verbose=verbose(),
         clip_skip=clip_skip,
-        custom_embeddings=data.custom_embeddings or None,
+        custom_embeddings=custom_embeddings,
     )
 
 
