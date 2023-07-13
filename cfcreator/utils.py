@@ -186,8 +186,10 @@ class APIPool(ILoadablePool[IAPI]):
             raise ValueError(f"key '{key}' does not exist")
         return loadable_api.need_change_device
 
-    def update_limit(self) -> None:
-        self.limit = pool_limit()
+    def update_limit(self, limit: Optional[int] = None) -> None:
+        if limit is None:
+            limit = pool_limit()
+        self.limit = limit
 
 
 api_pool = APIPool()
