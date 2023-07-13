@@ -677,6 +677,8 @@ def load_sd_lora_with(sd: ControlledDiffusionAPI, data: SDParameters) -> None:
     if data.lora_paths is not None:
         for lora_path in data.lora_paths:
             key = Path(lora_path).stem
+            if isinstance(sd.m, StableDiffusion) and sd.m.lora_manager.has(key):
+                continue
             sd.load_sd_lora(key, path=lora_path)
 
 
