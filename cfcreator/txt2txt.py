@@ -62,10 +62,13 @@ class Txt2TxtPromptEnhance(IAlgorithm):
         kw = data.dict()
         text = kw.pop("text")
         prompts = m.enhance(text, config=PromptEnhanceConfig(**kw))
+        t2 = time.time()
+        api_pool.cleanup(APIs.PROMPT_ENHANCE)
         self.log_times(
             {
                 "get_model": t1 - t0,
-                "inference": time.time() - t1,
+                "inference": t2 - t1,
+                "cleanup": time.time() - t2,
             }
         )
         return PromptEnhanceResponse(prompts=prompts)

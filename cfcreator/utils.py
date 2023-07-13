@@ -176,6 +176,12 @@ class APIPool(ILoadablePool[IAPI]):
             return
         return super().register(key, _init)
 
+    def cleanup(self, key: str) -> None:
+        loadable_api: Optional[LoadableAPI] = self.pool.get(key)
+        if loadable_api is None:
+            raise ValueError(f"key '{key}' does not exist")
+        loadable_api.cleanup()
+
     def need_change_device(self, key: str) -> bool:
         loadable_api: Optional[LoadableAPI] = self.pool.get(key)
         if loadable_api is None:

@@ -219,11 +219,15 @@ class Img2ImgSR(IAlgorithm):
         )
         t3 = time.time()
         res = get_response(data, [to_uint8(img_arr)])
+        t4 = time.time()
+        api_pool.cleanup(api_key)
+        t5 = time.time()
         latencies.update(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
-                "get_response": time.time() - t3,
+                "get_response": t4 - t3,
+                "cleanup": t5 - t4,
             }
         )
         self.log_times(latencies)
@@ -349,11 +353,14 @@ class Img2ImgInpainting(IAlgorithm):
                 ).numpy()[0]
             final = to_uint8(get_normalized_arr_from_diffusion(img_arr))
         res = get_response(data, [final])
+        t3 = time.time()
+        api_pool.cleanup(api_key)
         self.log_times(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
-                "inference": time.time() - t2,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
             }
         )
         return res
@@ -458,6 +465,8 @@ class Img2ImgSemantic2Img(IAlgorithm):
         ).numpy()[0]
         t5 = time.time()
         res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
+        t6 = time.time()
+        api_pool.cleanup(APIs.SEMANTIC)
         self.log_times(
             {
                 "download": t1 - t0,
@@ -465,7 +474,8 @@ class Img2ImgSemantic2Img(IAlgorithm):
                 "interpolation": t3 - t2,
                 "get_model": t4 - t3,
                 "inference": t5 - t4,
-                "get_response": time.time() - t5,
+                "get_response": t6 - t5,
+                "cleanup": time.time() - t6,
             }
         )
         return res
@@ -501,9 +511,12 @@ def apply_harmonization(
         result = result.astype(np.float32)
         result = result * strength + raw_image * (1.0 - strength)
         result = (np.clip(result, 0.0, 255.0)).astype(np.uint8)
+    t2 = time.time()
+    api_pool.cleanup(APIs.HRNET)
     latencies = {
         "get_model": t1 - t0,
-        "inference": time.time() - t1,
+        "inference": t2 - t1,
+        "cleanup": time.time() - t2,
     }
     return result, latencies
 
@@ -593,11 +606,14 @@ class Img2ImgSOD(IAlgorithm):
         rgb = to_rgb(image)
         alpha = to_uint8(m.segment(rgb))
         content = None if data.return_arrays else np_to_bytes(alpha)
+        t3 = time.time()
+        api_pool.cleanup(APIs.ISNET)
         self.log_times(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
-                "inference": time.time() - t2,
+                "inference": t3 - t2,
+                "cleanup": time.time() - t3,
             }
         )
         if content is None:

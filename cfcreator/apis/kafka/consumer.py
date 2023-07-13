@@ -29,7 +29,6 @@ from cfclient.utils import run_algorithm
 
 # This is necessary to register the algorithms
 from cfcreator import *
-from cfcreator.utils import api_pool
 from cfcreator.legacy.control import ControlNetModel as LegacyControlNetModel
 from cfcreator.legacy.control_multi import ControlMultiModel as LegacyControlMultiModel
 
@@ -223,7 +222,6 @@ async def consume() -> None:
         if isinstance(v, IWrapperAlgorithm):
             v.algorithms = loaded_algorithms
         v.initialize()
-    api_pool.update_limit(2)
     print("> Algorithms are Loaded!")
     kafka_consumer = KafkaConsumer(
         topic,
