@@ -43,8 +43,16 @@ endpoint_to_focuses = {
     # img2txt
     img2txt_caption_endpoint: [Focus.ALL, Focus.SYNC],
     # cv
+    cv_erode_endpoint: [Focus.ALL, Focus.SYNC],
     cv_resize_endpoint: [Focus.ALL, Focus.SYNC],
     cv_affine_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_get_mask_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_inverse_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_fill_bg_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_get_size_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_modify_box_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_generate_masks_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_crop_image_endpoint: [Focus.ALL, Focus.SYNC],
     cv_histogram_match_endpoint: [Focus.ALL, Focus.SYNC],
     # ControlNet
     control_depth_endpoint: [Focus.ALL, Focus.CONTROL],
