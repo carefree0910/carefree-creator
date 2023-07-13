@@ -39,7 +39,7 @@ def paste(
     f: float,
     force_rgb: bool,
     resampling: Resampling,
-    max_wh: int,
+    wh_limit: int,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
     t0 = time.time()
     if original_fg.mode != "RGBA":
@@ -56,7 +56,7 @@ def paste(
         original_w,
         original_h,
         resampling,
-        max_wh,
+        wh_limit,
     )
     t1 = time.time()
     affined_fg_array = affined_fg_array.astype(np.float32) / 255.0
@@ -125,7 +125,7 @@ class PastePipeline(IAlgorithm):
             data.f,
             data.force_rgb,
             data.resampling,
-            data.max_wh,
+            data.wh_limit,
         )
         latencies["download"] = t1 - t0
         t2 = time.time()
