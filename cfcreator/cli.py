@@ -79,6 +79,14 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
     type=int,
     help="Limitation of the pools (i.e. `WeightsPool` & `APIPool`).",
 )
+@click.option(
+    "--no_unload",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    type=bool,
+    help="This flag will prevent models from completely unloading.",
+)
 def serve(
     *,
     port: int,
@@ -88,8 +96,9 @@ def serve(
     cache_dir: str,
     lazy: bool,
     limit: int,
+    no_unload: bool,
 ) -> None:
-    increment = dict(lazy_load=lazy, pool_limit=limit)
+    increment = dict(lazy_load=lazy, pool_limit=limit, no_unload=no_unload)
     if cpu:
         increment["cpu"] = True
     if focus != "all":

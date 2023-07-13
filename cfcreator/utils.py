@@ -17,6 +17,7 @@ from cflearn.api.utils import ILoadablePool
 
 from .parameters import lazy_load
 from .parameters import pool_limit
+from .parameters import no_unload
 from .parameters import OPT
 
 
@@ -154,7 +155,8 @@ class LoadableAPI(ILoadableItem[IAPI]):
 
     def unload(self) -> None:
         self.cleanup()
-        return super().unload()
+        if not no_unload():
+            return super().unload()
 
 
 class APIPool(ILoadablePool[IAPI]):

@@ -79,6 +79,10 @@ def pool_limit() -> int:
     return OPT.get("pool_limit", -1)
 
 
+def no_unload() -> int:
+    return OPT.get("no_unload", True)
+
+
 def use_cos() -> bool:
     return OPT["use_cos"]
 
@@ -132,7 +136,10 @@ __all__ = [
     "use_cos",
     "verbose",
     "get_focus",
-    "inject_headers",
+    "lazy_load",
+    "pool_limit",
+    "no_unload",
+    "bypass_audit" "inject_headers",
     "redis_kwargs",
     "audit_redis_kwargs",
     "kafka_server",
