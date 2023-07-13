@@ -69,14 +69,11 @@ class Txt2ImgSD(IAlgorithm):
         ).numpy()[0]
         t2 = time.time()
         res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
-        t3 = time.time()
-        api_pool.cleanup(APIs.SD)
         self.log_times(
             {
                 "get_model": t1 - t0,
                 "inference": t2 - t1,
-                "get_response": t3 - t2,
-                "cleanup": time.time() - t3,
+                "get_response": time.time() - t2,
             }
         )
         return res
@@ -137,15 +134,12 @@ class Txt2ImgSDInpainting(IAlgorithm):
         img_arr = m.txt2img_inpainting(data.text, image, mask, **kwargs).numpy()[0]
         t3 = time.time()
         res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
-        t4 = time.time()
-        api_pool.cleanup(api_key)
         self.log_times(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
                 "inference": t3 - t2,
-                "get_response": t4 - t3,
-                "cleanup": time.time() - t4,
+                "get_response": time.time() - t3,
             }
         )
         return res
@@ -178,15 +172,12 @@ class Txt2ImgSDOutpainting(IAlgorithm):
         img_arr = m.outpainting(data.text, image, **kwargs).numpy()[0]
         t3 = time.time()
         res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
-        t4 = time.time()
-        api_pool.cleanup(APIs.SD_INPAINTING)
         self.log_times(
             {
                 "download": t1 - t0,
                 "get_model": t2 - t1,
                 "inference": t3 - t2,
-                "get_response": t4 - t3,
-                "cleanup": time.time() - t4,
+                "get_response": time.time() - t3,
             }
         )
         return res

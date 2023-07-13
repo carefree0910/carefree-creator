@@ -197,7 +197,6 @@ def apply_control(
         init_tensor = init_tensor.to(api.device)
         outs = api.img2img(init_tensor, **kw)
     dt = time.time()
-    api_pool.cleanup(api_key)
     change_diffusion_device_time += time.time() - dt
     outs = 0.5 * (outs + 1.0)
     outs = to_uint8(outs).permute(0, 2, 3, 1).cpu().numpy()
@@ -294,14 +293,11 @@ def register_hint(
                 hint_image = resize_image(hint_image, detect_resolution)
             hint = m.get_hint_of(hint_type, hint_image, **data.dict())
             hint = cv2.resize(hint, (w, h), interpolation=cv2.INTER_LINEAR)
-            t3 = time.time()
-            api_pool.cleanup(APIs.SD)
             self.log_times(
                 dict(
                     download=t1 - t0,
                     get_model=t2 - t1,
-                    inference=t3 - t2,
-                    cleanup=time.time() - t3,
+                    inference=time.time() - t2,
                 )
             )
             if data.return_arrays:

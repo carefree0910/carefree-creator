@@ -43,15 +43,12 @@ class Img2TxtCaption(IAlgorithm):
         m = api_pool.get(APIs.BLIP)
         t3 = time.time()
         caption = m.caption(to_rgb(image))
-        t4 = time.time()
-        api_pool.cleanup(APIs.BLIP)
         self.log_times(
             {
                 "download": t1 - t0,
                 "preprocess": t2 - t1,
                 "get_model": t3 - t2,
-                "inference": t4 - t3,
-                "cleanup": time.time() - t4,
+                "inference": time.time() - t3,
             }
         )
         return TextModel(text=caption)
