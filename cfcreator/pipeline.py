@@ -56,6 +56,7 @@ def paste(
         original_w,
         original_h,
         resampling,
+        max_wh,
     )
     t1 = time.time()
     affined_fg_array = affined_fg_array.astype(np.float32) / 255.0
