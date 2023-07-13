@@ -39,6 +39,7 @@ def paste(
     f: float,
     force_rgb: bool,
     resampling: Resampling,
+    max_wh: int,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
     t0 = time.time()
     if original_fg.mode != "RGBA":
@@ -112,18 +113,7 @@ class PastePipeline(IAlgorithm):
         original_fg = await self.get_image_from("url", data, kwargs)
         original_bg = await self.get_image_from("bg_url", data, kwargs)
         t1 = time.time()
-        results, latencies = paste(
-            original_fg,
-            original_bg,
-            data.a,
-            data.b,
-            data.c,
-            data.d,
-            data.e,
-            data.f,
-            data.force_rgb,
-            data.resampling,
-        )
+        results, latencies = paste(original_fg, original_bg, **data.dict())
         latencies["download"] = t1 - t0
         t2 = time.time()
         if not data.return_mask:

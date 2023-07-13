@@ -85,12 +85,15 @@ def affine(
     w: int,
     h: int,
     resampling: Resampling,
+    max_wh: int,
 ) -> np.ndarray:
     matrix2d = Matrix2D(a=a, b=b, c=c, d=d, e=e, f=f)
     properties = matrix2d.decompose()
     iw, ih = image.size
     nw = max(round(iw * abs(properties.w)), 1)
     nh = max(round(ih * abs(properties.h)), 1)
+    if nw > max_wh or nh > max_wh:
+        raise ValueError(f"image size ({nw}, {nh}) exceeds max_wh ({max_wh})")
     array = np.array(resize(image, nw, nh, resampling))
     properties.w = 1
     properties.h = 1 if properties.h > 0 else -1
@@ -182,6 +185,10 @@ class BaseAffineModel(BaseModel):
     d: float = Field(..., description="`d` of the affine matrix")
     e: float = Field(..., description="`e` of the affine matrix")
     f: float = Field(..., description="`f` of the affine matrix")
+    max_wh: int = Field(
+        16384,
+        description="maximum width or height of the output image",
+    )
 
 
 class AffineModel(ResizeModel, BaseAffineModel):
@@ -202,18 +209,7 @@ class Affine(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
-        output = affine(
-            image,
-            data.a,
-            data.b,
-            data.c,
-            data.d,
-            data.e,
-            data.f,
-            data.w,
-            data.h,
-            data.resampling,
-        )
+        output = affine(image, **data.dict())
         t2 = time.time()
         res = get_response(data, [output])
         self.log_times(
