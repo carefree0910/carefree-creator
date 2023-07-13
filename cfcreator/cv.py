@@ -209,7 +209,19 @@ class Affine(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
-        output = affine(image, **data.dict())
+        output = affine(
+            image,
+            data.a,
+            data.b,
+            data.c,
+            data.d,
+            data.e,
+            data.f,
+            data.w,
+            data.h,
+            data.resampling,
+            data.max_wh,
+        )
         t2 = time.time()
         res = get_response(data, [output])
         self.log_times(

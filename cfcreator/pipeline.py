@@ -113,7 +113,19 @@ class PastePipeline(IAlgorithm):
         original_fg = await self.get_image_from("url", data, kwargs)
         original_bg = await self.get_image_from("bg_url", data, kwargs)
         t1 = time.time()
-        results, latencies = paste(original_fg, original_bg, **data.dict())
+        results, latencies = paste(
+            original_fg,
+            original_bg,
+            data.a,
+            data.b,
+            data.c,
+            data.d,
+            data.e,
+            data.f,
+            data.force_rgb,
+            data.resampling,
+            data.max_wh,
+        )
         latencies["download"] = t1 - t0
         t2 = time.time()
         if not data.return_mask:
