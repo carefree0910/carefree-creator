@@ -13,7 +13,6 @@ from typing import List
 from typing import Type
 from typing import Tuple
 from typing import Union
-from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
@@ -26,6 +25,7 @@ from cftool.misc import shallow_copy_dict
 from cfclient.models.core import ImageModel
 from cflearn.api.cv.diffusion import ControlNetHints
 from cflearn.models.cv.diffusion.utils import CONTROL_HINT_KEY
+from cflearn.models.cv.diffusion.utils import CONTROL_HINT_END_KEY
 from cflearn.models.cv.diffusion.utils import CONTROL_HINT_START_KEY
 
 from .utils import api_pool
@@ -218,6 +218,7 @@ async def apply_control(
     hint = [(b.type, all_key_values[k][0]) for b, k in zip(controls, all_keys)]
     kw[CONTROL_HINT_KEY] = hint
     kw[CONTROL_HINT_START_KEY] = [b.data.hint_start for b in controls]
+    kw[CONTROL_HINT_END_KEY] = [b.data.hint_end for b in controls]
     kw["max_wh"] = common.max_wh
     dt = time.time()
     if need_change_device:

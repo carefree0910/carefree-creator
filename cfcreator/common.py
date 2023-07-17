@@ -437,6 +437,7 @@ The annotator type of the hint.
 """,
     )
     hint_start: Optional[float] = Field(None, description="start ratio of the control")
+    hint_end: Optional[float] = Field(None, description="end ratio of the control")
     bypass_annotator: bool = Field(False, description="Bypass the annotator.")
     guess_mode: bool = Field(False, description="Guess mode.")
     no_switch: bool = Field(
