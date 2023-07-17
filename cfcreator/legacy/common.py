@@ -22,6 +22,10 @@ The `cdn` / `cos` url of the user's hint image.
         default_factory=lambda: {},
         description="start ratio of each hint",
     )
+    hint_ends: Dict[str, float] = Field(
+        default_factory=lambda: {},
+        description="end ratio of each hint",
+    )
     prompt: str = Field(..., description="Prompt.")
     fidelity: float = Field(
         0.05,

@@ -24,6 +24,7 @@ from cftool.cv import get_suitable_size
 from cfclient.models.core import ImageModel
 from cflearn.api.cv.diffusion import ControlNetHints
 from cflearn.models.cv.diffusion.utils import CONTROL_HINT_KEY
+from cflearn.models.cv.diffusion.utils import CONTROL_HINT_END_KEY
 from cflearn.models.cv.diffusion.utils import CONTROL_HINT_START_KEY
 
 from .common import ControlNetModel
@@ -163,6 +164,7 @@ def apply_control(
     keys = sorted([k.value if isinstance(k, ControlNetHints) else k for k in all_hint])
     kw[CONTROL_HINT_KEY] = [(k, all_hint[k]) for k in keys]
     kw[CONTROL_HINT_START_KEY] = [common_data.hint_starts.get(k) for k in keys]
+    kw[CONTROL_HINT_END_KEY] = [common_data.hint_ends.get(k) for k in keys]
     kw["max_wh"] = common_data.max_wh
     api.m.control_scales = [all_scales[k] for k in keys]
     dt = time.time()
