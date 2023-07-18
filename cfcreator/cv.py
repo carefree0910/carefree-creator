@@ -13,9 +13,9 @@ from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from PIL.ImageFilter import GaussianBlur
 from cftool.cv import to_rgb
 from cftool.cv import to_uint8
-from cftool.cv import np_to_bytes
 from cftool.cv import ImageBox
 from cftool.cv import ImageProcessor
 from cftool.geometry import Matrix2D
@@ -27,6 +27,7 @@ from .common import IAlgorithm
 from .common import ReturnArraysModel
 
 
+cv_blur_endpoint = "/cv/blur"
 cv_grayscale_endpoint = "/cv/grayscale"
 cv_erode_endpoint = "/cv/erode"
 cv_resize_endpoint = "/cv/resize"
@@ -39,6 +40,36 @@ cv_modify_box_endpoint = "/cv/modify_box"
 cv_generate_masks_endpoint = "/cv/generate_masks"
 cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
+
+
+class BlurModel(ReturnArraysModel, ImageModel):
+    radius: int = Field(2, description="size of the kernel")
+
+
+class Blur(IAlgorithm):
+    model_class = BlurModel
+
+    endpoint = cv_blur_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: BlurModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        array = np.array(image.filter(GaussianBlur(data.radius)))
+        t2 = time.time()
+        res = get_response(data, [array])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
 
 
 class GrayscaleModel(ReturnArraysModel, ImageModel):
@@ -563,6 +594,7 @@ class HistogramMatch(IAlgorithm):
 
 
 __all__ = [
+    "cv_blur_endpoint",
     "cv_grayscale_endpoint",
     "cv_erode_endpoint",
     "cv_resize_endpoint",
@@ -575,6 +607,7 @@ __all__ = [
     "cv_generate_masks_endpoint",
     "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
+    "BlurModel",
     "GrayscaleModel",
     "ErodeModel",
     "ResizeModel",
@@ -587,6 +620,7 @@ __all__ = [
     "GenerateMasksModel",
     "CropImageModel",
     "HistogramMatchModel",
+    "Blur",
     "Grayscale",
     "Erode",
     "Resize",
