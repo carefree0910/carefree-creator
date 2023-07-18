@@ -27,6 +27,7 @@ from .common import IAlgorithm
 from .common import ReturnArraysModel
 
 
+cv_grayscale_endpoint = "/cv/grayscale"
 cv_erode_endpoint = "/cv/erode"
 cv_resize_endpoint = "/cv/resize"
 cv_affine_endpoint = "/cv/affine"
@@ -38,6 +39,37 @@ cv_modify_box_endpoint = "/cv/modify_box"
 cv_generate_masks_endpoint = "/cv/generate_masks"
 cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
+
+
+class GrayscaleModel(ReturnArraysModel, ImageModel):
+    pass
+
+
+@IAlgorithm.auto_register()
+class Grayscale(IAlgorithm):
+    model_class = GrayscaleModel
+
+    endpoint = cv_grayscale_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: GrayscaleModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        array = np.array(image.convert("L"))
+        t2 = time.time()
+        res = get_response(data, [array])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
 
 
 def erode(array: np.ndarray, n_iter: int, kernel_size: int) -> np.ndarray:
@@ -531,6 +563,7 @@ class HistogramMatch(IAlgorithm):
 
 
 __all__ = [
+    "cv_grayscale_endpoint",
     "cv_erode_endpoint",
     "cv_resize_endpoint",
     "cv_affine_endpoint",
@@ -542,6 +575,7 @@ __all__ = [
     "cv_generate_masks_endpoint",
     "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
+    "GrayscaleModel",
     "ErodeModel",
     "ResizeModel",
     "BaseAffineModel",
@@ -553,6 +587,7 @@ __all__ = [
     "GenerateMasksModel",
     "CropImageModel",
     "HistogramMatchModel",
+    "Grayscale",
     "Erode",
     "Resize",
     "Affine",

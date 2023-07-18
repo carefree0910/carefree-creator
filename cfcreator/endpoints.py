@@ -43,6 +43,7 @@ endpoint_to_focuses = {
     # img2txt
     img2txt_caption_endpoint: [Focus.ALL, Focus.SYNC],
     # cv
+    cv_grayscale_endpoint: [Focus.ALL, Focus.SYNC],
     cv_erode_endpoint: [Focus.ALL, Focus.SYNC],
     cv_resize_endpoint: [Focus.ALL, Focus.SYNC],
     cv_affine_endpoint: [Focus.ALL, Focus.SYNC],

@@ -46,6 +46,7 @@ endpoint2method = {
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     new_control_multi_endpoint: "run_multi_controlnet",
     upscale_tile_endpoint: "upscale_tile",
+    cv_grayscale_endpoint: "grayscale",
     cv_erode_endpoint: "erode",
     cv_resize_endpoint: "resize",
     cv_affine_endpoint: "affine",
@@ -198,6 +199,9 @@ class APIs:
         self, data: PastePipelineModel, **kw: Any
     ) -> List[Image.Image]:
         return await self._run(data, paste_pipeline_endpoint, **kw)
+
+    async def grayscale(self, data: GrayscaleModel, **kw: Any) -> List[Image.Image]:
+        return await self._run(data, cv_grayscale_endpoint, **kw)
 
     async def erode(self, data: ErodeModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_erode_endpoint, **kw)
