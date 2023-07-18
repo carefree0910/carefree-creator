@@ -46,6 +46,7 @@ class BlurModel(ReturnArraysModel, ImageModel):
     radius: int = Field(2, description="size of the kernel")
 
 
+@IAlgorithm.auto_register()
 class Blur(IAlgorithm):
     model_class = BlurModel
 
