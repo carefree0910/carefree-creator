@@ -204,7 +204,7 @@ class APIs:
     async def blur(self, data: BlurModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_blur_endpoint, **kw)
 
-    async def grayscale(self, data: GrayscaleModel, **kw: Any) -> List[Image.Image]:
+    async def grayscale(self, data: CVImageModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_grayscale_endpoint, **kw)
 
     async def erode(self, data: ErodeModel, **kw: Any) -> List[Image.Image]:

@@ -42,7 +42,11 @@ cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
 
 
-class BlurModel(ReturnArraysModel, ImageModel):
+class CVImageModel(ReturnArraysModel, ImageModel):
+    pass
+
+
+class BlurModel(CVImageModel):
     radius: int = Field(2, description="size of the kernel")
 
 
@@ -73,20 +77,16 @@ class Blur(IAlgorithm):
         return res
 
 
-class GrayscaleModel(ReturnArraysModel, ImageModel):
-    pass
-
-
 @IAlgorithm.auto_register()
 class Grayscale(IAlgorithm):
-    model_class = GrayscaleModel
+    model_class = CVImageModel
 
     endpoint = cv_grayscale_endpoint
 
     def initialize(self) -> None:
         pass
 
-    async def run(self, data: GrayscaleModel, *args: Any, **kwargs: Any) -> Response:
+    async def run(self, data: CVImageModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
@@ -165,7 +165,7 @@ def affine(
     return cv2.warpAffine(array, matrix2d.matrix, [w, h])
 
 
-class ErodeModel(ReturnArraysModel, ImageModel):
+class ErodeModel(CVImageModel):
     n_iter: int = Field(1, description="number of iterations")
     kernel_size: int = Field(3, description="size of the kernel")
     threshold: int = Field(0, description="threshold of the alpha channel")
@@ -210,7 +210,7 @@ class Erode(IAlgorithm):
         return res
 
 
-class ResizeModel(ReturnArraysModel, ResamplingModel, ImageModel):
+class ResizeModel(ResamplingModel, CVImageModel):
     w: int = Field(..., description="width of the output image")
     h: int = Field(..., description="width of the output image")
 
@@ -296,10 +296,6 @@ class Affine(IAlgorithm):
             }
         )
         return res
-
-
-class CVImageModel(ReturnArraysModel, ImageModel):
-    pass
 
 
 @IAlgorithm.auto_register()
@@ -538,7 +534,7 @@ class CropImage(IAlgorithm):
         return res
 
 
-class HistogramMatchModel(ReturnArraysModel, ImageModel):
+class HistogramMatchModel(CVImageModel):
     bg_url: str = Field(..., description="The `cdn` / `cos` url of the background.")
     use_hsv: bool = Field(False, description="Whether use the HSV space to match.")
     strength: float = Field(1.0, description="Strength of the matching.")
@@ -608,13 +604,12 @@ __all__ = [
     "cv_generate_masks_endpoint",
     "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
+    "CVImageModel",
     "BlurModel",
-    "GrayscaleModel",
     "ErodeModel",
     "ResizeModel",
     "BaseAffineModel",
     "AffineModel",
-    "CVImageModel",
     "FillBGModel",
     "LTRBModel",
     "ModifyBoxModel",
