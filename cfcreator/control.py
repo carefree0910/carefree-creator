@@ -13,6 +13,7 @@ from typing import List
 from typing import Type
 from typing import Tuple
 from typing import Union
+from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
@@ -65,9 +66,17 @@ class ControlNetBundleCommonData(ControlStrengthModel, _ControlNetCoreModel):
     pass
 
 
+class ControlNetBundleCommonDataWithDetectResolution(ControlNetBundleCommonData):
+    detect_resolution: Optional[int] = Field(None, description="Detect resolution.")
+    extra_annotator_params: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Extra parameters for the annotator.",
+    )
+
+
 class ControlNetBundle(BaseModel):
     type: Union[str, ControlNetHints]
-    data: ControlNetBundleCommonData
+    data: ControlNetBundleCommonDataWithDetectResolution
 
 
 TKey = Tuple[str, str, bool]
@@ -134,10 +143,15 @@ async def apply_control(
             image_array_d[url] = np.array(to_rgb(image))
         if is_hint.get(url, False):
             image_array_d[get_hint_url_key(url)] = np.array(to_contrast_rgb(image))
-    # gather detect resolution
+    # gather detect resolution & extra annotator params
     detect_resolutions = []
     for bundle in controls:
         detect_resolutions.append(getattr(bundle.data, "detect_resolution", None))
+    extra_annotator_params_list = []
+    for bundle in controls:
+        extra_annotator_params_list.append(
+            getattr(bundle.data, "extra_annotator_params", None)
+        )
     # calculate suitable size
     resize_to_original = lambda array: cv2.resize(
         array,
@@ -158,7 +172,9 @@ async def apply_control(
     ## Tensor for input, ndarray for results
     all_key_values: Dict[TKey, Tuple[torch.Tensor, np.ndarray]] = {}
     all_annotator_change_device_times = []
-    for bundle, detect_resolution in zip(controls, detect_resolutions):
+    for bundle, detect_resolution, extra_annotator_params in zip(
+        controls, detect_resolutions, extra_annotator_params_list
+    ):
         i_type = bundle.type
         i_data = bundle.data
         i_hint_image = image_array_d[get_hint_url_key(i_data.hint_url)]
@@ -184,7 +200,10 @@ async def apply_control(
                 use_half = True
                 i_annotator.to(device, use_half=True)
             all_annotator_change_device_times.append(time.time() - ht)
-            i_o_hint_arr = api.get_hint_of(i_t_annotator, i_hint_image, **i_data.dict())
+            i_hint_kw = i_data.dict()
+            if extra_annotator_params is not None:
+                i_hint_kw.update(extra_annotator_params)
+            i_o_hint_arr = api.get_hint_of(i_t_annotator, i_hint_image, **i_hint_kw)
             ht = time.time()
             if need_change_device:
                 i_annotator.to("cpu", use_half=False)
