@@ -402,6 +402,7 @@ async def consume() -> None:
                 end_time = time.time()
                 torch.cuda.empty_cache()
                 reason = f"{task} -> {procedure} : {get_err_msg(err)}"
+                logging.exception(reason)
                 data["uid"] = uid
                 data["reason"] = reason
                 data["end_time"] = end_time
