@@ -20,6 +20,7 @@ from .control import _CannyModel
 from .control import _DepthModel
 from .control import ControlNetHints
 from .control import ControlNetBundleCommonData
+from .control import ControlNetBundleCommonDataWithDetectResolution
 
 
 new_control_multi_endpoint = "/control_new/multi"
@@ -61,7 +62,7 @@ class DepthBundle(BaseModel):
     data: DepthBundleData
 
 
-class UniversalControlModel(ControlNetBundleCommonData):
+class UniversalControlModel(ControlNetBundleCommonDataWithDetectResolution):
     pass
 
 
