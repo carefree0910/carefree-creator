@@ -24,8 +24,13 @@ async def push(host: str, endpoint: str, params: Dict[str, Any]) -> str:
     url = f"{host}/push"
     data = dict(task=endpoint2algorithm(endpoint), params=params)
     async with get_http_session() as session:
-        res = await post(url, data, session)
-        return res["uid"]
+        while True:
+            try:
+                res = await post(url, data, session)
+                return res["uid"]
+            except Exception as err:
+                print(f"error occurred when pushing: {get_err_msg(err)}")
+                time.sleep(1)
 
 
 def push_sync(host: str, endpoint: str, params: Dict[str, Any]) -> str:
