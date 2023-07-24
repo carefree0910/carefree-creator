@@ -276,19 +276,18 @@ async def interrupt(data: InterruptModel, response: Response) -> InterruptRespon
         if existing is None:
             results.append(InterruptSingleResponse(success=False, reason="not found"))
             continue
-        existing = json.loads(existing)
-        existing_status = existing.get("status")
-        if not data.force_interrupt and existing_status != Status.PENDING:
+        existing_data = StatusData(**json.loads(existing))
+        if not data.force_interrupt and existing_data.status != Status.PENDING:
             results.append(
                 InterruptSingleResponse(
                     success=False,
-                    reason=f"not in pending status ({existing_status})",
+                    reason=f"not in pending status ({existing_data.status})",
                 )
             )
             continue
         redis_client.set(
             uid,
-            json.dumps(dict(status=Status.INTERRUPTED, data=existing.get("data"))),
+            json.dumps(dict(status=Status.INTERRUPTED, data=existing_data.data)),
         )
         results.append(InterruptSingleResponse(success=True, reason=""))
     return InterruptResponse(results=results)
