@@ -170,32 +170,41 @@ class ProducerResponse(BaseModel):
 
 # 30min = timeout
 queue_timeout_threshold = 30 * 60
+## check timeout interval = 1min
+queue_timeout_timer = time.time()
+queue_timeout_check_interval = 60
 
 
 @app.post("/push", responses=get_responses(ProducerResponse))
 async def push(data: ProducerModel, response: Response) -> ProducerResponse:
     def get_clean_queue() -> List[str]:
+        global queue_timeout_timer
         queue = get_pending_queue()
         queue_size = len(queue)
-        # check timeout
-        clear_indices = []
-        for i, uid in enumerate(queue):
-            uid_pack = redis_client.get(uid)
-            if uid_pack is None:
-                continue
-            uid_pack = json.loads(uid_pack)
-            create_time = (uid_pack.get("data", {}) or {}).get("create_time", None)
-            start_time = (uid_pack.get("data", {}) or {}).get("start_time", None)
-            i_cleared = False
-            for t in [create_time, start_time]:
-                if i_cleared:
-                    break
-                if t is not None:
-                    if time.time() - t >= queue_timeout_threshold:
-                        clear_indices.append(i)
-                        i_cleared = True
-        for idx in clear_indices[::-1]:
-            queue.pop(idx)
+        # check timeout / interrupted
+        if time.time() - queue_timeout_timer >= queue_timeout_check_interval:
+            queue_timeout_timer = time.time()
+            clear_indices = []
+            for i, uid in enumerate(queue):
+                uid_pack = redis_client.get(uid)
+                if uid_pack is None:
+                    continue
+                uid_data = StatusData(**json.loads(uid_pack))
+                if uid_data.status == Status.INTERRUPTED:
+                    clear_indices.append(i)
+                    continue
+                create_time = (uid_data.data or {}).get("create_time", None)
+                start_time = (uid_data.data or {}).get("start_time", None)
+                i_cleared = False
+                for t in [create_time, start_time]:
+                    if i_cleared:
+                        break
+                    if t is not None:
+                        if time.time() - t >= queue_timeout_threshold:
+                            clear_indices.append(i)
+                            i_cleared = True
+            for idx in clear_indices[::-1]:
+                queue.pop(idx)
         # check redundant
         exist = set()
         clear_indices = []
