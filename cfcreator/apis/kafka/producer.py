@@ -164,6 +164,8 @@ class ProducerModel(BaseModel):
 
 class ProducerResponse(BaseModel):
     uid: str
+    msg: str
+    success: bool
 
 
 # 30min = timeout
@@ -223,18 +225,23 @@ async def push(data: ProducerModel, response: Response) -> ProducerResponse:
     )
     # send to kafka
     data.params["callback_url"] = data.notify_url
-    kafka_producer.send(
-        kafka_topic(),
-        json.dumps(
-            dict(
-                uid=new_uid,
-                task=data.task,
-                params=data.params,
-            ),
-            ensure_ascii=False,
-        ).encode("utf-8"),
-    )
-    return ProducerResponse(uid=new_uid)
+    try:
+        kafka_producer.send(
+            kafka_topic(),
+            json.dumps(
+                dict(
+                    uid=new_uid,
+                    task=data.task,
+                    params=data.params,
+                ),
+                ensure_ascii=False,
+            ).encode("utf-8"),
+        )
+    except Exception as err:
+        msg = get_err_msg(err)
+        logging.exception(msg)
+        return ProducerResponse(uid=new_uid, msg=msg, success=False)
+    return ProducerResponse(uid=new_uid, msg="", success=True)
 
 
 class InterruptModel(BaseModel):
