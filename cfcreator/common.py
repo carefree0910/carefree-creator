@@ -509,7 +509,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
         manager = model.lora_manager
         if manager.injected:
             m.cleanup_sd_lora()
-        if data.lora_scales is not None:
+        if data.lora_scales:
             user_folder = os.path.expanduser("~")
             external_folder = os.path.join(user_folder, ".cache", "external")
             lora_folder = os.path.join(external_folder, "lora")
@@ -677,7 +677,7 @@ class SDParameters(BaseModel):
 
 
 def load_sd_lora_with(sd: ControlledDiffusionAPI, data: SDParameters) -> None:
-    if data.lora_paths is not None:
+    if data.lora_paths:
         for lora_path in data.lora_paths:
             key = Path(lora_path).stem
             if isinstance(sd.m, StableDiffusion) and sd.m.lora_manager.has(key):
