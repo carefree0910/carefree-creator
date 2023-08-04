@@ -5,6 +5,7 @@ from typing import List
 from typing import Union
 from fastapi import Response
 from pydantic import Field
+from pydantic import Extra
 from pydantic import BaseModel
 from cftool.cv import np_to_bytes
 
@@ -62,7 +63,10 @@ class DepthBundle(BaseModel):
     data: DepthBundleData
 
 
-class UniversalControlModel(ControlNetBundleCommonDataWithDetectResolution):
+class UniversalControlModel(
+    ControlNetBundleCommonDataWithDetectResolution,
+    extra=Extra.allow,
+):
     pass
 
 
