@@ -39,7 +39,6 @@ from ..common import handle_diffusion_model
 from ..common import handle_diffusion_inpainting_model
 from ..common import IAlgorithm
 from ..common import ReturnArraysModel
-from ..common import ControlStrengthModel
 
 
 root = os.path.dirname(__file__)
@@ -51,6 +50,10 @@ control_mlsd_endpoint = "/control/mlsd"
 
 images_type = Tuple[np.ndarray, np.ndarray]
 apply_response = Tuple[List[np.ndarray], Dict[str, float]]
+
+
+class ControlStrengthModel(BaseModel):
+    control_strength: float = Field(1.0, description="The strength of the control.")
 
 
 class ControlNetModelPlaceholder(ControlStrengthModel, ControlNetModel):

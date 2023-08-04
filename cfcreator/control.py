@@ -43,7 +43,6 @@ from .common import handle_diffusion_inpainting_model
 from .common import IAlgorithm
 from .common import ControlNetModel
 from .common import ReturnArraysModel
-from .common import ControlStrengthModel
 from .common import _ControlNetCoreModel
 
 
@@ -62,7 +61,7 @@ images_type = Tuple[np.ndarray, np.ndarray]
 apply_response = Tuple[List[np.ndarray], Dict[str, float]]
 
 
-class ControlNetBundleCommonData(ControlStrengthModel, _ControlNetCoreModel):
+class ControlNetBundleCommonData(_ControlNetCoreModel):
     pass
 
 
@@ -422,7 +421,7 @@ class _DepthModel(DetectResolutionModel):
     pass
 
 
-class ControlDepthModel(_DepthModel, ControlStrengthModel, ControlNetModel):
+class ControlDepthModel(_DepthModel, ControlNetModel):
     pass
 
 
@@ -448,7 +447,7 @@ class _CannyModel(LargeDetectResolutionModel):
     )
 
 
-class ControlCannyModel(_CannyModel, ControlStrengthModel, ControlNetModel):
+class ControlCannyModel(_CannyModel, ControlNetModel):
     pass
 
 
@@ -463,7 +462,7 @@ class _PoseModel(LargeDetectResolutionModel):
     pass
 
 
-class ControlPoseModel(_PoseModel, ControlStrengthModel, ControlNetModel):
+class ControlPoseModel(_PoseModel, ControlNetModel):
     pass
 
 
@@ -489,7 +488,7 @@ class _MLSDModel(LargeDetectResolutionModel):
     )
 
 
-class ControlMLSDModel(_MLSDModel, ControlStrengthModel, ControlNetModel):
+class ControlMLSDModel(_MLSDModel, ControlNetModel):
     pass
 
 
