@@ -1,6 +1,6 @@
 FROM pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime
 ENV DEBIAN_FRONTEND=noninteractive
-WORKDIR /workplace
+WORKDIR /workspace
 RUN rm -rf /opt/conda/lib/python3.8/site-packages/cv2 && \
     pip install -U pip && \
     apt-get update && \
