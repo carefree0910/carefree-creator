@@ -33,6 +33,7 @@ setup(
     ],
     extras_require={
         "kafka": kafka_requires,
+        "third_party": third_party_requires,
         "full": kafka_requires + third_party_requires,
     },
     author="carefree0910",
