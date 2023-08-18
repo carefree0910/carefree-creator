@@ -48,7 +48,7 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
         t2 = time.time()
         # fetch target
         target_result = results[data.target]
-        if isinstance(target_result[0], str):
+        if not target_result or isinstance(target_result[0], str):
             res = target_result
         else:
             arrays = list(map(np.array, target_result))
@@ -61,8 +61,9 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
             res = {WORKFLOW_TARGET_RESPONSE_KEY: res}
             for key in data.intermediate:
                 intermediate_result = results[key]
-                if isinstance(intermediate_result[0], Image.Image):
-                    intermediate_result = list(map(np.array, intermediate_result))
+                if intermediate_result:
+                    if isinstance(intermediate_result[0], Image.Image):
+                        intermediate_result = list(map(np.array, intermediate_result))
                 res[key] = intermediate_result
         latencies = {
             "get_workflow": t1 - t0,
