@@ -10,6 +10,7 @@ import logging.config
 
 import numpy as np
 
+from PIL import Image
 from kafka import KafkaConsumer
 from typing import Any
 from typing import Dict
@@ -184,7 +185,7 @@ def simplify(params: Any) -> Any:
 # return (urls, reasons)
 def audit_urls(
     model: BaseModel,
-    url_results: List[UploadImageResponse],
+    url_results: List[Union[UploadImageResponse, Any]],
 ) -> Tuple[List[str], List[str]]:
     urls = [rs.cdn for rs in url_results]
     if (
@@ -195,6 +196,9 @@ def audit_urls(
     else:
         reasons = []
         for i, rs in enumerate(url_results):
+            if not isinstance(rs, UploadImageResponse):
+                reasons.append("")
+                continue
             try:
                 audit = audit_image(cos_client, image_mod_client, rs.path)
             except:
@@ -278,7 +282,10 @@ async def consume() -> None:
                     for k, v in res.items():
                         procedure = f"[{k}] run_algorithm -> upload_temp_image"
                         all_results[k] = [
-                            upload_temp_image(cos_client, arr) for arr in v
+                            elem
+                            if not isinstance(elem, Image.Image)
+                            else upload_temp_image(cos_client, elem)
+                            for elem in v
                         ]
                     t2 = time.time()
                     for k, k_results in all_results.items():
@@ -300,7 +307,12 @@ async def consume() -> None:
                     or task.startswith("pipeline")
                 ):
                     procedure = "run_algorithm -> upload_temp_image"
-                    url_results = [upload_temp_image(cos_client, arr) for arr in res]
+                    url_results = [
+                        elem
+                        if not isinstance(elem, Image.Image)
+                        else upload_temp_image(cos_client, elem)
+                        for elem in res
+                    ]
                     t2 = time.time()
                     procedure = "upload_temp_image -> audit_image"
                     urls, reasons = audit_urls(model, url_results)

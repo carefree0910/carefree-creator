@@ -48,7 +48,7 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
         t2 = time.time()
         # fetch target
         target_result = results[data.target]
-        if not target_result or isinstance(target_result[0], str):
+        if not target_result or not isinstance(target_result[0], Image.Image):
             res = target_result
         else:
             arrays = list(map(np.array, target_result))
