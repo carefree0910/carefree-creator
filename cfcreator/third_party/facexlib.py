@@ -10,6 +10,7 @@ from typing import Any
 from typing import List
 from fastapi import Response
 from pydantic import Field
+from pydantic import BaseModel
 from cflearn.misc.toolkit import eval_context
 from torchvision.transforms.functional import normalize
 
@@ -134,6 +135,10 @@ class FacexlibDetectModel(CVImageModel):
     confidence: float = Field(0.97, description="confidence threshold")
 
 
+class FacexlibDetectResponse(BaseModel):
+    ltrbs: List[List[int]]
+
+
 @IAlgorithm.auto_register()
 class FacexlibDetect(IAlgorithm):
     model_class = FacexlibDetectModel
@@ -152,7 +157,7 @@ class FacexlibDetect(IAlgorithm):
 
     async def run(
         self, data: FacexlibDetectModel, *args: Any, **kwargs: Any
-    ) -> List[List[int]]:
+    ) -> FacexlibDetectResponse:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
@@ -174,7 +179,7 @@ class FacexlibDetect(IAlgorithm):
                 "cleanup": time.time() - t4,
             }
         )
-        return ltrbs
+        return FacexlibDetectResponse(ltrbs=ltrbs)
 
 
 __all__ = [
@@ -183,6 +188,7 @@ __all__ = [
     "FaceAreas",
     "FacexlibParseModel",
     "FacexlibDetectModel",
+    "FacexlibDetectResponse",
     "FacexlibParse",
     "FacexlibDetect",
 ]

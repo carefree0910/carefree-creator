@@ -267,7 +267,8 @@ class APIs:
         self, data: FacexlibDetectModel, **kw: Any
     ) -> List[List[int]]:
         task = endpoint2algorithm(facexlib_detect_endpoint)
-        return await self.algorithms[task].run(data, **kw)
+        result: FacexlibDetectResponse = await self.algorithms[task].run(data, **kw)
+        return result.ltrbs
 
     # special
 
