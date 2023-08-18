@@ -185,10 +185,10 @@ def simplify(params: Any) -> Any:
 # return (urls, reasons)
 def audit_urls(
     model: BaseModel,
-    url_results: List[Union[UploadImageResponse, Any]],
+    url_results: List[Union[UploadResponse, Any]],
 ) -> Tuple[List[str], List[str]]:
     urls = [
-        result if not isinstance(result, UploadImageResponse) else result.cdn
+        result if not isinstance(result, UploadResponse) else result.cdn
         for result in url_results
     ]
     if (
@@ -199,7 +199,7 @@ def audit_urls(
     else:
         reasons = []
         for i, rs in enumerate(url_results):
-            if not isinstance(rs, UploadImageResponse):
+            if not isinstance(rs, UploadResponse):
                 reasons.append("")
                 continue
             try:

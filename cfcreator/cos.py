@@ -68,7 +68,7 @@ class AuditResponse(BaseModel):
     reason: str = Field(..., description="If not safe, what's the reason?")
 
 
-class UploadImageResponse(BaseModel):
+class UploadResponse(BaseModel):
     path: str = Field(..., description="The path on the cloud.")
     cdn: str = Field(..., description="The `cdn` url of the input image.")
     cos: str = Field(
@@ -156,7 +156,7 @@ def upload_image(
     timeout: int = UPLOAD_TIMEOUT,
     # part_size: int = PART_SIZE,
     # max_thread: int = MAX_THREAD,
-) -> UploadImageResponse:
+) -> UploadResponse:
     path = f"{folder}/{uuid.uuid4().hex}.png"
     if isinstance(inp, bytes):
         img_bytes = io.BytesIO(inp)
@@ -192,7 +192,7 @@ def upload_image(
     finally:
         client._retry = original_retry
         client._conf._timeout = original_timeout
-    return UploadImageResponse(
+    return UploadResponse(
         path=path,
         cdn=cdn_url,
         cos=cos_url,
@@ -205,7 +205,7 @@ def upload_temp_image(
     # *,
     # part_size: int = PART_SIZE,
     # max_thread: int = MAX_THREAD,
-) -> UploadImageResponse:
+) -> UploadResponse:
     return upload_image(
         client,
         inp,
@@ -288,7 +288,7 @@ __all__ = [
     "ForbidEnum",
     "AuditJobsDetailModel",
     "AuditResponse",
-    "UploadImageResponse",
+    "UploadResponse",
 ]
 
 
