@@ -142,6 +142,7 @@ class FacexlibDetectResponse(BaseModel):
 @IAlgorithm.auto_register()
 class FacexlibDetect(IAlgorithm):
     model_class = FacexlibDetectModel
+    response_model_class = FacexlibDetectResponse
 
     endpoint = facexlib_detect_endpoint
 
