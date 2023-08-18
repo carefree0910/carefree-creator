@@ -187,7 +187,10 @@ def audit_urls(
     model: BaseModel,
     url_results: List[Union[UploadImageResponse, Any]],
 ) -> Tuple[List[str], List[str]]:
-    urls = [rs.cdn for rs in url_results]
+    urls = [
+        result if not isinstance(result, UploadImageResponse) else result.cdn
+        for result in url_results
+    ]
     if (
         isinstance(model, (ControlNetModel, LegacyControlNetModel))
         and not model.use_audit
