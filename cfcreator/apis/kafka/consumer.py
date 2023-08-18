@@ -10,7 +10,6 @@ import logging.config
 
 import numpy as np
 
-from PIL import Image
 from kafka import KafkaConsumer
 from typing import Any
 from typing import Dict
@@ -286,7 +285,7 @@ async def consume() -> None:
                         procedure = f"[{k}] run_algorithm -> upload_temp_image"
                         all_results[k] = [
                             elem
-                            if not isinstance(elem, Image.Image)
+                            if not isinstance(elem, np.ndarray)
                             else upload_temp_image(cos_client, elem)
                             for elem in v
                         ]
@@ -312,7 +311,7 @@ async def consume() -> None:
                     procedure = "run_algorithm -> upload_temp_image"
                     url_results = [
                         elem
-                        if not isinstance(elem, Image.Image)
+                        if not isinstance(elem, np.ndarray)
                         else upload_temp_image(cos_client, elem)
                         for elem in res
                     ]
