@@ -341,26 +341,30 @@ async def consume() -> None:
                     result = dict(uid=uid, response=res.dict())
                 else:
                     procedure = "run_algorithm -> upload_temp_image"
-                    content = res[0] if isinstance(res, list) else res.body
-                    urls = upload_temp_image(cos_client, content)
-                    t2 = time.time()
-                    procedure = "upload_temp_image -> audit_image"
-                    if task != "img2img.sr":
-                        try:
-                            audit = audit_image(audit_redis_client, urls.path)
-                        except:
-                            audit = AuditResponse(safe=False, reason="unknown")
+                    if isinstance(res, list) and not res:
+                        t2 = t3 = time.time()
+                        result = dict(uid=uid, cdn="", cos="", safe=True, reason="")
                     else:
-                        audit = AuditResponse(safe=True, reason="")
-                    t3 = time.time()
-                    procedure = "audit_image -> redis"
-                    result = dict(
-                        uid=uid,
-                        cdn=urls.cdn if audit.safe else "",
-                        cos=urls.cos if audit.safe else "",
-                        safe=audit.safe,
-                        reason=audit.reason,
-                    )
+                        content = res[0] if isinstance(res, list) else res.body
+                        urls = upload_temp_image(cos_client, content)
+                        t2 = time.time()
+                        procedure = "upload_temp_image -> audit_image"
+                        if task != "img2img.sr":
+                            try:
+                                audit = audit_image(audit_redis_client, urls.path)
+                            except:
+                                audit = AuditResponse(safe=False, reason="unknown")
+                        else:
+                            audit = AuditResponse(safe=True, reason="")
+                        t3 = time.time()
+                        procedure = "audit_image -> redis"
+                        result = dict(
+                            uid=uid,
+                            cdn=urls.cdn if audit.safe else "",
+                            cos=urls.cos if audit.safe else "",
+                            safe=audit.safe,
+                            reason=audit.reason,
+                        )
                 result.update(data)
                 end_time = time.time()
                 result["end_time"] = end_time
