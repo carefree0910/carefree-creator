@@ -10,6 +10,7 @@ import logging.config
 
 import numpy as np
 
+from obs import *
 from kafka import KafkaConsumer
 from typing import Any
 from typing import Dict
@@ -17,8 +18,6 @@ from typing import Tuple
 from typing import Union
 from fastapi import Response
 from pydantic import BaseModel
-from qcloud_cos import CosConfig
-from qcloud_cos import CosS3Client
 
 from cfclient.models import *
 from cftool.misc import get_err_msg
@@ -26,6 +25,9 @@ from cftool.misc import shallow_copy_dict
 from cfclient.core import HttpClient
 from cfclient.core import TritonClient
 from cfclient.utils import run_algorithm
+from huaweicloudsdkcore.auth.credentials import BasicCredentials
+from huaweicloudsdkmoderation.v2 import ModerationClient
+from huaweicloudsdkmoderation.v2.region.moderation_region import ModerationRegion
 
 # This is necessary to register the algorithms
 from cfcreator import *
@@ -66,13 +68,14 @@ constants = dict(
 
 # clients
 ## cos client
-config = CosConfig(
-    Region=REGION,
-    SecretId=SECRET_ID,
-    SecretKey=SECRET_KEY,
-    Scheme=SCHEME,
+cos_client = ObsClient(access_key_id=AK, secret_access_key=SK, server=SERVER)
+image_mod_cred = BasicCredentials(AK, SK)
+image_mod_client = (
+    ModerationClient.new_builder()
+    .with_credentials(image_mod_cred)
+    .with_region(ModerationRegion.value_of(REGION))
+    .build()
 )
-cos_client = CosS3Client(config)
 ## http client
 http_client = HttpClient()
 ## triton client
@@ -88,7 +91,6 @@ clients = dict(
 )
 
 redis_client = redis.Redis(**redis_kwargs())
-audit_redis_client = redis.Redis(**audit_redis_kwargs())
 pending_queue_key = get_pending_queue_key()
 
 
@@ -236,6 +238,8 @@ async def consume() -> None:
         max_poll_records=kafka_max_poll_records(),
         max_poll_interval_ms=kafka_max_poll_interval_ms(),
     )
+    with open("/tmp/health", "w"):
+        pass
     # main loop
     try:
         for message in kafka_consumer:
@@ -283,19 +287,32 @@ async def consume() -> None:
                     all_results = {}
                     for k, v in res.items():
                         procedure = f"[{k}] run_algorithm -> upload_temp_image"
+                        upload_fn = (
+                            upload_temp_image
+                            if k == WORKFLOW_TARGET_RESPONSE_KEY
+                            else upload_private_image
+                        )
                         all_results[k] = [
                             elem
                             if not isinstance(elem, np.ndarray)
-                            else upload_temp_image(cos_client, elem)
+                            else upload_fn(cos_client, elem)
                             for elem in v
                         ]
                     t2 = time.time()
                     for k, k_results in all_results.items():
                         procedure = f"[{k}] upload_temp_image -> audit_image"
-                        k_urls, k_reasons = audit_urls(model, k_results)
                         if k != WORKFLOW_TARGET_RESPONSE_KEY:
-                            intermediate[k] = dict(urls=k_urls, reasons=k_reasons)
+                            intermediate[k] = dict(
+                                urls=[
+                                    result
+                                    if not isinstance(result, UploadResponse)
+                                    else result.cos
+                                    for result in k_results
+                                ],
+                                reasons=[""] * len(k_results),
+                            )
                         else:
+                            k_urls, k_reasons = audit_urls(model, k_results)
                             response["urls"] = k_urls
                             response["reasons"] = k_reasons
                     t3 = time.time()
@@ -342,10 +359,35 @@ async def consume() -> None:
                                 result_reasons=reasons[num_cond:],
                             ),
                         )
-                    elif task == "pipeline.paste":
+                    elif task == "pipeline.paste" or task == "pipeline.product_sr":
                         result = dict(
                             uid=uid,
                             response=dict(url=urls[0], reason=reasons[0]),
+                        )
+                    elif task == "pipeline.product":
+                        result = dict(
+                            uid=uid,
+                            response=dict(
+                                raw_url=urls[0],
+                                raw_reason=reasons[0],
+                                depth_url=urls[1],
+                                depth_reason=reasons[1],
+                                result_urls=urls[2:],
+                                result_reasons=reasons[2:],
+                            ),
+                        )
+                    elif task.startswith("pipeline"):
+                        num_hints = len(params["types"])
+                        result = dict(
+                            uid=uid,
+                            response=dict(
+                                raw_url=urls[0],
+                                raw_reason=reasons[0],
+                                hint_urls=urls[1 : num_hints + 1],
+                                hint_reasons=reasons[1 : num_hints + 1],
+                                result_urls=urls[num_hints + 1 :],
+                                result_reasons=reasons[num_hints + 1 :],
+                            ),
                         )
                     else:
                         raise ValueError(f"unrecognized task '{task}' occurred")
@@ -365,7 +407,9 @@ async def consume() -> None:
                         procedure = "upload_temp_image -> audit_image"
                         if task != "img2img.sr":
                             try:
-                                audit = audit_image(audit_redis_client, urls.path)
+                                audit = audit_image(
+                                    cos_client, image_mod_client, urls.path
+                                )
                             except:
                                 audit = AuditResponse(safe=False, reason="unknown")
                         else:
