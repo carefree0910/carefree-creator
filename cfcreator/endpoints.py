@@ -76,8 +76,8 @@ endpoint_to_focuses = {
     # upscale
     upscale_tile_endpoint: [Focus.ALL, Focus.CONTROL],
     # third party
-    facexlib_parse_endpoint: [Focus.ALL],
-    facexlib_detect_endpoint: [Focus.ALL],
+    facexlib_parse_endpoint: [Focus.ALL, Focus.SYNC],
+    facexlib_detect_endpoint: [Focus.ALL, Focus.SYNC],
     # workflow
     workflow_endpoint: [Focus.ALL, Focus.SYNC],
 }
