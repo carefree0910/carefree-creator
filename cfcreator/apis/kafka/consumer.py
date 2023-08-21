@@ -11,6 +11,7 @@ import logging.config
 import numpy as np
 
 from obs import *
+from PIL import Image
 from kafka import KafkaConsumer
 from typing import Any
 from typing import Dict
@@ -191,6 +192,8 @@ def get_upload_results(raw: List[Any], upload_fn: Callable) -> List[Any]:
             if isinstance(elem, list)
             else upload_fn(cos_client, elem)
             if isinstance(elem, np.ndarray)
+            else upload_fn(cos_client, np.array(elem))
+            if isinstance(elem, Image.Image)
             else elem
             for elem in v
         ]
