@@ -201,15 +201,26 @@ def get_upload_results(raw: List[Any], upload_fn: Callable) -> List[Any]:
     return _upload(raw)
 
 
+def extract_urls(results: List[Union[UploadResponse, Any]], attr: str) -> List[Any]:
+    def _extract(v: List[Any]) -> List[Any]:
+        return [
+            _extract(elem)
+            if isinstance(elem, list)
+            else getattr(elem, attr)
+            if isinstance(elem, UploadResponse)
+            else elem
+            for elem in v
+        ]
+
+    return _extract(results)
+
+
 # return (urls, reasons)
 def audit_urls(
     model: BaseModel,
     url_results: List[Union[UploadResponse, Any]],
 ) -> Tuple[List[str], List[str]]:
-    urls = [
-        result if not isinstance(result, UploadResponse) else result.cdn
-        for result in url_results
-    ]
+    urls = extract_urls(url_results, "cdn")
     if (
         isinstance(model, (ControlNetModel, LegacyControlNetModel))
         and not model.use_audit
@@ -316,12 +327,7 @@ async def consume() -> None:
                         procedure = f"[{k}] upload_temp_image -> audit_image"
                         if k != WORKFLOW_TARGET_RESPONSE_KEY:
                             intermediate[k] = dict(
-                                urls=[
-                                    result
-                                    if not isinstance(result, UploadResponse)
-                                    else result.cos
-                                    for result in k_results
-                                ],
+                                urls=extract_urls(k_results, "cos"),
                                 reasons=[""] * len(k_results),
                             )
                         else:
