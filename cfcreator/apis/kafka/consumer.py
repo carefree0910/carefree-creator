@@ -16,6 +16,7 @@ from typing import Any
 from typing import Dict
 from typing import Tuple
 from typing import Union
+from typing import Callable
 from fastapi import Response
 from pydantic import BaseModel
 
@@ -183,6 +184,20 @@ def simplify(params: Any) -> Any:
     return _core(params)
 
 
+def get_upload_results(raw: List[Any], upload_fn: Callable) -> List[Any]:
+    def _upload(v: List[Any]) -> List[Any]:
+        return [
+            _upload(elem)
+            if isinstance(elem, list)
+            else upload_fn(cos_client, elem)
+            if isinstance(elem, np.ndarray)
+            else elem
+            for elem in v
+        ]
+
+    return _upload(raw)
+
+
 # return (urls, reasons)
 def audit_urls(
     model: BaseModel,
@@ -292,12 +307,7 @@ async def consume() -> None:
                             if k == WORKFLOW_TARGET_RESPONSE_KEY
                             else upload_private_image
                         )
-                        all_results[k] = [
-                            elem
-                            if not isinstance(elem, np.ndarray)
-                            else upload_fn(cos_client, elem)
-                            for elem in v
-                        ]
+                        all_results[k] = get_upload_results(v, upload_fn)
                     t2 = time.time()
                     for k, k_results in all_results.items():
                         procedure = f"[{k}] upload_temp_image -> audit_image"
@@ -326,12 +336,7 @@ async def consume() -> None:
                     or task.startswith("pipeline")
                 ):
                     procedure = "run_algorithm -> upload_temp_image"
-                    url_results = [
-                        elem
-                        if not isinstance(elem, np.ndarray)
-                        else upload_temp_image(cos_client, elem)
-                        for elem in res
-                    ]
+                    url_results = get_upload_results(res, upload_temp_image)
                     t2 = time.time()
                     procedure = "upload_temp_image -> audit_image"
                     urls, reasons = audit_urls(model, url_results)
