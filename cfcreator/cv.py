@@ -636,6 +636,7 @@ class ImageSimilarity(IAlgorithm):
         im0 = await self.get_image_from("url_0", data, kwargs)
         im1 = await self.get_image_from("url_1", data, kwargs)
         t1 = time.time()
+        im0, im1 = map(to_rgb, [im0, im1])
         embeddings = self._extract_embeddings([im0, im1])
         t2 = time.time()
         e1 = embeddings[0]
