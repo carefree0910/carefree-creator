@@ -56,6 +56,7 @@ endpoint_to_focuses = {
     cv_generate_masks_endpoint: [Focus.ALL, Focus.SYNC],
     cv_crop_image_endpoint: [Focus.ALL, Focus.SYNC],
     cv_histogram_match_endpoint: [Focus.ALL, Focus.SYNC],
+    cv_image_similarity_endpoint: [Focus.ALL, Focus.SYNC],
     # ControlNet
     control_depth_endpoint: [Focus.ALL, Focus.CONTROL],
     control_canny_endpoint: [Focus.ALL, Focus.CONTROL],

@@ -1,7 +1,9 @@
 import cv2
 import time
+import torch
 
 import numpy as np
+import torchvision.transforms as T
 
 from PIL import Image
 from enum import Enum
@@ -13,6 +15,8 @@ from typing import Optional
 from fastapi import Response
 from pydantic import Field
 from pydantic import BaseModel
+from transformers import AutoModel
+from transformers import AutoFeatureExtractor
 from PIL.ImageFilter import GaussianBlur
 from cftool.cv import to_rgb
 from cftool.cv import to_uint8
@@ -20,6 +24,7 @@ from cftool.cv import ImageBox
 from cftool.cv import ImageProcessor
 from cftool.geometry import Matrix2D
 from cfclient.models import ImageModel
+from cflearn.misc.toolkit import eval_context
 
 from .utils import get_contrast_bg
 from .common import get_response
@@ -40,6 +45,7 @@ cv_modify_box_endpoint = "/cv/modify_box"
 cv_generate_masks_endpoint = "/cv/generate_masks"
 cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
+cv_image_similarity_endpoint = "/cv/similarity"
 
 
 class CVImageModel(ReturnArraysModel, ImageModel):
@@ -590,6 +596,68 @@ class HistogramMatch(IAlgorithm):
         return res
 
 
+class ImageSimilarityModel(ReturnArraysModel):
+    url_0: str
+    url_1: str
+
+
+class ImageSimilarityResponse(BaseModel):
+    similarity: float
+
+
+@IAlgorithm.auto_register()
+class ImageSimilarity(IAlgorithm):
+    model_class = ImageSimilarityModel
+    response_model_class = ImageSimilarityResponse
+
+    endpoint = cv_image_similarity_endpoint
+
+    def initialize(self) -> None:
+        model_ckpt = "nateraw/vit-base-beans"
+        extractor = AutoFeatureExtractor.from_pretrained(model_ckpt)
+        self.model = AutoModel.from_pretrained(model_ckpt).to("cuda")
+        self.transform = T.Compose(
+            [
+                T.Resize(int((256 / 224) * extractor.size["height"])),
+                T.CenterCrop(extractor.size["height"]),
+                T.ToTensor(),
+                T.Normalize(mean=extractor.image_mean, std=extractor.image_std),
+            ]
+        )
+
+    async def run(
+        self,
+        data: ImageSimilarityModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> ImageSimilarityResponse:
+        self.log_endpoint(data)
+        t0 = time.time()
+        im0 = await self.get_image_from("url_0", data, kwargs)
+        im1 = await self.get_image_from("url_1", data, kwargs)
+        t1 = time.time()
+        embeddings = self._extract_embeddings([im0, im1])
+        t2 = time.time()
+        e1 = embeddings[0]
+        e2 = embeddings[1]
+        similarity = (e1 @ e2) / (torch.norm(e1) * torch.norm(e2))
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "inference": t2 - t1,
+                "calculation": time.time() - t2,
+            }
+        )
+        return ImageSimilarityResponse(similarity=similarity.item())
+
+    def _extract_embeddings(self, images: List[Image.Image]) -> torch.Tensor:
+        transformed = torch.stack(list(map(self.transform, images)))
+        batch = {"pixel_values": transformed.to(self.model.device)}
+        with eval_context(self.model):
+            embeddings = self.model(**batch).last_hidden_state[:, 0].cpu()
+        return embeddings
+
+
 __all__ = [
     "cv_blur_endpoint",
     "cv_grayscale_endpoint",
@@ -604,6 +672,7 @@ __all__ = [
     "cv_generate_masks_endpoint",
     "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
+    "cv_image_similarity_endpoint",
     "CVImageModel",
     "BlurModel",
     "ErodeModel",
@@ -616,6 +685,8 @@ __all__ = [
     "GenerateMasksModel",
     "CropImageModel",
     "HistogramMatchModel",
+    "ImageSimilarityModel",
+    "ImageSimilarityResponse",
     "Blur",
     "Grayscale",
     "Erode",
@@ -629,4 +700,5 @@ __all__ = [
     "GenerateMasks",
     "CropImage",
     "HistogramMatch",
+    "ImageSimilarity",
 ]
