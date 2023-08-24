@@ -637,24 +637,34 @@ class ImageSimilarity(IAlgorithm):
         t0 = time.time()
         if isinstance(data.url_0, str) and isinstance(data.url_1, str):
             is_item = True
-            im0 = [await self.get_image_from("url_0", data, kwargs)]
-            im1 = [await self.get_image_from("url_1", data, kwargs)]
+            futures = [
+                self.get_image_from("url_0", data, kwargs),
+                self.get_image_from("url_1", data, kwargs),
+            ]
+            im0_indices = [0]
+            im1_indices = [1]
         else:
             is_item = False
             url_0 = data.url_0 if isinstance(data.url_0, list) else [data.url_0]
             url_1 = data.url_1 if isinstance(data.url_1, list) else [data.url_1]
-            url_0_futures = list(map(self.download_image_with_retry, url_0))
-            url_1_futures = list(map(self.download_image_with_retry, url_1))
-            im0 = await asyncio.gather(*url_0_futures)
-            im1 = await asyncio.gather(*url_1_futures)
+            all_urls = {}
+            im0_indices = []
+            im1_indices = []
+            for url in url_0:
+                im0_indices.append(all_urls.setdefault(url, len(all_urls)))
+            for url in url_1:
+                im1_indices.append(all_urls.setdefault(url, len(all_urls)))
+            reverse_urls = {v: k for k, v in all_urls.items()}
+            sorted_urls = [reverse_urls[i] for i in range(len(all_urls))]
+            futures = list(map(self.download_image_with_retry, sorted_urls))
+        images = await asyncio.gather(*futures)
         t1 = time.time()
-        im0 = list(map(to_rgb, im0))
-        im1 = list(map(to_rgb, im1))
-        embeddings = self._extract_embeddings(im0 + im1, data.batch_size)
+        images = list(map(to_rgb, images))
+        embeddings = self._extract_embeddings(images, data.batch_size)
         t2 = time.time()
-        e1 = embeddings[: len(im0)]
-        e2 = embeddings[len(im0) :]
-        sim = (e1 @ e2.t()) / (e1.norm(dim=-1)[..., None] * e2.norm(dim=-1)[None])
+        e0 = embeddings[im0_indices]
+        e1 = embeddings[im1_indices]
+        sim = (e0 @ e1.t()) / (e0.norm(dim=-1)[..., None] * e1.norm(dim=-1)[None])
         if is_item:
             sim = sim.item()
         else:
