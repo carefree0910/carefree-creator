@@ -1,6 +1,7 @@
 import cv2
 import time
 import torch
+import asyncio
 
 import numpy as np
 import torchvision.transforms as T
@@ -597,12 +598,13 @@ class HistogramMatch(IAlgorithm):
 
 
 class ImageSimilarityModel(ReturnArraysModel):
-    url_0: str
-    url_1: str
+    url_0: Union[str, List[str]]
+    url_1: Union[str, List[str]]
+    batch_size: int = Field(4, description="batch size")
 
 
 class ImageSimilarityResponse(BaseModel):
-    similarity: float
+    similarity: Union[float, List[List[float]]]
 
 
 @IAlgorithm.auto_register()
@@ -633,15 +635,30 @@ class ImageSimilarity(IAlgorithm):
     ) -> ImageSimilarityResponse:
         self.log_endpoint(data)
         t0 = time.time()
-        im0 = await self.get_image_from("url_0", data, kwargs)
-        im1 = await self.get_image_from("url_1", data, kwargs)
+        if isinstance(data.url_0, str) and isinstance(data.url_1, str):
+            is_item = True
+            im0 = [await self.get_image_from("url_0", data, kwargs)]
+            im1 = [await self.get_image_from("url_1", data, kwargs)]
+        else:
+            is_item = False
+            url_0 = data.url_0 if isinstance(data.url_0, list) else [data.url_0]
+            url_1 = data.url_1 if isinstance(data.url_1, list) else [data.url_1]
+            url_0_futures = list(map(self.download_image_with_retry, url_0))
+            url_1_futures = list(map(self.download_image_with_retry, url_1))
+            im0 = await asyncio.gather(url_0_futures)
+            im1 = await asyncio.gather(url_1_futures)
         t1 = time.time()
-        im0, im1 = map(to_rgb, [im0, im1])
-        embeddings = self._extract_embeddings([im0, im1])
+        im0 = list(map(to_rgb, im0))
+        im1 = list(map(to_rgb, im1))
+        embeddings = self._extract_embeddings(im0 + im1, data.batch_size)
         t2 = time.time()
-        e1 = embeddings[0]
-        e2 = embeddings[1]
+        e1 = embeddings[: len(im0)]
+        e2 = embeddings[len(im0) :]
         similarity = (e1 @ e2) / (torch.norm(e1) * torch.norm(e2))
+        if is_item:
+            similarity = similarity.item()
+        else:
+            similarity = similarity.cpu().numpy().tolist()
         self.log_times(
             {
                 "download": t1 - t0,
@@ -649,14 +666,22 @@ class ImageSimilarity(IAlgorithm):
                 "calculation": time.time() - t2,
             }
         )
-        return ImageSimilarityResponse(similarity=similarity.item())
+        return ImageSimilarityResponse(similarity=similarity)
 
-    def _extract_embeddings(self, images: List[Image.Image]) -> torch.Tensor:
+    def _extract_embeddings(
+        self,
+        images: List[Image.Image],
+        batch_size: int,
+    ) -> torch.Tensor:
         transformed = torch.stack(list(map(self.transform, images)))
-        batch = {"pixel_values": transformed.to(self.model.device)}
         with eval_context(self.model):
-            embeddings = self.model(**batch).last_hidden_state[:, 0].cpu()
-        return embeddings
+            num_batches = (len(images) - 1) // batch_size + 1
+            embeddings = []
+            for i in range(num_batches):
+                i_transformed = transformed[i * batch_size : (i + 1) * batch_size]
+                batch = {"pixel_values": i_transformed.to(self.model.device)}
+                embeddings.append(self.model(**batch).last_hidden_state[:, 0].cpu())
+        return torch.cat(embeddings)
 
 
 __all__ = [
