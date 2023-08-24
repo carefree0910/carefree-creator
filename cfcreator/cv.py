@@ -654,11 +654,11 @@ class ImageSimilarity(IAlgorithm):
         t2 = time.time()
         e1 = embeddings[: len(im0)]
         e2 = embeddings[len(im0) :]
-        similarity = (e1 @ e2) / (torch.norm(e1) * torch.norm(e2))
+        sim = (e1 @ e2.t()) / (e1.norm(dim=-1)[..., None] * e2.norm(dim=-1)[None])
         if is_item:
-            similarity = similarity.item()
+            sim = sim.item()
         else:
-            similarity = similarity.cpu().numpy().tolist()
+            sim = sim.cpu().numpy().tolist()
         self.log_times(
             {
                 "download": t1 - t0,
@@ -666,7 +666,7 @@ class ImageSimilarity(IAlgorithm):
                 "calculation": time.time() - t2,
             }
         )
-        return ImageSimilarityResponse(similarity=similarity)
+        return ImageSimilarityResponse(similarity=sim)
 
     def _extract_embeddings(
         self,
