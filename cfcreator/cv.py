@@ -645,8 +645,8 @@ class ImageSimilarity(IAlgorithm):
             url_1 = data.url_1 if isinstance(data.url_1, list) else [data.url_1]
             url_0_futures = list(map(self.download_image_with_retry, url_0))
             url_1_futures = list(map(self.download_image_with_retry, url_1))
-            im0 = await asyncio.gather(url_0_futures)
-            im1 = await asyncio.gather(url_1_futures)
+            im0 = await asyncio.gather(*url_0_futures)
+            im1 = await asyncio.gather(*url_1_futures)
         t1 = time.time()
         im0 = list(map(to_rgb, im0))
         im1 = list(map(to_rgb, im1))
