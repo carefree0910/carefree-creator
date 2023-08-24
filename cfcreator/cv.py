@@ -601,6 +601,7 @@ class ImageSimilarityModel(ReturnArraysModel):
     url_0: Union[str, List[str]]
     url_1: Union[str, List[str]]
     batch_size: int = Field(4, description="batch size")
+    skip_to_rgb: bool = False
 
 
 class ImageSimilarityResponse(BaseModel):
@@ -659,9 +660,11 @@ class ImageSimilarity(IAlgorithm):
             futures = list(map(self.download_image_with_retry, sorted_urls))
         images = await asyncio.gather(*futures)
         t1 = time.time()
-        images = list(map(to_rgb, images))
-        embeddings = self._extract_embeddings(images, data.batch_size)
+        if not data.skip_to_rgb:
+            images = list(map(to_rgb, images))
         t2 = time.time()
+        embeddings = self._extract_embeddings(images, data.batch_size)
+        t3 = time.time()
         e0 = embeddings[im0_indices]
         e1 = embeddings[im1_indices]
         sim = (e0 @ e1.t()) / (e0.norm(dim=-1)[..., None] * e1.norm(dim=-1)[None])
@@ -672,8 +675,9 @@ class ImageSimilarity(IAlgorithm):
         self.log_times(
             {
                 "download": t1 - t0,
-                "inference": t2 - t1,
-                "calculation": time.time() - t2,
+                "to_rgb": t2 - t1,
+                "inference": t3 - t2,
+                "calculation": time.time() - t3,
             }
         )
         return ImageSimilarityResponse(similarity=sim)
