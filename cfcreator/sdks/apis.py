@@ -92,6 +92,7 @@ class APIs:
         clients: Optional[dict] = None,
         algorithms: Optional[Dict[str, IAlgorithm]] = None,
         focuses_endpoints: Optional[List[str]] = None,
+        excludes_endpoints: Optional[List[str]] = None,
         verbose: Optional[Union[str, bool]] = "auto",
         lazy_load: Optional[bool] = True,
     ) -> None:
@@ -99,6 +100,10 @@ class APIs:
             focuses = None
         else:
             focuses = list(map(endpoint2algorithm, focuses_endpoints))
+        if excludes_endpoints is None:
+            excludes = None
+        else:
+            excludes = list(map(endpoint2algorithm, excludes_endpoints))
         if verbose is not None:
             if verbose == "auto":
                 verbose = focuses is not None
@@ -124,7 +129,8 @@ class APIs:
             self.algorithms = {
                 k: v(clients)
                 for k, v in registered_algorithms.items()
-                if focuses is None or k in focuses
+                if (focuses is None or k in focuses)
+                and (excludes is None or k not in excludes)
             }
             for v in self.algorithms.values():
                 if isinstance(v, IWrapperAlgorithm):
