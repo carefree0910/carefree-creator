@@ -616,9 +616,10 @@ class ImageSimilarity(IAlgorithm):
     endpoint = cv_image_similarity_endpoint
 
     def initialize(self) -> None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         model_ckpt = "nateraw/vit-base-beans"
         extractor = AutoFeatureExtractor.from_pretrained(model_ckpt)
-        self.model = AutoModel.from_pretrained(model_ckpt).to("cuda")
+        self.model = AutoModel.from_pretrained(model_ckpt).to(device)
         self.transform = T.Compose(
             [
                 T.Resize(int((256 / 224) * extractor.size["height"])),
