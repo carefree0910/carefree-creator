@@ -55,6 +55,7 @@ class opt_env_context:
 
 class Focus(str, Enum):
     ALL = "all"
+    CV = "cv"
     SD = "sd"
     SD_BASE = "sd.base"
     SD_INPAINTING = "sd.inpainting"
