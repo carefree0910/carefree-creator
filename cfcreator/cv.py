@@ -1,4 +1,5 @@
 import cv2
+import math
 import time
 import torch
 import asyncio
@@ -23,7 +24,11 @@ from cftool.cv import to_rgb
 from cftool.cv import to_uint8
 from cftool.cv import ImageBox
 from cftool.cv import ImageProcessor
+from cftool.geometry import Point
 from cftool.geometry import Matrix2D
+from cftool.geometry import PivotType
+from cftool.geometry import ExpandType
+from cftool.geometry import Matrix2DProperties
 from cfclient.models import ImageModel
 from cflearn.misc.toolkit import eval_context
 
@@ -47,6 +52,7 @@ cv_generate_masks_endpoint = "/cv/generate_masks"
 cv_crop_image_endpoint = "/cv/crop_image"
 cv_histogram_match_endpoint = "/cv/hist_match"
 cv_image_similarity_endpoint = "/cv/similarity"
+cv_repositioning_endpoint = "/cv/repositioning"
 
 
 class CVImageModel(ReturnArraysModel, ImageModel):
@@ -699,6 +705,273 @@ class ImageSimilarity(IAlgorithm):
         return torch.cat(embeddings)
 
 
+class FillType(str, Enum):
+    FIT = "fit"
+    IOU = "iou"
+    COVER = "cover"
+
+
+class AlignType(str, Enum):
+    CENTER = "center"
+    CENTROID = "centroid"
+    HALF_CENTROID = "half-centroid"
+
+
+class AffineFrameModel(BaseModel):
+    x: float
+    y: float
+    w: float
+    h: float
+    rotation: float
+    frame_w: float
+    frame_h: float
+
+    @property
+    def wh_ratio(self) -> float:
+        return self.w / self.h
+
+    @property
+    def frame_wh_ratio(self) -> float:
+        return self.frame_w / self.frame_h
+
+    def scale_to(self, ow: float, oh: float) -> "Matrix2D":
+        return Matrix2D.from_properties(
+            Matrix2DProperties(
+                x=self.x,
+                y=self.y,
+                w=self.w,
+                h=self.h,
+                theta=self.rotation * math.pi / 180,
+                skew_x=0,
+                skew_y=0,
+            )
+        ).scale(ow / self.frame_w, oh / self.frame_h, center=Point.origin())
+
+
+class ScaleByDensityModel(BaseModel):
+    min_scale: float = Field(
+        0.8,
+        description="The minimum scale used when density is large.",
+    )
+    max_scale: float = Field(
+        1.1,
+        description="The maximum scale used when density is small.",
+    )
+
+
+class RepositioningModel(ResamplingModel, CVImageModel):
+    url: str = Field(..., description="The `cdn` / `cos` url of the goods.")
+    output_width: int = Field(800, description="The width of the output image.")
+    output_height: int = Field(800, description="The height of the output image.")
+    binary_threshold: int = Field(127, description="The binary threshold.")
+    stick_to_edge: bool = Field(
+        True,
+        description="Whether enable 'stick to edge' logic.",
+    )
+    stick_distance_threshold: int = Field(
+        3,
+        description="The distance threshold of 'sticking'.",
+    )
+    stick_image_fill_type: FillType = Field(
+        FillType.FIT,
+        description="The fill type under 'stick to edge' logic.",
+    )
+    stick_priorities: str = Field("tlbr", description="The priorities of 'sticking'.")
+    affine_frame_list: Optional[List[AffineFrameModel]] = Field(
+        None,
+        description="The target affine frames to match.",
+    )
+    fill_type: FillType = Field(FillType.FIT, description="The fill type.")
+    align_type: AlignType = Field(AlignType.CENTER, description="The align type.")
+    scale_by_density: bool = Field(
+        True,
+        description="Whether enable 'scale by density' logic.",
+    )
+    scale_by_density_params: Optional[Optional[ScaleByDensityModel]] = Field(
+        None,
+        description="The params of 'scale by density' logic.",
+    )
+    wh_limit: int = Field(
+        16384,
+        description="maximum width or height of the output image",
+    )
+
+
+opposite_edges = dict(l="r", t="b", r="l", b="t")
+
+
+@IAlgorithm.auto_register()
+class Repositioning(IAlgorithm):
+    model_class = RepositioningModel
+
+    endpoint = cv_repositioning_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(
+        self,
+        data: RepositioningModel,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
+        self.log_endpoint(data)
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        t1 = time.time()
+        ow, oh = data.output_width, data.output_height
+        image = image.convert("RGBA")
+        array = np.array(image)
+        alpha = array[..., -1]
+        image_box = ImageBox.from_mask(alpha, data.binary_threshold)
+        img_w, img_h = image.size
+        sticky_edges = set()
+        if data.stick_to_edge:
+            if image_box.l < data.stick_distance_threshold:
+                sticky_edges.add("l")
+            if image_box.t < data.stick_distance_threshold:
+                sticky_edges.add("t")
+            if image_box.r > img_w - data.stick_distance_threshold:
+                sticky_edges.add("r")
+            if image_box.b > img_h - data.stick_distance_threshold:
+                sticky_edges.add("b")
+        t2 = time.time()
+        mask = None
+        mask_sum = None
+        if sticky_edges:
+            fill_type = data.stick_image_fill_type
+            image_wh_ratio = img_w / img_h
+            frame_matrix = Matrix2D(a=ow, b=0, c=0, d=oh, e=0, f=0)
+            density_scale = None
+        else:
+            image = image.crop(image_box.tuple)
+            img_w, img_h = image.size
+            alpha = alpha[image_box.t : image_box.b, image_box.l : image_box.r]
+            if not data.scale_by_density:
+                density_scale = None
+            else:
+                density_scale_params = data.scale_by_density_params
+                if density_scale_params is None:
+                    density_scale_params = ScaleByDensityModel()
+                min_density_scale = density_scale_params.min_scale
+                max_density_scale = density_scale_params.max_scale
+                mask = alpha > data.binary_threshold
+                mask_sum = mask.sum()
+                density = mask_sum / (max(image_box.w, image_box.h) ** 2)
+                density_scale = (
+                    min_density_scale
+                    + (max_density_scale - min_density_scale) * density
+                )
+            fill_type = data.fill_type
+            affine_frames = data.affine_frame_list
+            if affine_frames is None:
+                d = dict(x=40, y=40, w=720, h=720, rotation=0, frame_w=800, frame_h=800)
+                affine_frames = [AffineFrameModel(**d)]
+            canvas_wh_ratio = ow / oh
+            filtered = [
+                frame
+                for frame in affine_frames
+                if abs(frame.frame_wh_ratio - canvas_wh_ratio) < 1.0e-6
+            ]
+            if not filtered:
+                raise ValueError("no affine frame matches the output ratio")
+            wh_ratios = [frame.wh_ratio for frame in filtered]
+            image_wh_ratio = image_box.wh_ratio
+            best_index = np.argmin([abs(ratio - image_wh_ratio) for ratio in wh_ratios])
+            frame_matrix = filtered[best_index].scale_to(ow, oh)
+        frame_wh_ratio = frame_matrix.abs_wh_ratio
+        if fill_type == FillType.IOU:
+            expand_type = ExpandType.IOU
+        elif fill_type == FillType.FIT:
+            expand_type = (
+                ExpandType.FIX_H
+                if frame_wh_ratio > image_wh_ratio
+                else ExpandType.FIX_W
+            )
+        else:
+            expand_type = (
+                ExpandType.FIX_H
+                if frame_wh_ratio < image_wh_ratio
+                else ExpandType.FIX_W
+            )
+        expanded_image_matrix = frame_matrix.set_wh_ratio(
+            image_wh_ratio,
+            type=expand_type,
+            pivot=PivotType.CENTER,
+        )
+        if density_scale is not None:
+            expanded_image_matrix = expanded_image_matrix.scale(
+                density_scale,
+                density_scale,
+                center=expanded_image_matrix.pivot(PivotType.CENTER),
+            )
+        expanded_properties = expanded_image_matrix.decompose()
+        ew, eh = expanded_properties.w, expanded_properties.h
+        ew_ratio = ew / img_w
+        eh_ratio = eh / img_h
+        expanded_properties.w = ew_ratio
+        expanded_properties.h = eh_ratio
+        delta = None
+        if sticky_edges:
+            sticked = set()
+            for edge in data.stick_priorities:
+                if edge not in sticky_edges:
+                    continue
+                if opposite_edges[edge] in sticked:
+                    continue
+                if edge == "l":
+                    expanded_properties.x = 0
+                elif edge == "t":
+                    expanded_properties.y = 0
+                elif edge == "r":
+                    expanded_properties.x = ow - ew
+                elif edge == "b":
+                    expanded_properties.y = oh - eh
+                sticked.add(edge)
+        elif data.align_type != AlignType.CENTER:
+            if mask is None:
+                mask = alpha > data.binary_threshold
+            if mask_sum is None:
+                mask_sum = mask.sum()
+            x_center = 0.5 * img_w
+            y_center = 0.5 * img_h
+            x_centroid = (mask * np.arange(img_w)[None]).sum() / mask_sum
+            y_centroid = (mask * np.arange(img_h)[..., None]).sum() / mask_sum
+            x_delta = x_center - x_centroid.item()
+            y_delta = y_center - y_centroid.item()
+            if data.align_type == AlignType.HALF_CENTROID:
+                x_delta *= 0.5
+                y_delta *= 0.5
+            delta = Point(x_delta, y_delta).rotate(frame_matrix.theta)
+        final_matrix = Matrix2D.from_properties(expanded_properties)
+        if delta is not None:
+            final_matrix = final_matrix.move(delta)
+        affined = affine(
+            image,
+            final_matrix.a,
+            final_matrix.b,
+            final_matrix.c,
+            final_matrix.d,
+            final_matrix.e,
+            final_matrix.f,
+            ow,
+            oh,
+            data.resampling,
+            data.wh_limit,
+        )
+        t3 = time.time()
+        res = get_response(data, [np.array(affined)])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "preprocess": t2 - t1,
+                "calculation": t3 - t2,
+                "get_response": time.time() - t3,
+            }
+        )
+        return res
+
+
 __all__ = [
     "cv_blur_endpoint",
     "cv_grayscale_endpoint",
@@ -714,6 +987,7 @@ __all__ = [
     "cv_crop_image_endpoint",
     "cv_histogram_match_endpoint",
     "cv_image_similarity_endpoint",
+    "cv_repositioning_endpoint",
     "CVImageModel",
     "BlurModel",
     "ErodeModel",
@@ -728,6 +1002,7 @@ __all__ = [
     "HistogramMatchModel",
     "ImageSimilarityModel",
     "ImageSimilarityResponse",
+    "RepositioningModel",
     "Blur",
     "Grayscale",
     "Erode",
@@ -742,4 +1017,5 @@ __all__ = [
     "CropImage",
     "HistogramMatch",
     "ImageSimilarity",
+    "Repositioning",
 ]

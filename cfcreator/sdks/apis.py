@@ -60,6 +60,7 @@ endpoint2method = {
     cv_crop_image_endpoint: "crop_image",
     cv_histogram_match_endpoint: "histogram_match",
     cv_image_similarity_endpoint: "image_similarity",
+    cv_repositioning_endpoint: "repositioning",
     facexlib_parse_endpoint: "facexlib_parse",
     facexlib_detect_endpoint: "facexlib_detect",
     paste_pipeline_endpoint: "paste_pipeline",
@@ -259,6 +260,11 @@ class APIs:
         task = endpoint2algorithm(cv_image_similarity_endpoint)
         result: ImageSimilarityResponse = await self.algorithms[task].run(data, **kw)
         return [result.similarity]
+
+    async def repositioning(
+        self, data: RepositioningModel, **kw: Any
+    ) -> List[Image.Image]:
+        return await self._run(data, cv_repositioning_endpoint, **kw)
 
     async def prompt_enhance(self, data: PromptEnhanceModel, **kw: Any) -> List[str]:
         task = endpoint2algorithm(txt2txt_prompt_enhance_endpoint)

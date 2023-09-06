@@ -57,6 +57,7 @@ endpoint_to_focuses = {
     cv_crop_image_endpoint: [Focus.ALL, Focus.CV, Focus.SYNC],
     cv_histogram_match_endpoint: [Focus.ALL, Focus.CV, Focus.SYNC],
     cv_image_similarity_endpoint: [Focus.ALL, Focus.CV, Focus.SYNC],
+    cv_repositioning_endpoint: [Focus.ALL, Focus.CV, Focus.SYNC],
     # ControlNet
     control_depth_endpoint: [Focus.ALL, Focus.CONTROL],
     control_canny_endpoint: [Focus.ALL, Focus.CONTROL],
