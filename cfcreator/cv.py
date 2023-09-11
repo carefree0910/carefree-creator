@@ -960,7 +960,7 @@ class Repositioning(IAlgorithm):
             data.wh_limit,
         )
         t3 = time.time()
-        res = get_response(data, [np.array(affined)])
+        res = get_response(data, [affined])
         self.log_times(
             {
                 "download": t1 - t0,
