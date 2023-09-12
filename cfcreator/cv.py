@@ -787,7 +787,7 @@ class RepositioningModel(ResamplingModel, CVImageModel):
         True,
         description="Whether enable 'scale by density' logic.",
     )
-    scale_by_density_params: Optional[Optional[ScaleByDensityModel]] = Field(
+    scale_by_density_params: Optional[ScaleByDensityModel] = Field(
         None,
         description="The params of 'scale by density' logic.",
     )
