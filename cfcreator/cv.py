@@ -857,7 +857,7 @@ class Repositioning(IAlgorithm):
                 max_density_scale = density_scale_params.max_scale
                 mask = alpha > data.binary_threshold
                 mask_sum = mask.sum()
-                density = mask_sum / (max(image_box.w, image_box.h) ** 2)
+                density = 1.0 - mask_sum / (max(image_box.w, image_box.h) ** 2)
                 density_scale = (
                     min_density_scale
                     + (max_density_scale - min_density_scale) * density
