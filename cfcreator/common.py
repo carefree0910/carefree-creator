@@ -352,6 +352,10 @@ class CommonSDInpaintingModel(ReturnArraysModel, MaxWHModel):
         False,
         description="Whether strictly keep the original image identical in the output image.",
     )
+    keep_original_num_fade_pixels: Optional[int] = Field(
+        50,
+        description="Number of pixels to fade the original image.",
+    )
     use_raw_inpainting: bool = Field(
         False,
         description="""
@@ -561,6 +565,7 @@ def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str
         anchor=64,
         max_wh=data.max_wh,
         keep_original=data.keep_original,
+        keep_original_num_fade_pixels=data.keep_original_num_fade_pixels,
         use_raw_inpainting=data.use_raw_inpainting,
         use_background_guidance=data.use_background_guidance,
         use_reference=data.use_reference,
