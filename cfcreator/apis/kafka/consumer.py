@@ -135,6 +135,7 @@ async def post_callback(
         async with http_client.session.post(url, json=cb_data, timeout=interval) as res:
             if not res.ok:
                 raise ValueError(f"post callback failed ({res.status})")
+            print(f">>>>> post callback succeeded ({await res.json()})")
 
     msg = ""
     for i in range(retry):
