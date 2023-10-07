@@ -61,7 +61,7 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
         is_exception = exception_message is not None
         res = {WORKFLOW_IS_EXCEPTION_KEY: is_exception}
         if is_exception:
-            res[WORKFLOW_TARGET_RESPONSE_KEY] = exception_message
+            res[WORKFLOW_TARGET_RESPONSE_KEY] = [exception_message]
         else:
             ## fetch target
             target_result = results[data.target]
