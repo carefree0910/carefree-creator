@@ -18,6 +18,7 @@ from .common import ReturnArraysModel
 
 
 workflow_endpoint = "/workflow"
+WORKFLOW_IS_EXCEPTION_KEY = "$is_exception"
 WORKFLOW_TARGET_RESPONSE_KEY = "$target"
 
 
@@ -29,6 +30,10 @@ class WorkflowModel(ReturnArraysModel):
         description="The intermediate nodes that you want to collect results from.",
     )
     caches: Optional[Dict[str, Any]] = Field(None, description="The preset caches.")
+    return_if_exception: bool = Field(
+        False,
+        description="Whether to return the intermediate results anyway if any exception occurs.",
+    )
 
 
 @IWrapperAlgorithm.auto_register()
@@ -44,21 +49,32 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
         for node in data.nodes:
             workflow.push(node)
         t1 = time.time()
-        results = await self.apis.execute(workflow, data.target, data.caches)
+        results = await self.apis.execute(
+            workflow,
+            data.target,
+            data.caches,
+            return_if_exception=data.return_if_exception,
+        )
         t2 = time.time()
-        # fetch target
-        target_result = results[data.target]
-        if not target_result or not isinstance(target_result[0], Image.Image):
-            res = target_result
+        # check exception message
+        exception_message = results.get(self.exception_message_key)
+        is_exception = exception_message is not None
+        res = {WORKFLOW_IS_EXCEPTION_KEY: is_exception}
+        if is_exception:
+            res[WORKFLOW_TARGET_RESPONSE_KEY] = exception_message
         else:
-            arrays = list(map(np.array, target_result))
-            res = get_response(data, arrays)
+            ## fetch target
+            target_result = results[data.target]
+            if not target_result or not isinstance(target_result[0], Image.Image):
+                res[WORKFLOW_TARGET_RESPONSE_KEY] = target_result
+            else:
+                arrays = list(map(np.array, target_result))
+                res[WORKFLOW_TARGET_RESPONSE_KEY] = get_response(data, arrays)
         # fetch intermediate
         if data.intermediate is not None:
             if not data.return_arrays:
                 msg = "`return_arrays` should be True when `intermediate` is specified."
                 raise ValueError(msg)
-            res = {WORKFLOW_TARGET_RESPONSE_KEY: res}
             for key in data.intermediate:
                 intermediate_result = results[key]
                 if intermediate_result:
@@ -77,6 +93,7 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
 
 __all__ = [
     "workflow_endpoint",
+    "WORKFLOW_IS_EXCEPTION_KEY",
     "WORKFLOW_TARGET_RESPONSE_KEY",
     "WorkflowModel",
     "WorkflowAlgorithm",

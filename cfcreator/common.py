@@ -645,6 +645,7 @@ class IWrapperAlgorithm(IAlgorithm):
     def initialize(self) -> None:
         from cfcreator.sdks.apis import APIs
         from cfcreator.sdks.apis import ALL_LATENCIES_KEY
+        from cfcreator.sdks.apis import EXCEPTION_MESSAGE_KEY
 
         if self.algorithms is None:
             raise ValueError("`algorithms` should be provided for `IWrapperAlgorithm`.")
@@ -655,6 +656,7 @@ class IWrapperAlgorithm(IAlgorithm):
             lazy_load=None,
         )
         self.latencies_key = ALL_LATENCIES_KEY
+        self.exception_message_key = EXCEPTION_MESSAGE_KEY
 
 
 # kafka

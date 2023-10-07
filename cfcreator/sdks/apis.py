@@ -11,6 +11,7 @@ from typing import Union
 from typing import Optional
 from pydantic import BaseModel
 from collections import OrderedDict
+from cftool.misc import get_err_msg
 from cftool.misc import random_hash
 from cftool.misc import print_warning
 from cftool.misc import shallow_copy_dict
@@ -32,6 +33,7 @@ CONTROL_HINT_ENDPOINT = "$control_hint"
 FOR_EACH_ENDPOINT = "$for_each"
 PICK_ENDPOINT = "$pick"
 ALL_LATENCIES_KEY = "$all_latencies"
+EXCEPTION_MESSAGE_KEY = "$exception_message"
 endpoint2method = {
     txt2img_sd_endpoint: "txt2img",
     txt2img_sd_inpainting_endpoint: "sd_inpainting",
@@ -356,6 +358,8 @@ class APIs:
         workflow: Workflow,
         target: str,
         caches: Optional[Union[OrderedDict, Dict[str, Any]]] = None,
+        *,
+        return_if_exception: bool = False,
         **kwargs: Any,
     ) -> Dict[str, TRes]:
         def _inject(
@@ -425,57 +429,65 @@ class APIs:
         else:
             caches = OrderedDict(caches)
             workflow = workflow.copy().inject_caches(caches)
-        for layer in workflow.get_dependency_path(target).hierarchy:
-            for item in layer:
-                if item.key in caches:
-                    continue
-                node = item.data
-                node_kw = shallow_copy_dict(kwargs)
-                node_data = shallow_copy_dict(node.data)
-                endpoint = node.endpoint
-                is_for_each = endpoint == FOR_EACH_ENDPOINT
-                for k, k_packs in node.injections.items():
-                    if not isinstance(k_packs, list):
-                        k_packs = [k_packs]
-                    for k_pack in k_packs:
-                        if k_pack.index is None:
-                            ki_cache = caches[k]
-                        else:
-                            ki_cache = caches[k][k_pack.index]
-                        _inject(k_pack.field, ki_cache, node_data, is_for_each)
-                        if isinstance(ki_cache, Image.Image):
-                            node_kw[k_pack.field] = ki_cache
-                method_fn = getattr(self, endpoint2method[endpoint])
-                t = time.time()
-                if endpoint == UPLOAD_ENDPOINT:
-                    data_model = ImageModel(**node_data)
-                    item_res = await method_fn(data_model, **node_kw)
-                elif endpoint == ADD_TEXT_ENDPOINT:
-                    data_model = TextModel(**node_data)
-                    item_res = await method_fn(data_model, **node_kw)
-                elif endpoint == CONTROL_HINT_ENDPOINT:
-                    hint_type = node_data.pop("hint_type")
-                    item_res = await method_fn(hint_type, node_data, **node_kw)
-                    endpoint = control_hint2hint_endpoints[hint_type]
-                elif endpoint == FOR_EACH_ENDPOINT:
-                    data_model = ForEachModel(**node_data)
-                    item_res = await method_fn(data_model, **node_kw)
-                elif endpoint == PICK_ENDPOINT:
-                    data_model = PickModel(**node_data)
-                    item_res = await method_fn(data_model, **node_kw)
-                else:
-                    data_model = self.get_data_model(endpoint, node_data)
-                    item_res = await method_fn(data_model, **node_kw)
-                if endpoint == UPLOAD_ENDPOINT or endpoint == ADD_TEXT_ENDPOINT:
-                    ls = dict(download=time.time() - t)
-                elif endpoint == FOR_EACH_ENDPOINT:
-                    ls = dict(loop=time.time() - t)
-                elif endpoint == PICK_ENDPOINT:
-                    ls = dict(pick=time.time() - t)
-                else:
-                    ls = self.algorithms[endpoint2algorithm(endpoint)].last_latencies
-                caches[item.key] = item_res
-                all_latencies[item.key] = ls
+        try:
+            for layer in workflow.get_dependency_path(target).hierarchy:
+                for item in layer:
+                    if item.key in caches:
+                        continue
+                    node = item.data
+                    node_kw = shallow_copy_dict(kwargs)
+                    node_data = shallow_copy_dict(node.data)
+                    endpoint = node.endpoint
+                    is_for_each = endpoint == FOR_EACH_ENDPOINT
+                    for k, k_packs in node.injections.items():
+                        if not isinstance(k_packs, list):
+                            k_packs = [k_packs]
+                        for k_pack in k_packs:
+                            if k_pack.index is None:
+                                ki_cache = caches[k]
+                            else:
+                                ki_cache = caches[k][k_pack.index]
+                            _inject(k_pack.field, ki_cache, node_data, is_for_each)
+                            if isinstance(ki_cache, Image.Image):
+                                node_kw[k_pack.field] = ki_cache
+                    method_fn = getattr(self, endpoint2method[endpoint])
+                    t = time.time()
+                    if endpoint == UPLOAD_ENDPOINT:
+                        data_model = ImageModel(**node_data)
+                        item_res = await method_fn(data_model, **node_kw)
+                    elif endpoint == ADD_TEXT_ENDPOINT:
+                        data_model = TextModel(**node_data)
+                        item_res = await method_fn(data_model, **node_kw)
+                    elif endpoint == CONTROL_HINT_ENDPOINT:
+                        hint_type = node_data.pop("hint_type")
+                        item_res = await method_fn(hint_type, node_data, **node_kw)
+                        endpoint = control_hint2hint_endpoints[hint_type]
+                    elif endpoint == FOR_EACH_ENDPOINT:
+                        data_model = ForEachModel(**node_data)
+                        item_res = await method_fn(data_model, **node_kw)
+                    elif endpoint == PICK_ENDPOINT:
+                        data_model = PickModel(**node_data)
+                        item_res = await method_fn(data_model, **node_kw)
+                    else:
+                        data_model = self.get_data_model(endpoint, node_data)
+                        item_res = await method_fn(data_model, **node_kw)
+                    if endpoint == UPLOAD_ENDPOINT or endpoint == ADD_TEXT_ENDPOINT:
+                        ls = dict(download=time.time() - t)
+                    elif endpoint == FOR_EACH_ENDPOINT:
+                        ls = dict(loop=time.time() - t)
+                    elif endpoint == PICK_ENDPOINT:
+                        ls = dict(pick=time.time() - t)
+                    else:
+                        ls = self.algorithms[
+                            endpoint2algorithm(endpoint)
+                        ].last_latencies
+                    caches[item.key] = item_res
+                    all_latencies[item.key] = ls
+            caches[EXCEPTION_MESSAGE_KEY] = None
+        except Exception as err:
+            caches[EXCEPTION_MESSAGE_KEY] = get_err_msg(err)
+            if not return_if_exception:
+                raise err
         caches[ALL_LATENCIES_KEY] = all_latencies
         return caches
 

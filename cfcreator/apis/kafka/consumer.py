@@ -307,12 +307,12 @@ async def consume() -> None:
                 res: Union[Response, Any] = await run_algorithm(algorithm, model)
                 latencies = algorithm.last_latencies
                 t1 = time.time()
-                if (
-                    isinstance(algorithm, WorkflowAlgorithm)
-                    and params.get("intermediate") is not None
-                ):
+                if isinstance(algorithm, WorkflowAlgorithm):
                     intermediate = {}
-                    response = dict(intermediate=intermediate)
+                    response = dict(
+                        is_exception=res.pop(WORKFLOW_IS_EXCEPTION_KEY, False),
+                        intermediate=intermediate,
+                    )
                     result = dict(uid=uid, response=response)
                     all_results = {}
                     for k, v in res.items():
@@ -337,14 +337,7 @@ async def consume() -> None:
                             response["reasons"] = k_reasons
                     t3 = time.time()
                     procedure = "audit_image -> redis"
-                elif (
-                    (
-                        isinstance(algorithm, WorkflowAlgorithm)
-                        and params.get("intermediate") is None
-                    )
-                    or task.startswith("control")
-                    or task.startswith("pipeline")
-                ):
+                elif task.startswith("control") or task.startswith("pipeline"):
                     procedure = "run_algorithm -> upload_temp_image"
                     url_results = get_upload_results(res, upload_temp_image)
                     t2 = time.time()
