@@ -80,7 +80,8 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
                 if intermediate_result:
                     if isinstance(intermediate_result[0], Image.Image):
                         intermediate_result = list(map(np.array, intermediate_result))
-                res[key] = intermediate_result
+                if intermediate_result is not None:
+                    res[key] = intermediate_result
         latencies = {
             "get_workflow": t1 - t0,
             "inference": t2 - t1,
