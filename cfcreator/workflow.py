@@ -76,7 +76,7 @@ class WorkflowAlgorithm(IWrapperAlgorithm):
                 msg = "`return_arrays` should be True when `intermediate` is specified."
                 raise ValueError(msg)
             for key in data.intermediate:
-                intermediate_result = results[key]
+                intermediate_result = results.get(key)
                 if intermediate_result:
                     if isinstance(intermediate_result[0], Image.Image):
                         intermediate_result = list(map(np.array, intermediate_result))
