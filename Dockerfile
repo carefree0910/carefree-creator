@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /workspace
 RUN rm -rf /opt/conda/lib/python3.10/site-packages/cv2 && \
