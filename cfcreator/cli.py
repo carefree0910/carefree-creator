@@ -65,6 +65,13 @@ Indicates which endpoints should we focus on, helpful if we only care about cert
     help="Directory of the cache files.",
 )
 @click.option(
+    "--external_dir",
+    default="",
+    show_default=True,
+    type=str,
+    help="Directory of the external files.",
+)
+@click.option(
     "--lazy",
     is_flag=True,
     default=False,
@@ -94,6 +101,7 @@ def serve(
     focus: str,
     reload: bool,
     cache_dir: str,
+    external_dir: str,
     lazy: bool,
     limit: int,
     no_unload: bool,
@@ -106,6 +114,8 @@ def serve(
     cflearn_increment = {}
     if cache_dir:
         cflearn_increment["cache_dir"] = cache_dir
+    if external_dir:
+        cflearn_increment["external_dir"] = external_dir
     with opt_env_context(increment):
         with OPT.opt_context(cflearn_increment):
             uvicorn.run(
