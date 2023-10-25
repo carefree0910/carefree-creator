@@ -12,7 +12,6 @@ from pydantic import BaseModel
 from cftool.cv import to_uint8
 from cfclient.models import ImageModel
 
-from .utils import api_pool
 from .utils import APIs
 from .common import register_sd
 from .common import register_sd_inpainting
