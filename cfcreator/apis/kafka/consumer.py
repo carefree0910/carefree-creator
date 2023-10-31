@@ -33,7 +33,6 @@ from huaweicloudsdkmoderation.v2.region.moderation_region import ModerationRegio
 
 # This is necessary to register the algorithms
 from cfcreator import *
-from cfcreator.legacy.control import ControlNetModel as LegacyControlNetModel
 from cfcreator.legacy.control_multi import ControlMultiModel as LegacyControlMultiModel
 
 
@@ -222,10 +221,7 @@ def audit_urls(
     url_results: List[Union[UploadResponse, Any]],
 ) -> Tuple[List[str], List[str]]:
     urls = extract_urls(url_results, "cdn")
-    if (
-        isinstance(model, (ControlNetModel, LegacyControlNetModel))
-        and not model.use_audit
-    ):
+    if isinstance(model, UseAuditModel) and not model.use_audit:
         reasons = [""] * len(url_results)
     else:
         reasons = []

@@ -213,6 +213,10 @@ class CallbackModel(BaseModel):
     callback_url: str = Field("", description="callback url to post to")
 
 
+class UseAuditModel(BaseModel):
+    use_audit: bool = Field(False, description="Whether audit the outputs.")
+
+
 class MaxWHModel(BaseModel):
     max_wh: int = Field(1024, description="The maximum resolution.")
 
@@ -447,7 +451,7 @@ The annotator type of the hint.
     )
 
 
-class _ControlNetModel(_ControlNetCoreModel):
+class _ControlNetModel(_ControlNetCoreModel, UseAuditModel):
     url: Optional[str] = Field(None, description="specify this to do img2img")
     prompt: str = Field("", description="Prompt.")
     fidelity: float = Field(
@@ -461,7 +465,6 @@ class _ControlNetModel(_ControlNetCoreModel):
         SDVersions.v1_5,
         description="The base model.",
     )
-    use_audit: bool = Field(False, description="Whether audit the outputs.")
     mask_url: Optional[str] = Field(None, description="specify this to do inpainting")
     use_inpainting: bool = Field(False, description="Whether use inpainting model.")
 
@@ -718,6 +721,7 @@ __all__ = [
     "Txt2ImgModel",
     "Img2ImgModel",
     "Img2ImgDiffusionModel",
+    "UseAuditModel",
     "ReturnArraysModel",
     "ControlNetModel",
     "GetPromptModel",

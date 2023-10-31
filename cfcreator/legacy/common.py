@@ -5,11 +5,12 @@ from cfclient.models import ImageModel
 from cflearn.api.cv import SDVersions
 
 from ..common import MaxWHModel
+from ..common import UseAuditModel
 from ..common import DiffusionModel
 from ..common import ReturnArraysModel
 
 
-class _ControlNetModel(BaseModel):
+class _ControlNetModel(UseAuditModel):
     hint_url: str = Field(
         "",
         description="""
@@ -41,7 +42,6 @@ The `cdn` / `cos` url of the user's hint image.
         description="The base model.",
     )
     guess_mode: bool = Field(False, description="Guess mode.")
-    use_audit: bool = Field(False, description="Whether audit the outputs.")
     no_switch: bool = Field(
         False,
         description="Whether not to switch the ControlNet weights even when the base model has switched.",
