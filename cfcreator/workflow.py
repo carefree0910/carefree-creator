@@ -14,6 +14,7 @@ from cftool.data_structures import Workflow
 
 from .common import get_response
 from .common import IWrapperAlgorithm
+from .common import UseAuditModel
 from .common import ReturnArraysModel
 
 
@@ -22,7 +23,7 @@ WORKFLOW_IS_EXCEPTION_KEY = "$is_exception"
 WORKFLOW_TARGET_RESPONSE_KEY = "$target"
 
 
-class WorkflowModel(ReturnArraysModel):
+class WorkflowModel(ReturnArraysModel, UseAuditModel):
     nodes: List[WorkNode] = Field(..., description="The nodes in the workflow.")
     target: str = Field(..., description="The target node.")
     intermediate: Optional[List[str]] = Field(
