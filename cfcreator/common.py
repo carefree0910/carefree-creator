@@ -624,22 +624,23 @@ class IAlgorithm(AlgorithmBase, metaclass=ABCMeta):
         latencies.pop(ALL_LATENCIES_KEY, None)
         super().log_times(latencies)
 
-    async def download_with_retry(self, url: str) -> bytes:
-        return await download_with_retry(self.http_client.session, url)
+    async def download_with_retry(self, url: str, **kw: Any) -> bytes:
+        return await download_with_retry(self.http_client.session, url, **kw)
 
-    async def download_image_with_retry(self, url: str) -> Image.Image:
-        return await download_image_with_retry(self.http_client.session, url)
+    async def download_image_with_retry(self, url: str, **kw: Any) -> Image.Image:
+        return await download_image_with_retry(self.http_client.session, url, **kw)
 
     async def get_image_from(
         self,
         key: str,
         data: BaseModel,
         kwargs: Dict[str, Any],
+        **request_kw: Any,
     ) -> Image.Image:
         existing = kwargs.pop(key, None)
         if existing is not None and isinstance(existing, Image.Image):
             return existing
-        return await self.download_image_with_retry(getattr(data, key))
+        return await self.download_image_with_retry(getattr(data, key), **request_kw)
 
 
 class IWrapperAlgorithm(IAlgorithm):

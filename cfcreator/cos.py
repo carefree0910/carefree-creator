@@ -11,6 +11,7 @@ import numpy as np
 from io import BytesIO
 from PIL import Image
 from enum import Enum
+from typing import Any
 from typing import Union
 from typing import BinaryIO
 from typing import Optional
@@ -256,10 +257,11 @@ async def download_with_retry(
     *,
     retry: int = RETRY,
     interval: int = 1,
+    **kw: Any,
 ) -> bytes:
     if use_cos() and url.startswith(CDN_HOST):
         url = url.replace(CDN_HOST, COS_HOST)
-    return await download(session, url, retry=retry, interval=interval)
+    return await download(session, url, retry=retry, interval=interval, **kw)
 
 
 async def download_image_with_retry(
@@ -268,10 +270,11 @@ async def download_image_with_retry(
     *,
     retry: int = RETRY,
     interval: int = 1,
+    **kw: Any,
 ) -> Image.Image:
     if use_cos() and url.startswith(CDN_HOST):
         url = url.replace(CDN_HOST, COS_HOST)
-    return await download_image(session, url, retry=retry, interval=interval)
+    return await download_image(session, url, retry=retry, interval=interval, **kw)
 
 
 __all__ = [
