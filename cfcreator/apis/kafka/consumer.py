@@ -333,8 +333,11 @@ async def consume() -> None:
                             )
                         else:
                             k_urls, k_reasons = audit_urls(model, k_results)
-                            response["urls"] = k_urls
-                            response["reasons"] = k_reasons
+                            if k != WORKFLOW_TARGET_RESPONSE_KEY:
+                                intermediate[k] = dict(urls=k_urls, reasons=k_reasons)
+                            else:
+                                response["urls"] = k_urls
+                                response["reasons"] = k_reasons
                     t3 = time.time()
                     procedure = "audit_image -> redis"
                 elif task.startswith("control") or task.startswith("pipeline"):
