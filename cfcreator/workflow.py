@@ -35,6 +35,10 @@ class WorkflowModel(ReturnArraysModel, UseAuditModel):
         False,
         description="Whether to return the intermediate results anyway if any exception occurs.",
     )
+    save_intermediate_to_private: bool = Field(
+        True,
+        description="Whether to save intermediate results to private buckets.",
+    )
 
 
 @IWrapperAlgorithm.auto_register()

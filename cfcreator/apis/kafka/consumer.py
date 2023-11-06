@@ -311,18 +311,22 @@ async def consume() -> None:
                     )
                     result = dict(uid=uid, response=response)
                     all_results = {}
+                    save_to_private = (
+                        not isinstance(model, WorkflowModel)
+                        or model.save_intermediate_to_private
+                    )
                     for k, v in res.items():
                         procedure = f"[{k}] run_algorithm -> upload_temp_image"
                         upload_fn = (
                             upload_temp_image
-                            if k == WORKFLOW_TARGET_RESPONSE_KEY
+                            if k == WORKFLOW_TARGET_RESPONSE_KEY or not save_to_private
                             else upload_private_image
                         )
                         all_results[k] = get_upload_results(v, upload_fn)
                     t2 = time.time()
                     for k, k_results in all_results.items():
                         procedure = f"[{k}] upload_temp_image -> audit_image"
-                        if k != WORKFLOW_TARGET_RESPONSE_KEY:
+                        if save_to_private and k != WORKFLOW_TARGET_RESPONSE_KEY:
                             intermediate[k] = dict(
                                 urls=extract_urls(k_results, "cos"),
                                 reasons=[""] * len(k_results),
