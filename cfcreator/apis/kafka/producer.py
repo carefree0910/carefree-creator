@@ -297,6 +297,7 @@ class ServerStatusResponse(BaseModel):
     is_ready: bool
     num_pending: int
     pending_queue: List[str]
+    details: Dict[str, List[str]]
 
 
 def get_pending_queue() -> List[str]:
@@ -306,29 +307,38 @@ def get_pending_queue() -> List[str]:
     return json.loads(data)
 
 
-def get_real_pending(queue: List[str]) -> List[str]:
-    pending = []
-    for uid in queue:
-        status = fetch_redis(uid).status
-        if status in (Status.FINISHED, Status.EXCEPTION, Status.INTERRUPTED):
-            continue
-        pending.append(uid)
-    return pending
+def get_statuses(queue: List[str]) -> List[str]:
+    return [fetch_redis(uid).status for uid in queue]
+
+
+def get_real_pending(queue: List[str], statuses: List[str]) -> List[str]:
+    return [
+        uid
+        for uid, status in zip(queue, statuses)
+        if status not in (Status.FINISHED, Status.EXCEPTION, Status.INTERRUPTED)
+    ]
 
 
 def get_real_lag(queue: List[str]) -> int:
-    return len(get_real_pending(queue))
+    statuses = get_statuses(queue)
+    return len(get_real_pending(queue, statuses))
 
 
 @app.get("/server_status", responses=get_responses(ServerStatusResponse))
 async def server_status(response: Response) -> ServerStatusResponse:
     inject_headers(response)
     members = kafka_admin.describe_consumer_groups([kafka_group_id()])[0].members
-    real_pending = get_real_pending(get_pending_queue())
+    queue = get_pending_queue()
+    statuses = get_statuses(queue)
+    real_pending = get_real_pending(queue, statuses)
+    details: Dict[str, List[str]] = {}
+    for uid, status in zip(queue, statuses):
+        details.setdefault(status, []).append(uid)
     return ServerStatusResponse(
         is_ready=len(members) > 0,
         num_pending=len(real_pending),
         pending_queue=real_pending,
+        details=details,
     )
 
 
