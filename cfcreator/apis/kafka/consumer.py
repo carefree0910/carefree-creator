@@ -35,6 +35,8 @@ from huaweicloudsdkmoderation.v2.region.moderation_region import ModerationRegio
 from cfcreator import *
 from cfcreator.legacy.control_multi import ControlMultiModel as LegacyControlMultiModel
 
+from producer import dump_queue
+
 
 # logging
 root = os.path.dirname(__file__)
@@ -296,7 +298,7 @@ async def consume() -> None:
             queue = get_pending_queue()
             if uid not in queue:
                 queue.insert(0, uid)
-                redis_client.set(pending_queue_key, json.dumps(queue))
+                dump_queue(queue)
             procedure = "start"
             model = None
             try:
@@ -475,7 +477,7 @@ async def consume() -> None:
                 queue = get_pending_queue()
                 if uid in queue:
                     queue.remove(uid)
-                    redis_client.set(pending_queue_key, json.dumps(queue))
+                    dump_queue(queue)
             except Exception as err:
                 end_time = time.time()
                 torch.cuda.empty_cache()

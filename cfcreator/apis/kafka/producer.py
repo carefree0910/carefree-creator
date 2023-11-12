@@ -175,59 +175,67 @@ queue_timeout_timer = time.time()
 queue_timeout_check_interval = 60
 
 
-@app.post("/push", responses=get_responses(ProducerResponse))
-async def push(data: ProducerModel, response: Response) -> ProducerResponse:
-    def get_clean_queue() -> List[str]:
-        global queue_timeout_timer
-        queue = get_pending_queue()
-        queue_size = len(queue)
-        # check timeout / interrupted
-        if time.time() - queue_timeout_timer >= queue_timeout_check_interval:
-            queue_timeout_timer = time.time()
-            clear_indices = []
-            for i, uid in enumerate(queue):
-                uid_pack = redis_client.get(uid)
-                if uid_pack is None:
-                    continue
-                uid_data = StatusData(**json.loads(uid_pack))
-                if uid_data.status == Status.INTERRUPTED:
-                    clear_indices.append(i)
-                    continue
-                create_time = (uid_data.data or {}).get("create_time", None)
-                start_time = (uid_data.data or {}).get("start_time", None)
-                i_cleared = False
-                for t in [create_time, start_time]:
-                    if i_cleared:
-                        break
-                    if t is not None:
-                        if time.time() - t >= queue_timeout_threshold:
-                            clear_indices.append(i)
-                            i_cleared = True
-            for idx in clear_indices[::-1]:
-                queue.pop(idx)
-        # check redundant
-        exist = set()
+def dump_queue(queue: List[str]) -> None:
+    redis_client.set(pending_queue_key, json.dumps(queue))
+
+
+def get_clean_queue() -> List[str]:
+    global queue_timeout_timer
+    queue = get_pending_queue()
+    queue_size = len(queue)
+    # check timeout / finished / interrupted
+    if time.time() - queue_timeout_timer >= queue_timeout_check_interval:
+        queue_timeout_timer = time.time()
         clear_indices = []
         for i, uid in enumerate(queue):
-            if uid not in exist:
-                exist.add(uid)
-            else:
+            uid_pack = redis_client.get(uid)
+            if uid_pack is None:
+                continue
+            uid_data = StatusData(**json.loads(uid_pack))
+            if uid_data.status in (Status.FINISHED, Status.INTERRUPTED):
                 clear_indices.append(i)
+                continue
+            create_time = (uid_data.data or {}).get("create_time", None)
+            start_time = (uid_data.data or {}).get("start_time", None)
+            i_cleared = False
+            for t in [create_time, start_time]:
+                if i_cleared:
+                    break
+                if t is not None:
+                    if time.time() - t >= queue_timeout_threshold:
+                        clear_indices.append(i)
+                        i_cleared = True
         for idx in clear_indices[::-1]:
             queue.pop(idx)
-        # if pending queue is already updated, ignore the cleanups and return the latest queue
-        latest_queue = get_pending_queue()
-        if queue_size != len(latest_queue):
-            return latest_queue
-        # otherwise, return the latest queue
-        return queue
+    # check redundant
+    exist = set()
+    clear_indices = []
+    for i, uid in enumerate(queue):
+        if uid not in exist:
+            exist.add(uid)
+        else:
+            clear_indices.append(i)
+    for idx in clear_indices[::-1]:
+        queue.pop(idx)
+    # check consistency
+    latest_queue = get_pending_queue()
+    ## if pending queue is already updated, ignore the cleanups and return the latest queue
+    if queue_size != len(latest_queue):
+        queue = latest_queue
+    ## else, update the pending queue with the cleaned queue
+    else:
+        dump_queue(queue)
+    return queue
 
+
+@app.post("/push", responses=get_responses(ProducerResponse))
+async def push(data: ProducerModel, response: Response) -> ProducerResponse:
     inject_headers(response)
     new_uid = random_hash()
     # append new uid and dump
     queue = get_clean_queue()
     queue.append(new_uid)
-    redis_client.set(pending_queue_key, json.dumps(queue))
+    dump_queue(queue)
     redis_client.set(
         new_uid,
         json.dumps(dict(status=Status.PENDING, data=dict(create_time=time.time()))),
@@ -368,24 +376,14 @@ def _get_status(uid: str) -> StatusResponse:
     if record.status != Status.PENDING:
         lag = 0
     else:
-        queue = get_pending_queue()
-        queue_size = len(queue)
-        pop_indices = []
-        for i, i_uid in enumerate(queue):
-            if fetch_redis(i_uid).status == Status.FINISHED:
-                pop_indices.append(i)
-        for idx in pop_indices[::-1]:
-            queue.pop(idx)
-        # update pending queue only if it is not updated during the cleanup
-        latest_queue = get_pending_queue()
-        if pop_indices and queue_size == len(latest_queue):
-            redis_client.set(pending_queue_key, json.dumps(queue))
+        queue = get_clean_queue()
+        # add `uid` back to queue if it's not in the queue
         try:
-            lag = get_real_lag(latest_queue[: latest_queue.index(uid)]) + 1
+            lag = get_real_lag(queue[: queue.index(uid)]) + 1
         except:
-            lag = len(latest_queue) + 1
-            latest_queue.append(uid)
-            redis_client.set(pending_queue_key, json.dumps(latest_queue))
+            lag = len(queue) + 1
+            queue.append(uid)
+            dump_queue(queue)
     return StatusResponse(status=record.status, data=record.data, pending=lag)
 
 
