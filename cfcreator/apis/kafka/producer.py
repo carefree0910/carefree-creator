@@ -202,7 +202,17 @@ def get_clean_queue() -> List[str]:
                 if i_cleared:
                     break
                 if t is not None:
-                    if time.time() - t >= queue_timeout_threshold:
+                    dt = time.time() - t
+                    if dt >= queue_timeout_threshold:
+                        redis_client.set(
+                            uid,
+                            json.dumps(
+                                dict(
+                                    status=Status.EXCEPTION,
+                                    data=dict(reason=f"timeout after {dt}s"),
+                                )
+                            ),
+                        )
                         clear_indices.append(i)
                         i_cleared = True
         for idx in clear_indices[::-1]:
