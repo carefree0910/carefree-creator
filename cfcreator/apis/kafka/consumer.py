@@ -292,6 +292,11 @@ async def consume() -> None:
             data["start_time"] = start_time
             create_time = data.get("create_time", start_time)
             redis_client.set(uid, json.dumps(dict(status=Status.WORKING, data=data)))
+            # maintain queue
+            queue = get_pending_queue()
+            if uid not in queue:
+                queue.insert(0, uid)
+                redis_client.set(pending_queue_key, json.dumps(queue))
             procedure = "start"
             model = None
             try:
