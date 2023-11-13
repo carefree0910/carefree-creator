@@ -492,7 +492,7 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     else:
         variations = [(v.seed, v.strength) for v in data.variations]
     m.switch_circular(data.use_circular)
-    unconditional_cond = [data.negative_prompt] if data.negative_prompt else None
+    unconditional_cond = [data.negative_prompt]
     clip_skip = data.clip_skip
     if clip_skip == -1:
         if data.is_anime or data.version.startswith("anime"):
