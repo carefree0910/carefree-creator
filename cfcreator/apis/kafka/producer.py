@@ -179,6 +179,26 @@ def dump_queue(queue: List[str]) -> None:
     redis_client.set(pending_queue_key, json.dumps(queue))
 
 
+def check_timeout(uid: str, data: Optional[Any]) -> bool:
+    create_time = (data or {}).get("create_time", None)
+    start_time = (data or {}).get("start_time", None)
+    for t in [create_time, start_time]:
+        if t is not None:
+            dt = time.time() - t
+            if dt >= queue_timeout_threshold:
+                redis_client.set(
+                    uid,
+                    json.dumps(
+                        dict(
+                            status=Status.EXCEPTION,
+                            data=dict(reason=f"timeout after {dt}s"),
+                        )
+                    ),
+                )
+                return True
+    return False
+
+
 def get_clean_queue() -> List[str]:
     global queue_timeout_timer
     queue = get_pending_queue()
@@ -195,26 +215,8 @@ def get_clean_queue() -> List[str]:
             if uid_data.status in (Status.FINISHED, Status.INTERRUPTED):
                 clear_indices.append(i)
                 continue
-            create_time = (uid_data.data or {}).get("create_time", None)
-            start_time = (uid_data.data or {}).get("start_time", None)
-            i_cleared = False
-            for t in [create_time, start_time]:
-                if i_cleared:
-                    break
-                if t is not None:
-                    dt = time.time() - t
-                    if dt >= queue_timeout_threshold:
-                        redis_client.set(
-                            uid,
-                            json.dumps(
-                                dict(
-                                    status=Status.EXCEPTION,
-                                    data=dict(reason=f"timeout after {dt}s"),
-                                )
-                            ),
-                        )
-                        clear_indices.append(i)
-                        i_cleared = True
+            if check_timeout(uid, uid_data.data):
+                clear_indices.append(i)
         for idx in clear_indices[::-1]:
             queue.pop(idx)
     # check redundant
