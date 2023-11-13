@@ -179,9 +179,9 @@ def dump_queue(queue: List[str]) -> None:
     redis_client.set(pending_queue_key, json.dumps(queue))
 
 
-def check_timeout(uid: str, data: Optional[Any]) -> bool:
-    create_time = (data or {}).get("create_time", None)
-    start_time = (data or {}).get("start_time", None)
+def check_timeout(uid: str, data: "StatusData") -> bool:
+    create_time = (data.data or {}).get("create_time", None)
+    start_time = (data.data or {}).get("start_time", None)
     for t in [create_time, start_time]:
         if t is not None:
             dt = time.time() - t
@@ -215,7 +215,7 @@ def get_clean_queue() -> List[str]:
             if uid_data.status in (Status.FINISHED, Status.INTERRUPTED):
                 clear_indices.append(i)
                 continue
-            if check_timeout(uid, uid_data.data):
+            if check_timeout(uid, uid_data):
                 clear_indices.append(i)
         for idx in clear_indices[::-1]:
             queue.pop(idx)

@@ -37,6 +37,7 @@ from cfcreator.legacy.control_multi import ControlMultiModel as LegacyControlMul
 
 from producer import dump_queue
 from producer import check_timeout
+from producer import StatusData
 
 
 # logging
@@ -289,7 +290,7 @@ async def consume() -> None:
                     Status.INTERRUPTED,
                 ):
                     continue
-            if check_timeout(uid, existing):
+            if existing is not None and check_timeout(uid, StatusData(**existing)):
                 print("!!! timeout", uid)
                 continue
             print(">>> working", uid)
