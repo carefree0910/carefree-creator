@@ -199,6 +199,9 @@ async def apply_control(
             if extra_annotator_params is not None:
                 i_hint_kw.update(extra_annotator_params)
             i_o_hint_arr = api.get_hint_of(i_t_annotator, i_hint_image, **i_hint_kw)
+            if i_data.hint_binarize_threshold is not None:
+                binarized = i_o_hint_arr > i_data.hint_binarize_threshold
+                i_o_hint_arr = np.where(binarized, 255, 0).astype(np.uint8)
             ht = time.time()
             if need_change_device:
                 i_annotator.to("cpu", use_half=False)

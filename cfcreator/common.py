@@ -443,6 +443,12 @@ The annotator type of the hint.
     hint_start: Optional[float] = Field(None, description="start ratio of the control")
     hint_end: Optional[float] = Field(None, description="end ratio of the control")
     control_strength: float = Field(1.0, description="The strength of the control.")
+    hint_binarize_threshold: Optional[int] = Field(
+        None,
+        ge=0,
+        le=255,
+        description="The threshold for binarizing the hint, None means no binarization.",
+    )
     extra_annotator_params: Optional[Dict[str, Any]] = Field(
         None,
         description="Extra parameters for the annotator.",
