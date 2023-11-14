@@ -67,10 +67,6 @@ class ControlNetBundleCommonData(_ControlNetCoreModel):
 
 class ControlNetBundleCommonDataWithDetectResolution(ControlNetBundleCommonData):
     detect_resolution: Optional[int] = Field(None, description="Detect resolution.")
-    extra_annotator_params: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Extra parameters for the annotator.",
-    )
 
 
 class ControlNetBundle(BaseModel):
