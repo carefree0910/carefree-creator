@@ -148,10 +148,10 @@ async def apply_control(
             getattr(bundle.data, "extra_annotator_params", None)
         )
     # calculate suitable size
-    resize_to_original = lambda array: cv2.resize(
+    resize_to_original = lambda array, binarize: cv2.resize(
         array,
         (original_w, original_h),
-        interpolation=cv2.INTER_CUBIC,
+        interpolation=cv2.INTER_NEAREST if binarize else cv2.INTER_CUBIC,
     )
     w, h = restrict_wh(original_w, original_h, common.max_wh)
     w = get_suitable_size(w, 64)
@@ -184,6 +184,7 @@ async def apply_control(
             continue
         device = api.device
         use_half = api.use_half
+        i_binarize = i_data.hint_binarize_threshold is not None
         if i_bypass_annotator:
             i_o_hint_arr = i_hint_image
         else:
@@ -199,7 +200,7 @@ async def apply_control(
             if extra_annotator_params is not None:
                 i_hint_kw.update(extra_annotator_params)
             i_o_hint_arr = api.get_hint_of(i_t_annotator, i_hint_image, **i_hint_kw)
-            if i_data.hint_binarize_threshold is not None:
+            if i_binarize:
                 binarized = i_o_hint_arr > i_data.hint_binarize_threshold
                 i_o_hint_arr = np.where(binarized, 255, 0).astype(np.uint8)
             ht = time.time()
@@ -207,12 +208,13 @@ async def apply_control(
                 i_annotator.to("cpu", use_half=False)
                 torch.cuda.empty_cache()
             all_annotator_change_device_times.append(time.time() - ht)
-        i_hint_array = cv2.resize(i_o_hint_arr, (w, h), interpolation=cv2.INTER_LINEAR)
+        interpolation = cv2.INTER_NEAREST if i_binarize else cv2.INTER_LINEAR
+        i_hint_array = cv2.resize(i_o_hint_arr, (w, h), interpolation=interpolation)
         i_hint = torch.from_numpy(i_hint_array)[None].permute(0, 3, 1, 2)
         if use_half:
             i_hint = i_hint.half()
         i_hint = i_hint.contiguous().to(device) / 255.0
-        all_key_values[key] = i_hint, i_o_hint_arr
+        all_key_values[key] = i_hint, i_o_hint_arr, i_binarize
     change_annotator_device_time = sum(all_annotator_change_device_times)
     t2 = time.time()
     # gather scales
@@ -288,9 +290,14 @@ async def apply_control(
     outs = 0.5 * (outs + 1.0)
     outs = to_uint8(outs).permute(0, 2, 3, 1).cpu().numpy()
     t3 = time.time()
-    results = list(map(resize_to_original, [p[1] for p in all_key_values.values()]))
+    results = list(
+        map(
+            resize_to_original,
+            *zip(*[p[1:] for p in all_key_values.values()]),
+        )
+    )
     for i in range(common.num_samples):
-        results.append(resize_to_original(outs[i]))
+        results.append(resize_to_original(outs[i], False))
     latencies = dict(
         get_model=t_sd2 - t_sd,
         download_images=t0 - t_sd2,
