@@ -379,6 +379,10 @@ the latent of the background is the only information for us to inpaint.
         False,
         description="Whether use the original image as reference.",
     )
+    use_background_reference: bool = Field(
+        False,
+        description="Whether use the original image background as reference.",
+    )
     reference_fidelity: float = Field(
         0.0,
         description="Fidelity of the reference image, only take effects when `use_reference` is `True`.",
@@ -582,6 +586,7 @@ def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str
         use_raw_inpainting=data.use_raw_inpainting,
         use_background_guidance=data.use_background_guidance,
         use_reference=data.use_reference,
+        use_background_reference=data.use_background_reference,
         reference_fidelity=data.reference_fidelity,
         inpainting_settings=InpaintingSettings(
             data.inpainting_mode,
