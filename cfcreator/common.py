@@ -51,6 +51,8 @@ from .utils import APIs
 from .parameters import verbose
 from .parameters import get_focus
 from .parameters import pool_limit
+from .parameters import use_controlnet
+from .parameters import use_controlnet_annotator
 from .parameters import Focus
 
 
@@ -79,16 +81,21 @@ def init_sd(init_to_cpu: bool) -> ControlledDiffusionAPI:
     init_fn = partial(ControlledDiffusionAPI.from_sd_version, version, **kw)
     m: ControlledDiffusionAPI = _get(init_fn, init_to_cpu)
     focus = get_focus()
+    keep_controlnet = use_controlnet()
+    if not keep_controlnet:
+        m.disable_control()
     if focus != Focus.SYNC:
         m.sd_weights.limit = pool_limit()
         m.current_sd_version = version
         print("> registering base sd")
         m.prepare_sd([version])
         m.sd_weights.register(BaseSDTag, _base_sd_path())
-        print("> warmup ControlNet")
-        m.switch_control(*m.preset_control_hints)
-    print("> prepare ControlNet Annotators")
-    m.prepare_annotators()
+        if keep_controlnet:
+            print("> warmup ControlNet")
+            m.switch_control(*m.preset_control_hints)
+    if use_controlnet_annotator():
+        print("> prepare ControlNet Annotators")
+        m.prepare_annotators()
     return m
 
 
@@ -109,7 +116,8 @@ def init_sd_inpainting(init_to_cpu: bool) -> ControlledDiffusionAPI:
     sd: ControlledDiffusionAPI = api_pool.get(APIs.SD, no_change=True)
     api.annotators = sd.annotators
     api.controlnet_weights = sd.controlnet_weights
-    api.switch_control(*api.preset_control_hints)
+    if use_controlnet():
+        api.switch_control(*api.preset_control_hints)
     return api
 
 

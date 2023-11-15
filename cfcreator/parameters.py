@@ -72,6 +72,14 @@ def get_focus() -> Focus:
     return OPT.get("focus", "all")
 
 
+def use_controlnet() -> bool:
+    return get_focus() in {Focus.ALL, Focus.CONTROL}
+
+
+def use_controlnet_annotator() -> bool:
+    return get_focus() in {Focus.ALL, Focus.CONTROL, Focus.SYNC}
+
+
 def lazy_load() -> bool:
     return OPT.get("lazy_load", False)
 
@@ -137,6 +145,8 @@ __all__ = [
     "use_cos",
     "verbose",
     "get_focus",
+    "use_controlnet",
+    "use_controlnet_annotator",
     "lazy_load",
     "pool_limit",
     "no_unload",
