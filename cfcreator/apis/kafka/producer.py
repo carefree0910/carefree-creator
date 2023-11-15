@@ -180,6 +180,8 @@ def dump_queue(queue: List[str]) -> None:
 
 
 def check_timeout(uid: str, data: "StatusData") -> bool:
+    if data.status not in (Status.PENDING, Status.WORKING):
+        return False
     create_time = (data.data or {}).get("create_time", None)
     start_time = (data.data or {}).get("start_time", None)
     for t in [create_time, start_time]:
