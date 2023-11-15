@@ -315,6 +315,8 @@ class GetMaskModel(CVImageModel):
     get_inverse: bool = Field(False, description="Whether get the inverse mask.")
     binarize_threshold: Optional[int] = Field(
         None,
+        ge=0,
+        le=255,
         description="If not None, will binarize the mask with this value.",
     )
 
