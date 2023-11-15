@@ -311,16 +311,24 @@ class Affine(IAlgorithm):
         return res
 
 
+class GetMaskModel(CVImageModel):
+    get_inverse: bool = Field(False, description="Whether get the inverse mask.")
+    binarize_threshold: Optional[int] = Field(
+        None,
+        description="If not None, will binarize the mask with this value.",
+    )
+
+
 @IAlgorithm.auto_register()
 class GetMask(IAlgorithm):
-    model_class = CVImageModel
+    model_class = GetMaskModel
 
     endpoint = cv_get_mask_endpoint
 
     def initialize(self) -> None:
         pass
 
-    async def run(self, data: CVImageModel, *args: Any, **kwargs: Any) -> Response:
+    async def run(self, data: GetMaskModel, *args: Any, **kwargs: Any) -> Response:
         self.log_endpoint(data)
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
@@ -329,6 +337,10 @@ class GetMask(IAlgorithm):
             mask = np.array(image)[..., -1]
         else:
             mask = np.array(image.convert("L"))
+        if data.get_inverse:
+            mask = 255 - mask
+        if data.binarize_threshold is not None:
+            mask = np.where(mask > data.binarize_threshold, 255, 0)
         t2 = time.time()
         res = get_response(data, [mask])
         self.log_times(
