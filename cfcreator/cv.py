@@ -269,7 +269,10 @@ class BaseAffineModel(BaseModel):
 
 
 class AffineModel(ResizeModel, BaseAffineModel):
-    pass
+    force_rgba: bool = Field(
+        False,
+        description="Whether to force the output to be RGBA.",
+    )
 
 
 @IAlgorithm.auto_register()
@@ -286,6 +289,9 @@ class Affine(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
+        if data.force_rgba and image.mode != "RGBA":
+            image = image.convert("RGBA")
+        t2 = time.time()
         output = affine(
             image,
             data.a,
@@ -299,13 +305,14 @@ class Affine(IAlgorithm):
             data.resampling,
             data.wh_limit,
         )
-        t2 = time.time()
+        t3 = time.time()
         res = get_response(data, [output])
         self.log_times(
             {
                 "download": t1 - t0,
-                "process": t2 - t1,
-                "get_response": time.time() - t2,
+                "preprocess": t2 - t1,
+                "process": t3 - t2,
+                "get_response": time.time() - t3,
             }
         )
         return res
