@@ -127,9 +127,10 @@ class Txt2ImgSDInpainting(IAlgorithm):
         t2 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
         kwargs.update(handle_diffusion_inpainting_model(data))
-        mask_arr = np.array(mask)
-        mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
-        mask = Image.fromarray(mask_arr)
+        if mask.mode == "RGBA":
+            mask_arr = np.array(mask)
+            mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
+            mask = Image.fromarray(mask_arr)
         img_arr = m.txt2img_inpainting(data.text, image, mask, **kwargs).numpy()[0]
         t3 = time.time()
         res = get_response(data, [to_uint8(get_normalized_arr_from_diffusion(img_arr))])
