@@ -285,6 +285,14 @@ async def consume() -> None:
             task = data["task"]
             if task == "$health-check$":
                 print(">>> incoming", data)
+                redis_client.set(
+                    uid,
+                    json.dumps(
+                        dict(status=Status.FINISHED, data=data),
+                        ensure_ascii=False,
+                    ),
+                )
+                consume_uid_from_queue(uid)
                 continue
             if task == "scene-generation":
                 task = "txt2img.sd.outpainting"
