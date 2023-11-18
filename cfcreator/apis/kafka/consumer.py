@@ -245,6 +245,13 @@ def audit_urls(
     return urls, reasons
 
 
+def consume_uid_from_queue(uid: str) -> None:
+    queue = get_pending_queue()
+    if uid in queue:
+        queue.remove(uid)
+        dump_queue(queue)
+
+
 # kafka & redis
 async def consume() -> None:
     OPT["verbose"] = False
@@ -481,11 +488,7 @@ async def consume() -> None:
                     json.dumps(dict(status=Status.FINISHED, data=result)),
                 )
                 procedure = "done"
-                # maintain queue
-                queue = get_pending_queue()
-                if uid in queue:
-                    queue.remove(uid)
-                    dump_queue(queue)
+                consume_uid_from_queue(uid)
             except Exception as err:
                 end_time = time.time()
                 torch.cuda.empty_cache()
