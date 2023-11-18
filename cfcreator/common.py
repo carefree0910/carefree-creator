@@ -308,7 +308,7 @@ Seed of the variation generation.
         default_factory=lambda: [],
         description="Variation ingredients",
     )
-    num_steps: int = Field(20, description="Number of sampling steps", ge=5, le=100)
+    num_steps: int = Field(20, description="Number of sampling steps", ge=1, le=100)
     guidance_scale: float = Field(
         7.5,
         description="Guidance scale for classifier-free guidance.",
