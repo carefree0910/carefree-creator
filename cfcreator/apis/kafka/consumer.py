@@ -276,6 +276,9 @@ async def consume() -> None:
             data = json.loads(message.value)
             uid = data["uid"]
             task = data["task"]
+            if task == "$health-check$":
+                print(">>> incoming", data)
+                continue
             if task == "scene-generation":
                 task = "txt2img.sd.outpainting"
             params = data["params"]
