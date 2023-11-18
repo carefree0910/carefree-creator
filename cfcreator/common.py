@@ -247,6 +247,7 @@ class SDSamplers(str, Enum):
     K_EULER = "k_euler"
     K_EULER_A = "k_euler_a"
     K_HEUN = "k_heun"
+    LCM = "lcm"
 
 
 class TomeInfoModel(BaseModel):
