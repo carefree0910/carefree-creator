@@ -355,6 +355,8 @@ async def server_status(response: Response) -> ServerStatusResponse:
     real_pending = get_real_pending(queue, statuses)
     details: Dict[str, List[str]] = {}
     for uid, status in zip(queue, statuses):
+        if status == Status.INTERRUPTED:
+            continue
         details.setdefault(status, []).append(uid)
     return ServerStatusResponse(
         is_ready=len(members) > 0,
