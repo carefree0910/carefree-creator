@@ -321,7 +321,7 @@ class Img2ImgInpainting(IAlgorithm):
             img_arr = m(image_arr, mask_arr, cfg)
             final = to_uint8(img_arr)
         else:
-            kwargs.update(handle_diffusion_model(m, data))
+            kwargs.update(handle_diffusion_model(m, data, always_uncond=False))
             mask_arr = np.array(mask)
             mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
             mask = Image.fromarray(mask_arr)

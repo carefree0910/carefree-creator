@@ -504,7 +504,12 @@ class ControlNetModel(CommonSDInpaintingModel, DiffusionModel, _ControlNetModel)
     pass
 
 
-def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, Any]:
+def handle_diffusion_model(
+    m: DiffusionAPI,
+    data: DiffusionModel,
+    *,
+    always_uncond: bool = True,
+) -> Dict[str, Any]:
     if data.seed >= 0:
         seed = data.seed
     else:
@@ -519,7 +524,10 @@ def handle_diffusion_model(m: DiffusionAPI, data: DiffusionModel) -> Dict[str, A
     else:
         variations = [(v.seed, v.strength) for v in data.variations]
     m.switch_circular(data.use_circular)
-    unconditional_cond = [data.negative_prompt]
+    if not always_uncond and not data.negative_prompt:
+        unconditional_cond = None
+    else:
+        unconditional_cond = [data.negative_prompt]
     clip_skip = data.clip_skip
     if clip_skip == -1:
         if data.is_anime or data.version.startswith("anime"):
