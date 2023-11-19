@@ -417,6 +417,10 @@ the latent of the background is the only information for us to inpaint.
         description="Target width and height of the images under MASKED mode.",
     )
     inpainting_padding_mode: Optional[str] = Field(None, description="Padding mode.")
+    inpainting_ref_one_more_step: bool = Field(
+        False,
+        description="Whether use one more step for reference in inpainting.",
+    )
 
 
 class HighresModel(BaseModel):
@@ -605,6 +609,7 @@ def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str
             data.inpainting_target_wh,
             data.inpainting_padding_mode,
         ),
+        inpainting_ref_one_more_step=data.inpainting_ref_one_more_step,
     )
 
 
