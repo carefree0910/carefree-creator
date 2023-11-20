@@ -201,6 +201,13 @@ def check_timeout(uid: str, data: "StatusData") -> bool:
     return False
 
 
+def get_pending_queue() -> List[str]:
+    data = redis_client.get(pending_queue_key)
+    if data is None:
+        return []
+    return json.loads(data)
+
+
 def get_clean_queue() -> List[str]:
     global queue_timeout_timer
     queue = get_pending_queue()
@@ -322,13 +329,6 @@ class ServerStatusResponse(BaseModel):
     details: Dict[str, List[str]]
 
 
-def get_pending_queue() -> List[str]:
-    data = redis_client.get(pending_queue_key)
-    if data is None:
-        return []
-    return json.loads(data)
-
-
 def get_statuses(queue: List[str]) -> List[str]:
     return [fetch_redis(uid).status for uid in queue]
 
@@ -350,7 +350,7 @@ def get_real_lag(queue: List[str]) -> int:
 async def server_status(response: Response) -> ServerStatusResponse:
     inject_headers(response)
     members = kafka_admin.describe_consumer_groups([kafka_group_id()])[0].members
-    queue = get_pending_queue()
+    queue = get_clean_queue()
     statuses = get_statuses(queue)
     real_pending = get_real_pending(queue, statuses)
     details: Dict[str, List[str]] = {}
