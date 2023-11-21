@@ -180,23 +180,22 @@ def dump_queue(queue: List[str]) -> None:
 
 
 def check_timeout(uid: str, data: "StatusData") -> bool:
-    if data.status not in (Status.PENDING, Status.WORKING):
-        return False
     create_time = (data.data or {}).get("create_time", None)
     start_time = (data.data or {}).get("start_time", None)
     for t in [create_time, start_time]:
         if t is not None:
             dt = time.time() - t
             if dt >= queue_timeout_threshold:
-                redis_client.set(
-                    uid,
-                    json.dumps(
-                        dict(
-                            status=Status.EXCEPTION,
-                            data=dict(reason=f"timeout after {dt}s"),
-                        )
-                    ),
-                )
+                if data.status in (Status.PENDING, Status.WORKING):
+                    redis_client.set(
+                        uid,
+                        json.dumps(
+                            dict(
+                                status=Status.EXCEPTION,
+                                data=dict(reason=f"timeout after {dt}s"),
+                            )
+                        ),
+                    )
                 return True
     return False
 
