@@ -27,6 +27,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from cftool.web import get_responses
 from cftool.misc import get_err_msg
 from cftool.misc import random_hash
+from cftool.misc import shallow_copy_dict
 
 from cfcreator import *
 
@@ -180,21 +181,18 @@ def dump_queue(queue: List[str]) -> None:
 
 
 def check_timeout(uid: str, data: "StatusData") -> bool:
-    create_time = (data.data or {}).get("create_time", None)
-    start_time = (data.data or {}).get("start_time", None)
+    d = shallow_copy_dict(data.data or {})
+    create_time = d.get("create_time", None)
+    start_time = d.get("start_time", None)
     for t in [create_time, start_time]:
         if t is not None:
             dt = time.time() - t
             if dt >= queue_timeout_threshold:
                 if data.status in (Status.PENDING, Status.WORKING):
+                    d["reason"] = f"timeout after {dt}s"
                     redis_client.set(
                         uid,
-                        json.dumps(
-                            dict(
-                                status=Status.EXCEPTION,
-                                data=dict(reason=f"timeout after {dt}s"),
-                            )
-                        ),
+                        json.dumps(dict(status=Status.EXCEPTION, data=d)),
                     )
                 return True
     return False
