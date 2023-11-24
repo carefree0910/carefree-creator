@@ -32,6 +32,7 @@ ADD_TEXT_ENDPOINT = "$add_text"
 CONTROL_HINT_ENDPOINT = "$control_hint"
 FOR_EACH_ENDPOINT = "$for_each"
 PICK_ENDPOINT = "$pick"
+GATHER_ENDPOINT = "$gather"
 ALL_LATENCIES_KEY = "$all_latencies"
 EXCEPTION_MESSAGE_KEY = "$exception_message"
 endpoint2method = {
@@ -71,6 +72,7 @@ endpoint2method = {
     CONTROL_HINT_ENDPOINT: "get_control_hint",
     FOR_EACH_ENDPOINT: "for_each",
     PICK_ENDPOINT: "pick",
+    GATHER_ENDPOINT: "gather",
 }
 
 
@@ -84,6 +86,15 @@ class ForEachModel(BaseModel):
 class PickModel(BaseModel):
     index: int
     values: List[Any]
+
+
+class GatherItemModel(BaseModel):
+    index: Optional[int]
+    values: List[Any]
+
+
+class GatherModel(BaseModel):
+    items: List[GatherItemModel]
 
 
 class APIs:
@@ -351,6 +362,15 @@ class APIs:
     async def pick(self, data: PickModel, **kw: Any) -> List[Any]:
         return [data.values[data.index]]
 
+    async def gather(self, data: GatherModel, **kw: Any) -> List[Any]:
+        results = []
+        for item in data.items:
+            if item.index is None:
+                results += item.values
+            else:
+                results.append(item.values[item.index])
+        return results
+
     # workflow
 
     async def execute(
@@ -468,6 +488,9 @@ class APIs:
                     elif endpoint == PICK_ENDPOINT:
                         data_model = PickModel(**node_data)
                         item_res = await method_fn(data_model, **node_kw)
+                    elif endpoint == GATHER_ENDPOINT:
+                        data_model = GatherModel(**node_data)
+                        item_res = await method_fn(data_model, **node_kw)
                     else:
                         data_model = self.get_data_model(endpoint, node_data)
                         item_res = await method_fn(data_model, **node_kw)
@@ -477,6 +500,8 @@ class APIs:
                         ls = dict(loop=time.time() - t)
                     elif endpoint == PICK_ENDPOINT:
                         ls = dict(pick=time.time() - t)
+                    elif endpoint == GATHER_ENDPOINT:
+                        ls = dict(gather=time.time() - t)
                     else:
                         ls = self.algorithms[
                             endpoint2algorithm(endpoint)
@@ -504,6 +529,7 @@ __all__ = [
     "CONTROL_HINT_ENDPOINT",
     "FOR_EACH_ENDPOINT",
     "PICK_ENDPOINT",
+    "GATHER_ENDPOINT",
     "ALL_LATENCIES_KEY",
     "APIs",
     "HighresModel",
