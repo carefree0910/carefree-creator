@@ -89,7 +89,7 @@ class PickModel(BaseModel):
 
 
 class GatherItemModel(BaseModel):
-    index: Optional[int]
+    index: Optional[Union[int, List[int]]]
     values: List[Any]
 
 
@@ -368,7 +368,10 @@ class APIs:
             if item.index is None:
                 results += item.values
             else:
-                results.append(item.values[item.index])
+                index = item.index
+                if isinstance(index, int):
+                    index = [index]
+                results += [item.values[i] for i in index]
         return results
 
     # workflow
