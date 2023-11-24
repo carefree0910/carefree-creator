@@ -252,6 +252,11 @@ def consume_uid_from_queue(uid: str) -> None:
         dump_queue(queue)
 
 
+def echo_health() -> None:
+    with open("/tmp/health", "w"):
+        pass
+
+
 # kafka & redis
 async def consume() -> None:
     OPT["verbose"] = False
@@ -275,11 +280,11 @@ async def consume() -> None:
         max_poll_records=kafka_max_poll_records(),
         max_poll_interval_ms=kafka_max_poll_interval_ms(),
     )
-    with open("/tmp/health", "w"):
-        pass
+    echo_health()
     # main loop
     try:
         for message in kafka_consumer:
+            echo_health()
             data = json.loads(message.value)
             uid = data["uid"]
             task = data["task"]
@@ -311,6 +316,7 @@ async def consume() -> None:
             if existing is not None and check_timeout(uid, StatusData(**existing)):
                 print("!!! timeout", uid)
                 continue
+            echo_health()
             print(">>> working", uid)
             data = {} if existing is None else (existing.get("data", {}) or {})
             start_time = time.time()
@@ -318,6 +324,7 @@ async def consume() -> None:
             create_time = data.get("create_time", start_time)
             redis_client.set(uid, json.dumps(dict(status=Status.WORKING, data=data)))
             # maintain queue
+            echo_health()
             queue = get_pending_queue()
             if uid not in queue:
                 queue.insert(0, uid)
@@ -331,6 +338,7 @@ async def consume() -> None:
                 if isinstance(model, ReturnArraysModel):
                     model.return_arrays = True
                 res: Union[Response, Any] = await run_algorithm(algorithm, model)
+                echo_health()
                 latencies = algorithm.last_latencies
                 t1 = time.time()
                 if isinstance(algorithm, WorkflowAlgorithm):
@@ -481,8 +489,10 @@ async def consume() -> None:
                     json.dumps(dict(status=Status.FINISHED, data=result)),
                 )
                 t4 = time.time()
+                echo_health()
                 procedure = "redis -> callback"
                 await post_callback(callback_url, uid, True, result)
+                echo_health()
                 t5 = time.time()
                 procedure = "callback -> update_elapsed_times"
                 result["elapsed_times"].update(
@@ -497,7 +507,9 @@ async def consume() -> None:
                 )
                 procedure = "done"
                 consume_uid_from_queue(uid)
+                echo_health()
             except Exception as err:
+                echo_health()
                 end_time = time.time()
                 torch.cuda.empty_cache()
                 reason = f"{task} -> {procedure} : {get_err_msg(err)}"
@@ -510,6 +522,7 @@ async def consume() -> None:
                     data["request"] = dict(task=task, params=simplify(params))
                 else:
                     data["request"] = dict(task=task, model=simplify(model.dict()))
+                echo_health()
                 redis_client.set(
                     uid,
                     json.dumps(
@@ -518,6 +531,7 @@ async def consume() -> None:
                     ),
                 )
                 await post_callback(callback_url, uid, False, data)
+                echo_health()
     finally:
         # clean up
         await http_client.stop()
