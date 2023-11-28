@@ -223,9 +223,16 @@ class Erode(IAlgorithm):
         return res
 
 
+class ResizeMode(str, Enum):
+    FILL = "fill"
+    FIT = "fit"
+    COVER = "cover"
+
+
 class ResizeModel(ResamplingModel, CVImageModel):
     w: int = Field(..., description="width of the output image")
     h: int = Field(..., description="width of the output image")
+    mode: ResizeMode = Field(ResizeMode.FILL, description="resize mode")
 
 
 @IAlgorithm.auto_register()
@@ -242,14 +249,27 @@ class Resize(IAlgorithm):
         t0 = time.time()
         image = await self.get_image_from("url", data, kwargs)
         t1 = time.time()
-        resized = np.array(resize(image, data.w, data.h, data.resampling))
+        w, h = data.w, data.h
+        img_w, img_h = image.size
+        if data.mode != ResizeMode.FILL:
+            w_ratio = w / img_w
+            h_ratio = h / img_h
+            if data.mode == ResizeMode.FIT:
+                ratio = min(w_ratio, h_ratio)
+            else:
+                ratio = max(w_ratio, h_ratio)
+            w = round(img_w * ratio)
+            h = round(img_h * ratio)
         t2 = time.time()
+        resized = np.array(resize(image, w, h, data.resampling))
+        t3 = time.time()
         res = get_response(data, [resized])
         self.log_times(
             {
                 "download": t1 - t0,
-                "process": t2 - t1,
-                "get_response": time.time() - t2,
+                "get_size": t2 - t1,
+                "process": t3 - t2,
+                "get_response": time.time() - t3,
             }
         )
         return res
