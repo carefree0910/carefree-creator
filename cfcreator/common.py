@@ -537,11 +537,11 @@ def handle_diffusion_model(
     tome_info = data.tome_info.dict()
     enable_tome = tome_info.pop("enable")
     if not enable_tome:
-        m.set_tome_info(None)
+        m.setup_hooks(tome_info=None)
     else:
         if tome_info["seed"] == -1:
             tome_info["seed"] = seed
-        m.set_tome_info(tome_info)
+        m.setup_hooks(tome_info=tome_info)
     # lora
     model = m.m
     if isinstance(model, StableDiffusion):
