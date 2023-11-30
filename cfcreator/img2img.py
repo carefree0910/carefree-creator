@@ -34,6 +34,7 @@ from .common import register_inpainting
 from .common import get_sd_from
 from .common import get_response
 from .common import handle_diffusion_model
+from .common import handle_diffusion_hooks
 from .common import get_normalized_arr_from_diffusion
 from .common import IAlgorithm
 from .common import ImageModel
@@ -107,6 +108,7 @@ class Img2ImgSD(IAlgorithm):
         m = get_sd_from(APIs.SD, data)
         t3 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
+        await handle_diffusion_hooks(m, data, self, kwargs)
         if data.highres_info is not None:
             kwargs["highres_info"] = data.highres_info.dict()
         img_arr = m.img2img(
@@ -322,6 +324,7 @@ class Img2ImgInpainting(IAlgorithm):
             final = to_uint8(img_arr)
         else:
             kwargs.update(handle_diffusion_model(m, data, always_uncond=False))
+            await handle_diffusion_hooks(m, data, self, kwargs)
             mask_arr = np.array(mask)
             mask_arr[..., -1] = np.where(mask_arr[..., -1] > 0, 255, 0)
             mask = Image.fromarray(mask_arr)

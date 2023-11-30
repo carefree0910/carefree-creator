@@ -534,14 +534,6 @@ def handle_diffusion_model(
             clip_skip = 1
         else:
             clip_skip = 0
-    tome_info = data.tome_info.dict()
-    enable_tome = tome_info.pop("enable")
-    if not enable_tome:
-        m.setup_hooks(tome_info=None)
-    else:
-        if tome_info["seed"] == -1:
-            tome_info["seed"] = seed
-        m.setup_hooks(tome_info=tome_info)
     # lora
     model = m.m
     if isinstance(model, StableDiffusion):
@@ -619,6 +611,22 @@ def handle_diffusion_inpainting_model(data: CommonSDInpaintingModel) -> Dict[str
         ),
         inpainting_ref_one_more_step=data.inpainting_ref_one_more_step,
     )
+
+
+async def handle_diffusion_hooks(
+    m: DiffusionAPI,
+    data: DiffusionModel,
+    algorithm: "IAlgorithm",
+    kwargs: Dict[str, Any],
+) -> None:
+    tome_info = data.tome_info.dict()
+    enable_tome = tome_info.pop("enable")
+    if not enable_tome:
+        m.setup_hooks(tome_info=None)
+    else:
+        if tome_info["seed"] == -1:
+            tome_info["seed"] = kwargs.get("seed", secrets.randbelow(2**32))
+        m.setup_hooks(tome_info=tome_info)
 
 
 class GetPromptModel(BaseModel):

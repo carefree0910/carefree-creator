@@ -39,6 +39,7 @@ from .common import get_sd_from
 from .common import register_sd
 from .common import register_sd_inpainting
 from .common import handle_diffusion_model
+from .common import handle_diffusion_hooks
 from .common import handle_diffusion_inpainting_model
 from .common import IAlgorithm
 from .common import ControlNetModel
@@ -234,6 +235,7 @@ async def apply_control(
     cond = [common.prompt] * common.num_samples
     kw = shallow_copy_dict(kwargs)
     kw.update(handle_diffusion_model(api, common))
+    await handle_diffusion_hooks(api, common, self, kw)
     hint = [(b.type, all_key_values[k][0]) for b, k in zip(controls, all_keys)]
     kw[CONTROL_HINT_KEY] = hint
     kw[CONTROL_HINT_START_KEY] = [b.data.hint_start for b in controls]

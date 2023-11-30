@@ -36,6 +36,7 @@ from ..common import BaseSDTag
 from ..common import get_sd_from
 from ..common import register_sd
 from ..common import handle_diffusion_model
+from ..common import handle_diffusion_hooks
 from ..common import handle_diffusion_inpainting_model
 from ..common import IAlgorithm
 from ..common import ReturnArraysModel
@@ -72,7 +73,8 @@ async def get_images(
     return image, hint_image
 
 
-def apply_control(
+async def apply_control(
+    self: IAlgorithm,
     data: Union[ControlNetModelPlaceholder, Dict[str, ControlNetModelPlaceholder]],
     api_key: APIs,
     input_image: np.ndarray,
@@ -164,6 +166,7 @@ def apply_control(
         )
     cond = [common_data.prompt] * common_data.num_samples
     kw = handle_diffusion_model(api, common_data)
+    await handle_diffusion_hooks(api, data, self, kw)
     keys = sorted([k.value if isinstance(k, ControlNetHints) else k for k in all_hint])
     kw[CONTROL_HINT_KEY] = [(k, all_hint[k]) for k in keys]
     kw[CONTROL_HINT_START_KEY] = [common_data.hint_starts.get(k) for k in keys]
@@ -231,7 +234,9 @@ async def run_control(
     t0 = time.time()
     image, hint_image = await get_images(self, data, kwargs)
     t1 = time.time()
-    results, latencies = apply_control(data, APIs.SD, image, hint_image, hint_type)
+    results, latencies = await apply_control(
+        self, data, APIs.SD, image, hint_image, hint_type
+    )
     latencies["download"] = t1 - t0
     return results, latencies
 

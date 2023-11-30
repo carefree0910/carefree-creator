@@ -87,7 +87,8 @@ class ControlMulti(IAlgorithm):
         t0 = time.time()
         image, hint_image = await get_images(self, data, kwargs)
         t1 = time.time()
-        results, latencies = apply_control(
+        results, latencies = await apply_control(
+            self,
             gather_all_data(data),
             APIs.SD,
             image,
