@@ -275,6 +275,27 @@ Seed of the generation.
     merge_mlp: bool = Field(False, description="Whether merge mlp.")
 
 
+class StyleReferenceModel(BaseModel):
+    url: Optional[str] = Field(
+        None,
+        description="The url of the style image, `None` means not enabling style reference.",
+    )
+    style_fidelity: float = Field(
+        0.5,
+        description="Style fidelity, larger means reference more on the given style image.",
+    )
+    reference_weight: float = Field(
+        1.0,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Reference weight, similar to `control_strength`, "
+            "but value > 1.0 or value < 0.0 will take no effect, "
+            "so we strictly restrict it to [0.0, 1.0]."
+        ),
+    )
+
+
 class DiffusionModel(CallbackModel):
     use_circular: bool = Field(
         False,
@@ -343,6 +364,10 @@ Number of CLIP layers that we want to skip.
         description="Custom embeddings, often used in textual inversion.",
     )
     tome_info: TomeInfoModel = Field(TomeInfoModel(), description="tomesd settings.")
+    style_reference: StyleReferenceModel = Field(
+        StyleReferenceModel(),
+        description="style reference settings.",
+    )
     lora_scales: Optional[Dict[str, float]] = Field(
         None,
         description="lora scales, key is the name, value is the weight.",
@@ -619,14 +644,32 @@ async def handle_diffusion_hooks(
     algorithm: "IAlgorithm",
     kwargs: Dict[str, Any],
 ) -> None:
+    # tomesd
     tome_info = data.tome_info.dict()
     enable_tome = tome_info.pop("enable")
     if not enable_tome:
-        m.setup_hooks(tome_info=None)
+        tome_info = None
     else:
         if tome_info["seed"] == -1:
             tome_info["seed"] = kwargs.get("seed", secrets.randbelow(2**32))
-        m.setup_hooks(tome_info=tome_info)
+    # style reference
+    style_reference = data.style_reference.dict()
+    style_url = style_reference.pop("url")
+    existing = kwargs.get("style_reference.url")
+    if existing is not None and isinstance(existing, Image.Image):
+        style_image = existing
+    else:
+        if style_url is not None:
+            style_image = await algorithm.download_image_with_retry(style_url)
+        else:
+            style_image = None
+            style_reference = None
+    # setup
+    m.setup_hooks(
+        tome_info=tome_info,
+        style_reference_image=style_image,
+        style_reference_states=style_reference,
+    )
 
 
 class GetPromptModel(BaseModel):
