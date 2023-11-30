@@ -166,7 +166,7 @@ async def apply_control(
         )
     cond = [common_data.prompt] * common_data.num_samples
     kw = handle_diffusion_model(api, common_data)
-    await handle_diffusion_hooks(api, data, self, kw)
+    await handle_diffusion_hooks(api, common_data, self, kw)
     keys = sorted([k.value if isinstance(k, ControlNetHints) else k for k in all_hint])
     kw[CONTROL_HINT_KEY] = [(k, all_hint[k]) for k in keys]
     kw[CONTROL_HINT_START_KEY] = [common_data.hint_starts.get(k) for k in keys]
