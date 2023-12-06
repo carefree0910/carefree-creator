@@ -383,7 +383,12 @@ def register_hint(
             if detect_resolution is not None:
                 hint_image = resize_image(hint_image, detect_resolution)
             hint = m.get_hint_of(hint_type, hint_image, **data.dict())
-            hint = cv2.resize(hint, (w, h), interpolation=cv2.INTER_LINEAR)
+            interpolation = (
+                cv2.INTER_NEAREST
+                if data.binarize_threshold is not None
+                else cv2.INTER_LINEAR
+            )
+            hint = cv2.resize(hint, (w, h), interpolation=interpolation)
             t3 = time.time()
             self.log_times(
                 dict(
