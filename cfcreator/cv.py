@@ -38,6 +38,7 @@ from .common import IAlgorithm
 from .common import ReturnArraysModel
 
 
+cv_op_endpoint = "/cv/op"
 cv_blur_endpoint = "/cv/blur"
 cv_grayscale_endpoint = "/cv/grayscale"
 cv_erode_endpoint = "/cv/erode"
@@ -57,6 +58,44 @@ cv_repositioning_endpoint = "/cv/repositioning"
 
 class CVImageModel(ReturnArraysModel, ImageModel):
     pass
+
+
+class OpModel(CVImageModel):
+    url2: str = Field(..., description="the second image to process")
+    op: str = Field(..., description="the operation")
+
+
+@IAlgorithm.auto_register()
+class Op(IAlgorithm):
+    model_class = OpModel
+
+    endpoint = cv_op_endpoint
+
+    def initialize(self) -> None:
+        pass
+
+    async def run(self, data: OpModel, *args: Any, **kwargs: Any) -> Response:
+        self.log_endpoint(data)
+        op = getattr(np, data.op, None)
+        if op is None:
+            raise ValueError(f"`{data.op}` is not a valid operation")
+        t0 = time.time()
+        image = await self.get_image_from("url", data, kwargs)
+        image2 = await self.get_image_from("url2", data, kwargs)
+        t1 = time.time()
+        array = np.array(image)
+        array2 = np.array(image2)
+        calculated = op(array, array2)
+        t2 = time.time()
+        res = get_response(data, [calculated])
+        self.log_times(
+            {
+                "download": t1 - t0,
+                "process": t2 - t1,
+                "get_response": time.time() - t2,
+            }
+        )
+        return res
 
 
 class BlurModel(CVImageModel):
@@ -1014,6 +1053,7 @@ class Repositioning(IAlgorithm):
 
 
 __all__ = [
+    "cv_op_endpoint",
     "cv_blur_endpoint",
     "cv_grayscale_endpoint",
     "cv_erode_endpoint",
@@ -1030,6 +1070,7 @@ __all__ = [
     "cv_image_similarity_endpoint",
     "cv_repositioning_endpoint",
     "CVImageModel",
+    "OpModel",
     "BlurModel",
     "ErodeModel",
     "ResizeModel",
@@ -1044,6 +1085,7 @@ __all__ = [
     "ImageSimilarityModel",
     "ImageSimilarityResponse",
     "RepositioningModel",
+    "Op",
     "Blur",
     "Grayscale",
     "Erode",

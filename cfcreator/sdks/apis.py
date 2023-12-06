@@ -49,6 +49,7 @@ endpoint2method = {
     txt2txt_prompt_enhance_endpoint: "prompt_enhance",
     new_control_multi_endpoint: "run_multi_controlnet",
     upscale_tile_endpoint: "upscale_tile",
+    cv_op_endpoint: "op",
     cv_blur_endpoint: "blur",
     cv_grayscale_endpoint: "grayscale",
     cv_erode_endpoint: "erode",
@@ -221,6 +222,9 @@ class APIs:
         self, data: PastePipelineModel, **kw: Any
     ) -> List[Image.Image]:
         return await self._run(data, paste_pipeline_endpoint, **kw)
+
+    async def op(self, data: OpModel, **kw: Any) -> List[Image.Image]:
+        return await self._run(data, cv_op_endpoint, **kw)
 
     async def blur(self, data: BlurModel, **kw: Any) -> List[Image.Image]:
         return await self._run(data, cv_blur_endpoint, **kw)
