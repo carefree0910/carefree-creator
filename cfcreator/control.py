@@ -198,12 +198,10 @@ async def apply_control(
                 i_annotator.to(device, use_half=True)
             all_annotator_change_device_times.append(time.time() - ht)
             i_hint_kw = i_data.dict()
+            i_hint_kw["binarize_threshold"] = i_data.hint_binarize_threshold
             if extra_annotator_params is not None:
                 i_hint_kw.update(extra_annotator_params)
             i_o_hint_arr = api.get_hint_of(i_t_annotator, i_hint_image, **i_hint_kw)
-            if i_binarize:
-                binarized = i_o_hint_arr > i_data.hint_binarize_threshold
-                i_o_hint_arr = np.where(binarized, 255, 0).astype(np.uint8)
             ht = time.time()
             if need_change_device:
                 i_annotator.to("cpu", use_half=False)
@@ -404,6 +402,15 @@ def register_hint(
     control_hint2hint_data_models[hint_type] = hint_model_class
 
 
+class BinarizeModel(BaseModel):
+    binarize_threshold: Optional[int] = Field(
+        None,
+        ge=0,
+        le=255,
+        description="The threshold for binarizing the hint, None means no binarization.",
+    )
+
+
 class DetectResolutionModel(BaseModel):
     detect_resolution: int = Field(
         384,
@@ -433,7 +440,7 @@ class ControlDepthModel(_DepthModel, ControlNetModel):
     pass
 
 
-class ControlDepthHintModel(_DepthModel, ReturnArraysModel, ImageModel):
+class ControlDepthHintModel(_DepthModel, BinarizeModel, ReturnArraysModel, ImageModel):
     pass
 
 
@@ -459,7 +466,7 @@ class ControlCannyModel(_CannyModel, ControlNetModel):
     pass
 
 
-class ControlCannyHintModel(_CannyModel, ReturnArraysModel, ImageModel):
+class ControlCannyHintModel(_CannyModel, BinarizeModel, ReturnArraysModel, ImageModel):
     pass
 
 
@@ -474,7 +481,7 @@ class ControlPoseModel(_PoseModel, ControlNetModel):
     pass
 
 
-class ControlPoseHintModel(_PoseModel, ReturnArraysModel, ImageModel):
+class ControlPoseHintModel(_PoseModel, BinarizeModel, ReturnArraysModel, ImageModel):
     pass
 
 
@@ -500,7 +507,7 @@ class ControlMLSDModel(_MLSDModel, ControlNetModel):
     pass
 
 
-class ControlMLSDHintModel(_MLSDModel, ReturnArraysModel, ImageModel):
+class ControlMLSDHintModel(_MLSDModel, BinarizeModel, ReturnArraysModel, ImageModel):
     pass
 
 
