@@ -296,6 +296,12 @@ class StyleReferenceModel(BaseModel):
     )
 
 
+class HighresModel(BaseModel):
+    fidelity: float = Field(0.3, description="Fidelity of the original latent.")
+    upscale_factor: float = Field(2.0, description="Upscale factor.")
+    max_wh: int = Field(1024, description="Max width or height of the output image.")
+
+
 class DiffusionModel(CallbackModel):
     use_circular: bool = Field(
         False,
@@ -368,6 +374,7 @@ Number of CLIP layers that we want to skip.
         StyleReferenceModel(),
         description="style reference settings.",
     )
+    highres_info: Optional[HighresModel] = Field(None, description="Highres info.")
     lora_scales: Optional[Dict[str, float]] = Field(
         None,
         description="lora scales, key is the name, value is the weight.",
@@ -446,12 +453,6 @@ the latent of the background is the only information for us to inpaint.
         False,
         description="Whether use one more step for reference in inpainting.",
     )
-
-
-class HighresModel(BaseModel):
-    fidelity: float = Field(0.3, description="Fidelity of the original latent.")
-    upscale_factor: float = Field(2.0, description="Upscale factor.")
-    max_wh: int = Field(1024, description="Max width or height of the output image.")
 
 
 class Txt2ImgModel(DiffusionModel, MaxWHModel, TextModel):
@@ -612,6 +613,7 @@ def handle_diffusion_model(
         verbose=verbose(),
         clip_skip=clip_skip,
         custom_embeddings=custom_embeddings,
+        highres_info=None if data.highres_info is None else data.highres_info.dict(),
     )
 
 

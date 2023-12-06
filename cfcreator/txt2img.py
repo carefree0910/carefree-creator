@@ -36,7 +36,6 @@ txt2img_sd_outpainting_endpoint = "/txt2img/sd.outpainting"
 class _Txt2ImgSDModel(BaseModel):
     w: int = Field(512, description="The desired output width.")
     h: int = Field(512, description="The desired output height.")
-    highres_info: Optional[HighresModel] = Field(None, description="Highres info.")
 
 
 class Txt2ImgSDModel(ReturnArraysModel, Txt2ImgModel, _Txt2ImgSDModel):
@@ -60,8 +59,6 @@ class Txt2ImgSD(IAlgorithm):
         size = data.w, data.h
         kwargs.update(handle_diffusion_model(m, data))
         await handle_diffusion_hooks(m, data, self, kwargs)
-        if data.highres_info is not None:
-            kwargs["highres_info"] = data.highres_info.dict()
         img_arr = m.txt2img(
             data.text,
             size=size,

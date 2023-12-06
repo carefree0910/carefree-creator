@@ -78,7 +78,6 @@ Whether the returned image should keep the alpha-channel of the input image or n
         (0, 0),
         description="The output size, `0` means as-is",
     )
-    highres_info: Optional[HighresModel] = Field(None, description="Highres info.")
 
 
 class Img2ImgSDModel(ReturnArraysModel, Img2ImgDiffusionModel, _Img2ImgSDModel):
@@ -109,8 +108,6 @@ class Img2ImgSD(IAlgorithm):
         t3 = time.time()
         kwargs.update(handle_diffusion_model(m, data))
         await handle_diffusion_hooks(m, data, self, kwargs)
-        if data.highres_info is not None:
-            kwargs["highres_info"] = data.highres_info.dict()
         img_arr = m.img2img(
             image,
             cond=[data.text],
