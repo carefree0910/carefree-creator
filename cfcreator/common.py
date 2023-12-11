@@ -247,6 +247,7 @@ class SDSamplers(str, Enum):
     K_EULER = "k_euler"
     K_EULER_A = "k_euler_a"
     K_HEUN = "k_heun"
+    K_DPMPP_2M = "k_dpmpp_2m"
     LCM = "lcm"
 
 
