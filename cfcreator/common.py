@@ -251,6 +251,10 @@ class SDSamplers(str, Enum):
     LCM = "lcm"
 
 
+class SigmasScheduler(str, Enum):
+    KARRAS = "karras"
+
+
 class TomeInfoModel(BaseModel):
     enable: bool = Field(False, description="Whether enable tomesd.")
     ratio: float = Field(0.5, description="The ratio of tokens to merge.")
@@ -356,6 +360,10 @@ Seed of the variation generation.
     sampler: SDSamplers = Field(
         SDSamplers.K_EULER,
         description="Sampler of the diffusion model",
+    )
+    sigmas_scheduler: Optional[SigmasScheduler] = Field(
+        None,
+        description="Sigmas scheduler of the k-samplers, `None` will use default.",
     )
     clip_skip: int = Field(
         -1,
@@ -607,6 +615,7 @@ def handle_diffusion_model(
         unconditional_guidance_scale=data.guidance_scale,
         unconditional_cond=unconditional_cond,
         sampler=data.sampler,
+        sigmas_scheduler=data.sigmas_scheduler,
         verbose=verbose(),
         clip_skip=clip_skip,
         custom_embeddings=custom_embeddings,
