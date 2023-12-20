@@ -304,6 +304,7 @@ class StyleReferenceModel(BaseModel):
 class HighresModel(BaseModel):
     fidelity: float = Field(0.3, description="Fidelity of the original latent.")
     upscale_factor: float = Field(2.0, description="Upscale factor.")
+    upscale_method: str = Field("nearest-exact", description="Upscale method.")
     max_wh: int = Field(1024, description="Max width or height of the output image.")
 
 
